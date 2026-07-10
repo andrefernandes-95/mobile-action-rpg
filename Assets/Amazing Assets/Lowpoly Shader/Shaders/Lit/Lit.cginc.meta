@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 0c7d22a491a59df4fb337996eabc8d88
+timeCreated: 1467108962
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 197219
+  packageName: Lowpoly Shader
+  packageVersion: 2025.3
+  assetPath: Assets/Amazing Assets/Lowpoly Shader/Shaders/Lit/Lit.cginc
+  uploadId: 836528

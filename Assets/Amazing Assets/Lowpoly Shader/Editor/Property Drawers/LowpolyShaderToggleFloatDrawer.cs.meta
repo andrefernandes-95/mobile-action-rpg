@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 509cd80f73d7d2c4f89b5e12abf61321
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 197219
+  packageName: Lowpoly Shader
+  packageVersion: 2025.3
+  assetPath: Assets/Amazing Assets/Lowpoly Shader/Editor/Property Drawers/LowpolyShaderToggleFloatDrawer.cs
+  uploadId: 836528

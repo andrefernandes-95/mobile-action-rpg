@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 613d0452b46421448ad39d20b74f398c
+AssemblyDefinitionImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 197219
+  packageName: Lowpoly Shader
+  packageVersion: 2025.3
+  assetPath: Assets/Amazing Assets/Lowpoly Shader/Editor/AmazingAssets.LowpolyShader.Editor.asmdef
+  uploadId: 836528

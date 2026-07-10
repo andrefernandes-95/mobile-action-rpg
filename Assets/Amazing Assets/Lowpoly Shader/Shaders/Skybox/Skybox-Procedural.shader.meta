@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 9852039401ae94146983b24593cf1165
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 197219
+  packageName: Lowpoly Shader
+  packageVersion: 2025.3
+  assetPath: Assets/Amazing Assets/Lowpoly Shader/Shaders/Skybox/Skybox-Procedural.shader
+  uploadId: 836528

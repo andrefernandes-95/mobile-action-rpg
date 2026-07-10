@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 4de62d9087ee0534a93eb9468293cdc0
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 197219
+  packageName: Lowpoly Shader
+  packageVersion: 2025.3
+  assetPath: Assets/Amazing Assets/Lowpoly Shader/Editor/Property Drawers/LowpolyShaderUVScrollDrawer.cs
+  uploadId: 836528

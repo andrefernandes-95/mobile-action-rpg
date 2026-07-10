@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 4ef2bcfbdc749f548b354246a15973ff
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 197219
+  packageName: Lowpoly Shader
+  packageVersion: 2025.3
+  assetPath: Assets/Amazing Assets/Lowpoly Shader/Editor/Property Drawers/LowpolyShaderSpaceDrawer.cs
+  uploadId: 836528

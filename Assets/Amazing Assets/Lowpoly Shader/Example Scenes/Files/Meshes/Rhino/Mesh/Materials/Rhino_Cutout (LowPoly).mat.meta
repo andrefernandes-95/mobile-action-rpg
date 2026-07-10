@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 3cccdc22d70ba4c4b94c2df8905679d7
+timeCreated: 1482578512
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 197219
+  packageName: Lowpoly Shader
+  packageVersion: 2025.3
+  assetPath: Assets/Amazing Assets/Lowpoly Shader/Example Scenes/Files/Meshes/Rhino/Mesh/Materials/Rhino_Cutout
+    (LowPoly).mat
+  uploadId: 836528

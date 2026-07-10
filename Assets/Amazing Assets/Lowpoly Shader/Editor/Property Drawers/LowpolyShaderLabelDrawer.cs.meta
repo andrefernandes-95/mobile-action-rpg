@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 64f698b2fd5f1754aa5023f0f9173841
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 197219
+  packageName: Lowpoly Shader
+  packageVersion: 2025.3
+  assetPath: Assets/Amazing Assets/Lowpoly Shader/Editor/Property Drawers/LowpolyShaderLabelDrawer.cs
+  uploadId: 836528

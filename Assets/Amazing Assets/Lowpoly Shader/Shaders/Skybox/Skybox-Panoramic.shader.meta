@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: a217f49b9630f2b4785354c59ebd55bf
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 197219
+  packageName: Lowpoly Shader
+  packageVersion: 2025.3
+  assetPath: Assets/Amazing Assets/Lowpoly Shader/Shaders/Skybox/Skybox-Panoramic.shader
+  uploadId: 836528

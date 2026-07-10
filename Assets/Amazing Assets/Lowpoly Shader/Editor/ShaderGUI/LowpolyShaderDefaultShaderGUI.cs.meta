@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 7a2d04f51cc1df34593bce2e08b6487f
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 197219
+  packageName: Lowpoly Shader
+  packageVersion: 2025.3
+  assetPath: Assets/Amazing Assets/Lowpoly Shader/Editor/ShaderGUI/LowpolyShaderDefaultShaderGUI.cs
+  uploadId: 836528

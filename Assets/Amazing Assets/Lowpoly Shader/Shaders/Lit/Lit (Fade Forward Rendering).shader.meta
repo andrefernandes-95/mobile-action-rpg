@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 83efc9379c5596846a1d01d788a84c22
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 197219
+  packageName: Lowpoly Shader
+  packageVersion: 2025.3
+  assetPath: Assets/Amazing Assets/Lowpoly Shader/Shaders/Lit/Lit (Fade Forward Rendering).shader
+  uploadId: 836528

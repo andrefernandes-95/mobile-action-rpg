@@ -1,0 +1,143 @@
+# =============================================================================
+# Unity generated / local-only
+# =============================================================================
+
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+# IDE / OS
+.vs/
+.vscode/
+.idea/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Unity auto-generated
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+sysinfo.txt
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# Crash / debug artifacts
+crashlytics-build.properties
+InitTestScene*.unity
+
+# =============================================================================
+# Licensed / commercial binary assets — do NOT commit
+# (.meta sidecars are still tracked so Unity GUIDs stay consistent)
+# =============================================================================
+
+# 3D models & DCC source
+*.fbx
+*.FBX
+*.obj
+*.OBJ
+*.blend
+*.BLEND
+*.blend1
+*.mb
+*.ma
+*.max
+*.dae
+*.3ds
+*.stl
+*.ztl
+*.zbrush
+
+# Textures & image sources
+*.psd
+*.PSD
+*.tga
+*.TGA
+*.tif
+*.tiff
+*.TIFF
+*.exr
+*.EXR
+*.hdr
+*.HDR
+*.bmp
+*.BMP
+*.png
+*.PNG
+*.jpg
+*.jpeg
+*.JPG
+*.JPEG
+*.gif
+*.GIF
+*.webp
+*.WEBP
+
+# Audio
+*.wav
+*.WAV
+*.mp3
+*.MP3
+*.ogg
+*.OGG
+*.aiff
+*.AIFF
+*.aif
+*.flac
+*.FLAC
+*.aac
+*.AAC
+*.m4a
+*.M4A
+
+# Video
+*.mp4
+*.MP4
+*.mov
+*.MOV
+*.avi
+*.AVI
+*.webm
+*.WEBM
+
+# Fonts (often store-bought)
+*.ttf
+*.TTF
+*.otf
+*.OTF
+*.woff
+*.woff2
+
+# Substance / material authoring
+*.sbsar
+*.spp
+
+# Teammates install Asset Store packs (Synty, VFX packs, etc.) locally.
+# .meta files for ignored assets still commit so Unity GUIDs stay in sync.
+
+# =============================================================================
+# Exceptions — uncomment to force-include original art you own
+# =============================================================================
+# !Assets/MyArt/
+# !Assets/MyArt/**/*.png

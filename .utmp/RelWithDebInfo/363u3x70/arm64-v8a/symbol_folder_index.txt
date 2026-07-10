@@ -1,0 +1,1 @@
+C:\Users\andre\Desktop\My Unity Projects\Dungeoncrawler\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\build\intermediates\cxx\RelWithDebInfo\363u3x70\obj\arm64-v8a

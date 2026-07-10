@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: f6de6d552f90cc0478eb5e3306615d9f
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 197219
+  packageName: Lowpoly Shader
+  packageVersion: 2025.3
+  assetPath: Assets/Amazing Assets/Lowpoly Shader/Shaders/Skybox/Skybox-Cubed.shader
+  uploadId: 836528

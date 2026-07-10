@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: eac15d0f3bc5b1b4bbaf04d4858cf43e
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 197219
+  packageName: Lowpoly Shader
+  packageVersion: 2025.3
+  assetPath: Assets/Amazing Assets/Lowpoly Shader/Editor/ReadMe/ReadMeEditor.cs
+  uploadId: 836528
