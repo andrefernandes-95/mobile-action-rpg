@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 namespace AF
@@ -5,22 +6,30 @@ namespace AF
     [RequireComponent(typeof(AudioSource))]
     public class Dodge : MonoBehaviour
     {
-        [SerializeField] CharacterManager characterManager;
-
         public bool isDodging = false;
 
+        [Header("Settings")]
         [SerializeField] float dodgeDistance = 4f;
         [SerializeField] float dodgeDuration = 0.35f;
 
+        [Header("Components")]
+        [SerializeField] CharacterManager characterManager;
+
         [Header("VFX")]
         [SerializeField] TrailRenderer dodgeTrail;
+
+        [Header("Sound")]
+        [SerializeField] AudioClip dodgeSfx;
         AudioSource audioSource => GetComponent<AudioSource>();
 
         public void PerformDodge(Vector3 direction, string animationName)
         {
-            if (isDodging) return;
+            if (isDodging) 
+            {
+                return;
+            }
 
-            audioSource.Play();
+            PlayDodgeSfx();
 
             characterManager.isBusy = true;
             isDodging = true;
@@ -33,7 +42,7 @@ namespace AF
             StartCoroutine(DodgeRoutine(direction));
         }
 
-        System.Collections.IEnumerator DodgeRoutine(Vector3 dir)
+        IEnumerator DodgeRoutine(Vector3 dir)
         {
             float elapsed = 0f;
             Vector3 startPos = transform.position;
@@ -50,6 +59,16 @@ namespace AF
 
             isDodging = false;
             characterManager.isBusy = false;
+        }
+
+        void PlayDodgeSfx()
+        {
+            if (audioSource == null || dodgeSfx == null)
+            {
+                return;
+            }
+
+            audioSource.PlayOneShot(dodgeSfx);
         }
     }
 }

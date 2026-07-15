@@ -98,12 +98,13 @@ Material:
     - _QueueOffset: 0
     - _Smoothness: 0.2
     - _Tattoo_Amount: 1
+    - _XRMotionVectorsPass: 1
     - __dirty: 0
     m_Colors:
     - _Color_BodyArt: {r: 0.05071366, g: 0.675916, b: 0.9852941, a: 1}
     - _Color_Body_Art: {r: 0.050713636, g: 0.675916, b: 0.98529404, a: 1}
-    - _Color_Eyes: {r: 0.22831953, g: 0.5822246, b: 0.7573528, a: 1}
-    - _Color_Hair: {r: 0.83823526, g: 0.41621712, b: 0.17257783, a: 1}
+    - _Color_Eyes: {r: 0.75686276, g: 0.44042054, b: 0.22745095, a: 1}
+    - _Color_Hair: {r: 0.4339623, g: 0.33365968, b: 0.41640458, a: 1}
     - _Color_Leather_Primary: {r: 0.28235298, g: 0.20784315, b: 0.16470587, a: 0}
     - _Color_Leather_Secondary: {r: 0.37254897, g: 0.32941175, b: 0.27843136, a: 0}
     - _Color_Metal_Dark: {r: 0.17647055, g: 0.19607836, b: 0.21568623, a: 0}
@@ -112,8 +113,8 @@ Material:
     - _Color_Primary: {r: 0.64705884, g: 0.52671474, b: 0.23788923, a: 0}
     - _Color_Scar: {r: 0.9294118, g: 0.68627447, b: 0.5921568, a: 1}
     - _Color_Secondary: {r: 0.16470584, g: 0.16470584, b: 0.16470584, a: 0}
-    - _Color_Skin: {r: 1, g: 0.8000001, b: 0.68235296, a: 1}
-    - _Color_Stubble: {r: 0.80392164, g: 0.7019608, b: 0.6313726, a: 1}
+    - _Color_Skin: {r: 1, g: 0.9179934, b: 0.48584908, a: 1}
+    - _Color_Stubble: {r: 0.8867924, g: 0.8123608, b: 0.4224813, a: 1}
     - _Color_Tertiary: {r: 0.7352941, g: 0.20004326, b: 0.20004326, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Camera Occlusion Fade — Unity Tutorial</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242836;
+      --text: #e6e9f0;
+      --muted: #9aa3b5;
+      --accent: #6c9eff;
+      --accent2: #7ee787;
+      --warn: #f0b429;
+      --border: #343a4d;
+      --code-bg: #12151c;
+      --csharp: #c792ea;
+      --keyword: #82aaff;
+      --string: #c3e88d;
+      --comment: #546e7a;
+      --type: #ffcb6b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .wrap {
+      max-width: 920px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 2.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    h2 {
+      font-size: 1.35rem;
+      margin: 2.25rem 0 0.75rem;
+      color: var(--accent);
+    }
+
+    h3 {
+      font-size: 1.05rem;
+      margin: 1.5rem 0 0.5rem;
+      color: var(--accent2);
+    }
+
+    p, li { margin-bottom: 0.65rem; }
+
+    ul, ol {
+      padding-left: 1.35rem;
+      margin-bottom: 1rem;
+    }
+
+    a { color: var(--accent); }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.35rem;
+      margin: 1rem 0 1.5rem;
+    }
+
+    .card.warn {
+      border-color: #6b5420;
+      background: #1c1810;
+    }
+
+    .card.tip {
+      border-color: #1f4d35;
+      background: #101a14;
+    }
+
+    .label {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      margin-bottom: 0.6rem;
+    }
+
+    .label.goal { background: #1e3a5f; color: var(--accent); }
+    .label.warn { background: #4a3810; color: var(--warn); }
+    .label.tip  { background: #1a3d2b; color: var(--accent2); }
+
+    .flow {
+      font-family: Consolas, "Cascadia Code", monospace;
+      font-size: 0.82rem;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+      white-space: pre;
+      line-height: 1.5;
+      color: var(--muted);
+      margin: 1rem 0;
+    }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      font-family: Consolas, "Cascadia Code", monospace;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      margin: 0.75rem 0 1.25rem;
+    }
+
+    code {
+      font-family: Consolas, "Cascadia Code", monospace;
+      font-size: 0.9em;
+      background: var(--surface2);
+      padding: 0.1em 0.35em;
+      border-radius: 4px;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+    }
+
+    .steps {
+      counter-reset: step;
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .steps li {
+      counter-increment: step;
+      position: relative;
+      padding-left: 2.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0.1rem;
+      width: 1.7rem;
+      height: 1.7rem;
+      background: var(--accent);
+      color: #0f1117;
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0 1.5rem;
+      font-size: 0.92rem;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.55rem 0.75rem;
+      text-align: left;
+    }
+
+    th {
+      background: var(--surface2);
+      color: var(--accent);
+    }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .line-walk {
+      list-style: none;
+      padding-left: 0;
+      margin: 1.25rem 0 2rem;
+    }
+
+    .line-walk li {
+      display: grid;
+      grid-template-columns: 3.2rem 1fr;
+      gap: 0.75rem 1rem;
+      padding: 0.85rem 0;
+      border-bottom: 1px solid var(--border);
+      align-items: start;
+    }
+
+    .line-walk li:last-child { border-bottom: none; }
+
+    .line-num {
+      font-family: Consolas, "Cascadia Code", monospace;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--warn);
+      background: var(--surface2);
+      border-radius: 6px;
+      padding: 0.25rem 0.4rem;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .line-code {
+      font-family: Consolas, "Cascadia Code", monospace;
+      font-size: 0.82rem;
+      color: var(--keyword);
+      margin-bottom: 0.35rem;
+      word-break: break-word;
+    }
+
+    .line-analogy {
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+
+    .line-analogy em {
+      color: var(--accent2);
+      font-style: normal;
+      font-weight: 600;
+    }
+
+    .act {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+    }
+
+    .act-1 { background: #2a2040; color: #c792ea; }
+    .act-2 { background: #1e3a5f; color: var(--accent); }
+    .act-3 { background: #1a3d2b; color: var(--accent2); }
+    .act-4 { background: #4a3810; color: var(--warn); }
+    .act-5 { background: #3d1f2a; color: #ff8ba7; }
+
+    .pipeline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 1rem 0 1.5rem;
+      align-items: center;
+      font-size: 0.88rem;
+    }
+
+    .pipeline span {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.35rem 0.65rem;
+    }
+
+    .pipeline .arrow { background: none; border: none; color: var(--muted); padding: 0; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Camera Occlusion Fade</h1>
+    <p class="subtitle">Guia passo a passo para fazer fade em objetos que bloqueiam a câmara — inclui explicação linha a linha do shader <code>AF/OcclusionFade</code> para quem nunca escreveu HLSL.</p>
+  </header>
+
+  <div class="card">
+    <span class="label goal">Goal</span>
+    <p>When a wall, tree, or prop sits between the <strong>camera</strong> and the <strong>player</strong>, instead of hiding it completely, we <strong>swap its materials</strong> to a semi-transparent version. When it stops blocking, we put the original materials back.</p>
+  </div>
+
+  <h2>1. The big picture</h2>
+
+  <p>Every frame, the script does three things:</p>
+
+  <div class="flow">Camera ──raycast──▶ Player
+         │
+         └── hits occluders (walls, props on a specific layer)
+
+For each hit renderer  →  save original materials, apply fade materials
+For renderers no longer hit  →  restore original materials</div>
+
+  <p>This runs in <code>LateUpdate()</code> so it happens <em>after</em> the player and camera have moved for the frame — you always fade based on the latest positions.</p>
+
+  <h2>2. Key Unity concepts you'll use</h2>
+
+  <table>
+    <tr><th>Concept</th><th>What it means here</th></tr>
+    <tr><td><code>RaycastAll</code></td><td>Shoots a ray from camera toward player and returns <em>every</em> collider along the way (not just the first).</td></tr>
+    <tr><td><code>LayerMask</code></td><td>Lets you choose which layers count as occluders (e.g. "Environment" only, not the player).</td></tr>
+    <tr><td><code>Renderer</code></td><td>The component that actually draws a mesh. You need this to change materials.</td></tr>
+    <tr><td><code>sharedMaterials</code></td><td>The asset materials on a renderer. Reading these gives you the originals without creating copies.</td></tr>
+    <tr><td><code>materials</code></td><td>Setting this creates <em>instances</em> at runtime — perfect for temporary fade swaps.</td></tr>
+    <tr><td><code>Dictionary</code></td><td>Tracks which renderers are currently faded and stores their original + fade material arrays.</td></tr>
+    <tr><td><code>HashSet</code></td><td>Stores "which renderers are blocking <em>this frame</em>" for fast lookup.</td></tr>
+  </table>
+
+  <div class="card warn">
+    <span class="label warn">Important</span>
+    <p><code>new Material(...)</code> allocates memory. Always <code>Destroy()</code> fade materials when you restore a renderer, or you'll leak memory over time.</p>
+  </div>
+
+  <h2>3. Build order — type it in this sequence</h2>
+
+  <ol class="steps">
+    <li>Cria o <strong>shader</strong> de fade (<code>AF/OcclusionFade</code>) — secção 4 + walkthrough 4b.</li>
+    <li>Create the C# script skeleton with public fields and the inner <code>OccludedRenderer</code> class.</li>
+    <li>Add <code>Awake()</code> to auto-create a fade material if none is assigned in the Inspector.</li>
+    <li>Write <code>LateUpdate()</code> — raycast, collect hits, fade new ones, restore old ones.</li>
+    <li>Write <code>ApplyFade</code>, <code>RestoreRenderer</code>, and <code>RestoreAll</code>.</li>
+    <li>Write <code>CreateFadeMaterial</code> and the helpers that copy textures/colors from the original.</li>
+    <li>Attach the script to your camera, assign Player + Occluder Layer, test in Play mode.</li>
+  </ol>
+
+  <h2>4. O shader de fade (URP)</h2>
+
+  <p>Este shader desenha uma textura multiplicada por uma cor, com mistura alpha padrão. O valor <code>_BaseColor.a</code> é o que o torna semi-transparente — perfeito para paredes que bloqueiam a câmara.</p>
+
+  <p>Tags que valem a pena conhecer:</p>
+  <ul>
+    <li><code>Queue = Transparent</code> — desenha depois dos objetos opacos; obrigatório para ver através.</li>
+    <li><code>Blend SrcAlpha OneMinusSrcAlpha</code> — mistura alpha clássica (como Photoshop em modo Normal).</li>
+    <li><code>ZWrite Off</code> — objetos transparentes normalmente não escrevem no depth buffer (evita bugs de ordenação).</li>
+  </ul>
+
+  <p>Guarda em <code>Assets/Shaders/AF_OcclusionFade.shader</code>:</p>
+
+<pre><code>Shader "AF/OcclusionFade"
+{
+    Properties
+    {
+        [MainTexture] _BaseMap("Albedo", 2D) = "white" {}
+        [MainColor] _BaseColor("Color", Color) = (1, 1, 1, 0.25)
+    }
+
+    SubShader
+    {
+        Tags
+        {
+            "RenderType" = "Transparent"
+            "Queue" = "Transparent"
+            "RenderPipeline" = "UniversalPipeline"
+            "IgnoreProjector" = "True"
+        }
+
+        Pass
+        {
+            Name "ForwardLit"
+            Tags { "LightMode" = "UniversalForward" }
+
+            Blend SrcAlpha OneMinusSrcAlpha
+            ZWrite Off
+            Cull Back
+
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma multi_compile_fog
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float2 uv : TEXCOORD0;
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                float fogFactor : TEXCOORD1;
+            };
+
+            TEXTURE2D(_BaseMap);
+            SAMPLER(sampler_BaseMap);
+
+            CBUFFER_START(UnityPerMaterial)
+                float4 _BaseMap_ST;
+                half4 _BaseColor;
+            CBUFFER_END
+
+            Varyings vert(Attributes input)
+            {
+                Varyings output;
+                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                output.fogFactor = ComputeFogFactor(output.positionCS.z);
+                return output;
+            }
+
+            half4 frag(Varyings input) : SV_Target
+            {
+                half4 col = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv) * _BaseColor;
+                col.rgb = MixFog(col.rgb, input.fogFactor);
+                return col;
+            }
+            ENDHLSL
+        }
+    }
+}</code></pre>
+
+  <h2>4b. Nunca escreveste um shader? Vamos linha a linha 🎭</h2>
+
+  <div class="card tip">
+    <span class="label tip">Metáfora do teatro</span>
+    <p>Imagina que cada pixel do ecrã é um lugar na plateia. O <strong>vertex shader</strong> (<code>vert</code>) é o stage manager: coloca cada vértice do modelo 3D no sítio certo do palco (ecrã). O <strong>fragment shader</strong> (<code>frag</code>) é o pintor: decide a cor exacta de cada lugar. O shader inteiro é o guião desta peça de 73 linhas.</p>
+  </div>
+
+  <div class="pipeline">
+    <span>Mesh 3D</span>
+    <span class="arrow">→</span>
+    <span>vert (posição + UV)</span>
+    <span class="arrow">→</span>
+    <span>rasterização (GPU)</span>
+    <span class="arrow">→</span>
+    <span>frag (cor + alpha)</span>
+    <span class="arrow">→</span>
+    <span>ecrã</span>
+  </div>
+
+  <p><span class="act act-1">Acto I — A ficha de identidade</span></p>
+
+  <ol class="line-walk">
+    <li>
+      <span class="line-num">1</span>
+      <div>
+        <div class="line-code">Shader "AF/OcclusionFade"</div>
+        <div class="line-analogy">O <em>nome na porta</em>. É assim que o Unity encontra o shader: <code>Shader.Find("AF/OcclusionFade")</code> no teu script C#. <code>AF</code> é o teu "estúdio"; <code>OcclusionFade</code> é o papel.</div>
+      </div>
+    </li>
+    <li>
+      <span class="line-num">2–7</span>
+      <div>
+        <div class="line-code">Properties { _BaseMap, _BaseColor }</div>
+        <div class="line-analogy">A <em>lista de ingredientes</em> que aparece no Inspector do Material. <code>_BaseMap</code> = imagem (albedo). <code>_BaseColor</code> = tinta por cima. O alpha <code>0.25</code> significa "75% transparente" — a parede fica fantasma mas ainda visível. Os atributos <code>[MainTexture]</code> e <code>[MainColor]</code> dizem ao URP "isto é a textura/cor principal".</div>
+      </div>
+    </li>
+  </ol>
+
+  <p><span class="act act-2">Acto II — Regras de cenário</span></p>
+
+  <ol class="line-walk">
+    <li>
+      <span class="line-num">9</span>
+      <div>
+        <div class="line-code">SubShader</div>
+        <div class="line-analogy">Um <em>bloco de instruções</em>. Podes ter vários SubShaders para GPUs diferentes; aqui só precisas de um.</div>
+      </div>
+    </li>
+    <li>
+      <span class="line-num">11–17</span>
+      <div>
+        <div class="line-code">Tags { RenderType, Queue, RenderPipeline… }</div>
+        <div class="line-analogy">Etiquetas para o motor de render:
+          <br>• <code>Transparent</code> = "não sou parede sólida, desenha-me por cima do chão mas mistura com o que está atrás"
+          <br>• <code>UniversalPipeline</code> = "só funciono no URP" (não no Built-in antigo)
+          <br>• <code>IgnoreProjector</code> = projectores de luz não me rebentam a transparência</div>
+      </div>
+    </li>
+    <li>
+      <span class="line-num">19</span>
+      <div>
+        <div class="line-code">Pass</div>
+        <div class="line-analogy">Uma <em>ida ao palco</em>. Shaders complexos têm vários passes (sombra, profundidade, cor). O nosso tem um só: "desenha a cor".</div>
+      </div>
+    </li>
+    <li>
+      <span class="line-num">21–22</span>
+      <div>
+        <div class="line-code">Name "ForwardLit" / LightMode = UniversalForward</div>
+        <div class="line-analogy">Diz ao URP: "sou um pass de iluminação forward normal" — o caminho standard para objetos visíveis à luz.</div>
+      </div>
+    </li>
+    <li>
+      <span class="line-num">24–26</span>
+      <div>
+        <div class="line-code">Blend … / ZWrite Off / Cull Back</div>
+        <div class="line-analogy">As <em>regras de mistura</em>:
+          <br>• <code>Blend SrcAlpha OneMinusSrcAlpha</code> — fórmula mágica: cor final = cor do objeto × alpha + cor de trás × (1−alpha). É o "vidro fosco".
+          <br>• <code>ZWrite Off</code> — não gravas profundidade; se gravasses, objetos atrás de ti desapareciam de forma estranha.
+          <br>• <code>Cull Back</code> — não desenhas a cara de dentro do modelo (performance + evita artefactos).</div>
+      </div>
+    </li>
+  </ol>
+
+  <p><span class="act act-3">Acto III — O guião HLSL</span></p>
+
+  <ol class="line-walk">
+    <li>
+      <span class="line-num">28</span>
+      <div>
+        <div class="line-code">HLSLPROGRAM</div>
+        <div class="line-analogy">Aqui começa código <em>real</em> (HLSL = linguagem de shaders da Microsoft, tipo C mas para GPUs). Tudo até <code>ENDHLSL</code> corre na placa gráfica, milhares de vezes por frame.</div>
+      </div>
+    </li>
+    <li>
+      <span class="line-num">29–31</span>
+      <div>
+        <div class="line-code">#pragma vertex vert / fragment frag / multi_compile_fog</div>
+        <div class="line-analogy">Contratos com a GPU:
+          <br>• <code>vert</code> = função para cada <strong>vértice</strong> (cantos do mesh)
+          <br>• <code>frag</code> = função para cada <strong>pixel</strong>
+          <br>• <code>multi_compile_fog</code> = suporte opcional à névoa do Unity (liga/desliga variantes automaticamente)</div>
+      </div>
+    </li>
+    <li>
+      <span class="line-num">33</span>
+      <div>
+        <div class="line-code">#include Core.hlsl</div>
+        <div class="line-analogy">Importas a <em>caixa de ferramentas</em> do URP: funções como <code>TransformObjectToHClip</code>, <code>TRANSFORM_TEX</code>, <code>MixFog</code>. Não reinventas a roda.</div>
+      </div>
+    </li>
+    <li>
+      <span class="line-num">35–38</span>
+      <div>
+        <div class="line-code">struct Attributes { positionOS, uv }</div>
+        <div class="line-analogy">O <em>pacote de entrada</em> do mesh. Cada vértice traz:
+          <br>• <code>positionOS</code> — posição no espaço do <strong>O</strong>bjecto (<strong>S</strong>pace)
+          <br>• <code>uv</code> — coordenadas na textura (como GPS na imagem: 0,0 = canto, 1,1 = canto oposto)</div>
+      </div>
+    </li>
+    <li>
+      <span class="line-num">40–44</span>
+      <div>
+        <div class="line-code">struct Varyings { positionCS, uv, fogFactor }</div>
+        <div class="line-analogy">O <em>pacote de saída</em> do vertex shader, que o fragment shader vai receber. <code>positionCS</code> = posição no espaço do <strong>C</strong>lip (ecrã). Os números em <code>TEXCOORD0/1</code> são "correios internos" da GPU para passar dados entre estágios.</div>
+      </div>
+    </li>
+    <li>
+      <span class="line-num">46–47</span>
+      <div>
+        <div class="line-code">TEXTURE2D(_BaseMap) / SAMPLER(sampler_BaseMap)</div>
+        <div class="line-analogy">Declaras a <em>imagem</em> e o <em>modo de leitura</em> (filtro, wrap). No URP moderno separas textura e sampler — é o padrão DX12/Vulkan.</div>
+      </div>
+    </li>
+    <li>
+      <span class="line-num">49–52</span>
+      <div>
+        <div class="line-code">CBUFFER_START(UnityPerMaterial) … CBUFFER_END</div>
+        <div class="line-analogy">Variáveis que o Material controla e que a GPU consegue ler de forma eficiente:
+          <br>• <code>_BaseMap_ST</code> — tiling (repetir) e offset da textura (Unity cria isto automaticamente)
+          <br>• <code>_BaseColor</code> — a tinta + alpha que o teu script C# altera com <code>SetColor("_BaseColor", …)</code></div>
+      </div>
+    </li>
+  </ol>
+
+  <p><span class="act act-4">Acto IV — O stage manager: vert()</span></p>
+
+  <ol class="line-walk">
+    <li>
+      <span class="line-num">54–60</span>
+      <div>
+        <div class="line-code">Varyings vert(Attributes input) { … }</div>
+        <div class="line-analogy">Corre <em>uma vez por vértice</em> do modelo. Uma parede com 8 cantos? 8 chamadas. Um orc com 5000 vértices? 5000 chamadas — mas a GPU faz tudo em paralelo, ridiculamente rápido.
+          <br><br><strong>Linha 56:</strong> <code>TransformObjectToHClip</code> — a viagem épica: espaço do objeto → mundo → câmara → ecrã normalizado. É o "onde fica este canto no ecrã?"
+          <br><strong>Linha 57:</strong> <code>TRANSFORM_TEX</code> — aplica scale/offset do Inspector às UVs.
+          <br><strong>Linha 58:</strong> <code>ComputeFogFactor</code> — guarda quanto névoa aplicar mais tarde, baseado na profundidade Z.</div>
+      </div>
+    </li>
+  </ol>
+
+  <p><span class="act act-5">Acto V — O pintor: frag()</span></p>
+
+  <ol class="line-walk">
+    <li>
+      <span class="line-num">62–67</span>
+      <div>
+        <div class="line-code">half4 frag(Varyings input) : SV_Target</div>
+        <div class="line-analogy">Corre <em>uma vez por pixel</em> visível do objeto. Uma parede a ocupar metade do ecrã em 1080p? Centenas de milhares de chamadas — outra vez, a GPU adora isto.
+          <br><br><strong>Linha 64:</strong> <code>SAMPLE_TEXTURE2D(…, input.uv)</code> — lê a cor da textura naquele ponto UV. Multiplica por <code>_BaseColor</code> — se a textura for tijolo vermelho e <code>_BaseColor</code> for branco semi-transparente, ficas com tijolo fantasma.
+          <br><strong>Linha 65:</strong> <code>MixFog</code> — mistura névoa de cena se tiveres Fog activo.
+          <br><strong>Linha 66:</strong> <code>return col</code> — entrega o pixel. O <code>: SV_Target</code> significa "isto vai para o framebuffer" (o ecrã).</div>
+      </div>
+    </li>
+    <li>
+      <span class="line-num">69–72</span>
+      <div>
+        <div class="line-code">ENDHLSL / } / }</div>
+        <div class="line-analogy">Fim do código GPU, fim do Pass, fim do SubShader, fim do Shader. Cortina. 🎬</div>
+      </div>
+    </li>
+  </ol>
+
+  <div class="card">
+    <span class="label goal">Como isto liga ao teu jogo</span>
+    <p>O script C# <strong>não mexe no shader</strong> directamente. Cria <code>Material</code> com este shader, copia a textura da parede original para <code>_BaseMap</code>, e põe <code>_BaseColor.a = fadeAlpha</code> (ex: 0.25). O shader faz o resto — cada frame, cada pixel, a GPU executa <code>vert</code> e <code>frag</code> e a parede fica translúcida entre a câmara e o jogador.</p>
+  </div>
+
+  <table>
+    <tr><th>Se mudares isto no Material…</th><th>O que vês</th></tr>
+    <tr><td><code>_BaseColor.a</code> → 0</td><td>Objecto invisível (só o collider continua a bloquear o raycast!)</td></tr>
+    <tr><td><code>_BaseColor.a</code> → 1</td><td>Objecto totalmente opaco (deixa de ser fade)</td></tr>
+    <tr><td><code>_BaseMap</code> sem textura</td><td>Quadrado branco semi-transparente (default "white")</td></tr>
+    <tr><td>Apagas <code>ZWrite Off</code></td><td>Provavelmente bugs visuais com outros transparentes — não recomendado</td></tr>
+  </table>
+
+  <div class="card tip">
+    <span class="label tip">Primeiro shader? Parabéns.</span>
+    <p>73 linhas e já tens transparência, texturas, fog e compatibilidade URP. A maioria dos shaders de jogos são variações deste esqueleto: <strong>Properties → Tags → Pass → vert → frag</strong>. Quando quiseres evoluir, experimenta mudar só a linha 64 — por exemplo multiplicar por um verde para debug: <code>col.rgb *= half3(0,1,0);</code></p>
+  </div>
+
+  <h2>5. O script C# — secção a secção</h2>
+
+  <h3>5a. Fields and tracking data</h3>
+
+  <p>Public fields show up in the Inspector. The dictionary remembers every renderer you've faded this session.</p>
+
+<pre><code>namespace AF
+{
+    using UnityEngine;
+    using System.Collections.Generic;
+
+    public class CameraOcclusionFade : MonoBehaviour
+    {
+        public Transform player;
+        public LayerMask occluderLayer;
+
+        public Material fadeMaterial;   // template — shader = AF/OcclusionFade
+        [Range(0f, 1f)]
+        public float fadeAlpha = 0.25f; // 0 = invisible, 1 = solid
+
+        // Key = renderer, Value = saved originals + runtime fade copies
+        private readonly Dictionary&lt;Renderer, OccludedRenderer&gt; fadedRenderers = new();
+
+        private class OccludedRenderer
+        {
+            public Material[] originals;
+            public Material[] fades;
+        }</code></pre>
+
+  <h3>5b. Awake — fallback material</h3>
+
+  <p>If you forget to drag a material into the Inspector, the script finds the shader by name and creates one. Handy during prototyping.</p>
+
+<pre><code>        void Awake()
+        {
+            if (fadeMaterial == null)
+            {
+                Shader shader = Shader.Find("AF/OcclusionFade");
+                if (shader != null)
+                    fadeMaterial = new Material(shader);
+            }
+        }</code></pre>
+
+  <h3>5c. LateUpdate — the main loop</h3>
+
+  <p>This is the heart of the system. Read it in four chunks:</p>
+
+  <p><strong>Chunk 1 — build the ray</strong></p>
+<pre><code>        void LateUpdate()
+        {
+            if (player == null || fadeMaterial == null) return;
+
+            Vector3 dir = player.position - transform.position;
+            float dist = dir.magnitude;
+
+            Ray ray = new Ray(transform.position, dir);
+            RaycastHit[] hits = Physics.RaycastAll(ray, dist, occluderLayer);</code></pre>
+
+  <p><code>transform.position</code> is the camera (this script lives on the camera). The ray only travels as far as the player — no need to hit things behind them.</p>
+
+  <p><strong>Chunk 2 — fade everything currently blocking</strong></p>
+<pre><code>            var currentHits = new HashSet&lt;Renderer&gt;();
+
+            foreach (RaycastHit hit in hits)
+            {
+                Renderer rend = hit.collider.GetComponent&lt;Renderer&gt;();
+                if (rend == null) continue;
+
+                currentHits.Add(rend);
+                ApplyFade(rend);
+            }</code></pre>
+
+  <p>Not every collider has a renderer (invisible trigger volumes, for example). Skip those.</p>
+
+  <p><strong>Chunk 3 — find renderers that stopped blocking</strong></p>
+<pre><code>            var toRestore = new List&lt;Renderer&gt;();
+
+            foreach (var kvp in fadedRenderers)
+            {
+                if (kvp.Key == null)          // object was destroyed
+                {
+                    DestroyFadeMaterials(kvp.Value);
+                    continue;
+                }
+
+                if (!currentHits.Contains(kvp.Key))
+                    toRestore.Add(kvp.Key);
+            }
+
+            foreach (Renderer rend in toRestore)
+                RestoreRenderer(rend);
+        }</code></pre>
+
+  <p>Compare "who we faded before" against "who is blocking now." Anyone in the old set but not the new set gets restored.</p>
+
+  <h3>5d. Cleanup on disable/destroy</h3>
+
+  <p>If you leave Play mode or disable the camera while objects are faded, you must put materials back and destroy runtime copies.</p>
+
+<pre><code>        void OnDisable() =&gt; RestoreAll();
+        void OnDestroy() =&gt; RestoreAll();</code></pre>
+
+  <h3>5e. ApplyFade — swap to fade materials</h3>
+
+<pre><code>        void ApplyFade(Renderer rend)
+        {
+            if (fadedRenderers.ContainsKey(rend)) return; // already faded
+
+            Material[] originals = rend.sharedMaterials;
+            var fades = new Material[originals.Length];
+
+            for (int i = 0; i &lt; originals.Length; i++)
+                fades[i] = CreateFadeMaterial(originals[i]);
+
+            fadedRenderers[rend] = new OccludedRenderer
+            {
+                originals = originals,
+                fades = fades
+            };
+
+            rend.materials = fades;  // assign runtime instances
+        }</code></pre>
+
+  <p>Multi-material meshes (e.g. separate slots for body and trim) get one fade material per slot.</p>
+
+  <h3>5f. RestoreRenderer — put originals back</h3>
+
+<pre><code>        void RestoreRenderer(Renderer rend)
+        {
+            if (!fadedRenderers.TryGetValue(rend, out OccludedRenderer state)) return;
+
+            rend.sharedMaterials = state.originals;
+            DestroyFadeMaterials(state);
+            fadedRenderers.Remove(rend);
+        }
+
+        void RestoreAll()
+        {
+            foreach (var kvp in fadedRenderers)
+            {
+                if (kvp.Key != null)
+                    kvp.Key.sharedMaterials = kvp.Value.originals;
+
+                DestroyFadeMaterials(kvp.Value);
+            }
+
+            fadedRenderers.Clear();
+        }</code></pre>
+
+  <h3>5g. CreateFadeMaterial — copy look, lower alpha</h3>
+
+  <p>Clone the template fade material, copy the original's texture and color, then override alpha.</p>
+
+<pre><code>        Material CreateFadeMaterial(Material original)
+        {
+            Material fade = new Material(fadeMaterial);
+            CopyVisuals(original, fade);
+
+            Color color = GetSourceColor(original);
+            color.a = fadeAlpha;
+            fade.SetColor("_BaseColor", color);
+
+            return fade;
+        }</code></pre>
+
+  <h3>5h. Helpers — support different shader property names</h3>
+
+  <p>URP uses <code>_BaseMap</code> / <code>_BaseColor</code>. Older shaders use <code>_MainTex</code> / <code>_Color</code>. Your Synty/Lowpoly assets use <code>_Lowpoly_DiffuseMap</code>. Check which properties exist before reading them.</p>
+
+<pre><code>        static void CopyVisuals(Material source, Material target)
+        {
+            if (source == null) return;
+
+            if (source.HasProperty("_BaseMap"))
+            {
+                target.SetTexture("_BaseMap", source.GetTexture("_BaseMap"));
+                target.SetTextureScale("_BaseMap", source.GetTextureScale("_BaseMap"));
+                target.SetTextureOffset("_BaseMap", source.GetTextureOffset("_BaseMap"));
+            }
+            else if (source.HasProperty("_MainTex"))
+            {
+                target.SetTexture("_BaseMap", source.GetTexture("_MainTex"));
+                target.SetTextureScale("_BaseMap", source.GetTextureScale("_MainTex"));
+                target.SetTextureOffset("_BaseMap", source.GetTextureOffset("_MainTex"));
+            }
+            else if (source.HasProperty("_Lowpoly_DiffuseMap"))
+            {
+                target.SetTexture("_BaseMap", source.GetTexture("_Lowpoly_DiffuseMap"));
+            }
+        }
+
+        static Color GetSourceColor(Material source)
+        {
+            if (source.HasProperty("_BaseColor"))
+                return source.GetColor("_BaseColor");
+            if (source.HasProperty("_Color"))
+                return source.GetColor("_Color");
+            if (source.HasProperty("_Lowpoly_DiffuseColor"))
+                return source.GetColor("_Lowpoly_DiffuseColor");
+            return Color.white;
+        }
+
+        static void DestroyFadeMaterials(OccludedRenderer state)
+        {
+            if (state.fades == null) return;
+
+            foreach (Material mat in state.fades)
+            {
+                if (mat != null)
+                    Destroy(mat);
+            }
+        }
+    }
+}</code></pre>
+
+  <h2>6. Full script (copy reference)</h2>
+
+  <p>Once you've typed each section, compare against the complete file:</p>
+
+<pre><code>namespace AF
+{
+    using UnityEngine;
+    using System.Collections.Generic;
+
+    public class CameraOcclusionFade : MonoBehaviour
+    {
+        public Transform player;
+        public LayerMask occluderLayer;
+
+        [Tooltip("Template material using AF/OcclusionFade. Textures are copied from each occluder at runtime.")]
+        public Material fadeMaterial;
+
+        [Range(0f, 1f)]
+        public float fadeAlpha = 0.25f;
+
+        private readonly Dictionary&lt;Renderer, OccludedRenderer&gt; fadedRenderers = new();
+
+        private class OccludedRenderer
+        {
+            public Material[] originals;
+            public Material[] fades;
+        }
+
+        void Awake()
+        {
+            if (fadeMaterial == null)
+            {
+                Shader shader = Shader.Find("AF/OcclusionFade");
+                if (shader != null)
+                    fadeMaterial = new Material(shader);
+            }
+        }
+
+        void LateUpdate()
+        {
+            if (player == null || fadeMaterial == null) return;
+
+            Vector3 dir = player.position - transform.position;
+            float dist = dir.magnitude;
+
+            Ray ray = new Ray(transform.position, dir);
+            RaycastHit[] hits = Physics.RaycastAll(ray, dist, occluderLayer);
+
+            var currentHits = new HashSet&lt;Renderer&gt;();
+
+            foreach (RaycastHit hit in hits)
+            {
+                Renderer rend = hit.collider.GetComponent&lt;Renderer&gt;();
+                if (rend == null) continue;
+
+                currentHits.Add(rend);
+                ApplyFade(rend);
+            }
+
+            var toRestore = new List&lt;Renderer&gt;();
+
+            foreach (var kvp in fadedRenderers)
+            {
+                if (kvp.Key == null)
+                {
+                    DestroyFadeMaterials(kvp.Value);
+                    continue;
+                }
+
+                if (!currentHits.Contains(kvp.Key))
+                    toRestore.Add(kvp.Key);
+            }
+
+            foreach (Renderer rend in toRestore)
+                RestoreRenderer(rend);
+        }
+
+        void OnDisable() =&gt; RestoreAll();
+        void OnDestroy() =&gt; RestoreAll();
+
+        void ApplyFade(Renderer rend)
+        {
+            if (fadedRenderers.ContainsKey(rend)) return;
+
+            Material[] originals = rend.sharedMaterials;
+            var fades = new Material[originals.Length];
+
+            for (int i = 0; i &lt; originals.Length; i++)
+                fades[i] = CreateFadeMaterial(originals[i]);
+
+            fadedRenderers[rend] = new OccludedRenderer
+            {
+                originals = originals,
+                fades = fades
+            };
+
+            rend.materials = fades;
+        }
+
+        void RestoreRenderer(Renderer rend)
+        {
+            if (!fadedRenderers.TryGetValue(rend, out OccludedRenderer state)) return;
+
+            rend.sharedMaterials = state.originals;
+            DestroyFadeMaterials(state);
+            fadedRenderers.Remove(rend);
+        }
+
+        void RestoreAll()
+        {
+            foreach (var kvp in fadedRenderers)
+            {
+                if (kvp.Key != null)
+                    kvp.Key.sharedMaterials = kvp.Value.originals;
+
+                DestroyFadeMaterials(kvp.Value);
+            }
+
+            fadedRenderers.Clear();
+        }
+
+        Material CreateFadeMaterial(Material original)
+        {
+            Material fade = new Material(fadeMaterial);
+            CopyVisuals(original, fade);
+
+            Color color = GetSourceColor(original);
+            color.a = fadeAlpha;
+            fade.SetColor("_BaseColor", color);
+
+            return fade;
+        }
+
+        static void CopyVisuals(Material source, Material target)
+        {
+            if (source == null) return;
+
+            if (source.HasProperty("_BaseMap"))
+            {
+                target.SetTexture("_BaseMap", source.GetTexture("_BaseMap"));
+                target.SetTextureScale("_BaseMap", source.GetTextureScale("_BaseMap"));
+                target.SetTextureOffset("_BaseMap", source.GetTextureOffset("_BaseMap"));
+            }
+            else if (source.HasProperty("_MainTex"))
+            {
+                target.SetTexture("_BaseMap", source.GetTexture("_MainTex"));
+                target.SetTextureScale("_BaseMap", source.GetTextureScale("_MainTex"));
+                target.SetTextureOffset("_BaseMap", source.GetTextureOffset("_MainTex"));
+            }
+            else if (source.HasProperty("_Lowpoly_DiffuseMap"))
+            {
+                target.SetTexture("_BaseMap", source.GetTexture("_Lowpoly_DiffuseMap"));
+            }
+        }
+
+        static Color GetSourceColor(Material source)
+        {
+            if (source.HasProperty("_BaseColor"))
+                return source.GetColor("_BaseColor");
+
+            if (source.HasProperty("_Color"))
+                return source.GetColor("_Color");
+
+            if (source.HasProperty("_Lowpoly_DiffuseColor"))
+                return source.GetColor("_Lowpoly_DiffuseColor");
+
+            return Color.white;
+        }
+
+        static void DestroyFadeMaterials(OccludedRenderer state)
+        {
+            if (state.fades == null) return;
+
+            foreach (Material mat in state.fades)
+            {
+                if (mat != null)
+                    Destroy(mat);
+            }
+        }
+    }
+}</code></pre>
+
+  <h2>7. Unity setup checklist</h2>
+
+  <ul>
+    <li>Create a layer (e.g. <code>Occluder</code>) and assign it to walls/props that should fade.</li>
+    <li>Those objects need a <strong>Collider</strong> (raycasts hit colliders, not meshes directly).</li>
+    <li>Attach <code>CameraOcclusionFade</code> to your camera object.</li>
+    <li>Drag the <strong>Player</strong> transform into the script's Player field.</li>
+    <li>Set <strong>Occluder Layer</strong> to your occluder layer mask.</li>
+    <li>Optionally create a Material using shader <code>AF/OcclusionFade</code> and assign it as Fade Material.</li>
+    <li>Tweak <strong>Fade Alpha</strong> in Play mode until it feels right (~0.2–0.35).</li>
+  </ul>
+
+  <h2>8. Things to experiment with (good learning exercises)</h2>
+
+  <ul>
+    <li><strong>Smooth fade</strong> — lerp <code>fadeAlpha</code> over time instead of snapping.</li>
+    <li><strong>Spherecast</strong> — use <code>Physics.SphereCastAll</code> with a small radius so thin poles don't get missed.</li>
+    <li><strong>MaterialPropertyBlock</strong> — avoid creating new Material instances; set alpha on a shared fade material per renderer (more advanced, better performance).</li>
+    <li><strong>Dither fade</strong> — looks opaque-ish but clips pixels; avoids transparent sorting issues.</li>
+    <li><strong>Debug draw</strong> — <code>Debug.DrawRay(transform.position, dir, Color.red)</code> to visualize the ray in the Scene view.</li>
+  </ul>
+
+  <h2>9. Common gotchas</h2>
+
+  <table>
+    <tr><th>Problem</th><th>Likely cause</th></tr>
+    <tr><td>Nothing fades</td><td>Wrong layer mask, missing collider, or no Renderer on the object.</td></tr>
+    <tr><td>Faded object stays faded</td><td>Restore logic not running — check dictionary cleanup and OnDisable.</td></tr>
+    <tr><td>Pink materials</td><td>Shader not found — make sure <code>AF_OcclusionFade.shader</code> compiled without errors.</td></tr>
+    <tr><td>Wrong texture on fade</td><td>Original shader uses a property name you didn't handle — inspect the material in Unity and add it to <code>CopyVisuals</code>.</td></tr>
+    <tr><td>Memory climbing</td><td>Fade materials not destroyed — verify <code>DestroyFadeMaterials</code> runs on restore.</td></tr>
+  </table>
+
+  <footer>
+    <p>Dungeoncrawler 0.1 — Camera Occlusion Fade tutorial. Open this file in any browser while you type the script in Unity.</p>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -104,7 +104,7 @@ namespace AF
 
         void UpdateAnimation()
         {
-            animator.SetFloat("Speed", agent.desiredVelocity.magnitude);
+            animator.SetFloat("Speed", agent.desiredVelocity.magnitude, 0.1f, Time.deltaTime);
         }
 
         public bool IsPlayer()
