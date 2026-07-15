@@ -319,7 +319,8 @@ For renderers no longer hit  →  restore original materials</div>
 
   <table>
     <tr><th>Concept</th><th>What it means here</th></tr>
-    <tr><td><code>RaycastAll</code></td><td>Shoots a ray from camera toward player and returns <em>every</em> collider along the way (not just the first).</td></tr>
+    <tr><td><code>RaycastAll</code></td><td>Dispara um raio da câmara ao jogador e devolve <em>todos</em> os colliders no caminho. Simples de escrever, mas <strong>aloca um array novo</strong> em cada chamada — ver secção 8.</td></tr>
+    <tr><td><code>SphereCastNonAlloc</code></td><td>Varre um <em>volume</em> (esfera) em vez de uma linha — apanha postes finos. Com buffer reutilizável, <strong>zero alocações</strong>.</td></tr>
     <tr><td><code>LayerMask</code></td><td>Lets you choose which layers count as occluders (e.g. "Environment" only, not the player).</td></tr>
     <tr><td><code>Renderer</code></td><td>The component that actually draws a mesh. You need this to change materials.</td></tr>
     <tr><td><code>sharedMaterials</code></td><td>The asset materials on a renderer. Reading these gives you the originals without creating copies.</td></tr>
@@ -339,7 +340,7 @@ For renderers no longer hit  →  restore original materials</div>
     <li>Cria o <strong>shader</strong> de fade (<code>AF/OcclusionFade</code>) — secção 4 + walkthrough 4b.</li>
     <li>Create the C# script skeleton with public fields and the inner <code>OccludedRenderer</code> class.</li>
     <li>Add <code>Awake()</code> to auto-create a fade material if none is assigned in the Inspector.</li>
-    <li>Write <code>LateUpdate()</code> — raycast, collect hits, fade new ones, restore old ones.</li>
+    <li>Write <code>LateUpdate()</code> — raycast, collect hits, fade new ones, restore old ones. <em>Opcional depois: secção 8 (performance).</em></li>
     <li>Write <code>ApplyFade</code>, <code>RestoreRenderer</code>, and <code>RestoreAll</code>.</li>
     <li>Write <code>CreateFadeMaterial</code> and the helpers that copy textures/colors from the original.</li>
     <li>Attach the script to your camera, assign Player + Occluder Layer, test in Play mode.</li>
@@ -1042,17 +1043,152 @@ For renderers no longer hit  →  restore original materials</div>
     <li>Tweak <strong>Fade Alpha</strong> in Play mode until it feels right (~0.2–0.35).</li>
   </ul>
 
-  <h2>8. Things to experiment with (good learning exercises)</h2>
+  <h2>8. Performance — zero alocações por frame</h2>
+
+  <p>A versão do tutorial em secções 5–6 usa <code>RaycastAll</code> e cria <code>new HashSet</code> / <code>new List</code> em cada <code>LateUpdate</code>. Funciona perfeitamente para aprender e para um third-person típico — mas se quiseres o melhor equilíbrio entre simplicidade e performance, aplica estas mudanças <em>quando estiveres pronto</em> (não são obrigatórias no primeiro dia).</p>
+
+  <div class="card warn">
+    <span class="label warn">O que optimizar primeiro</span>
+    <p>Antes de te preocupares com ray vs sphere, ataca as <strong>alocações por frame</strong>. São muitas vezes o custo real no profiler, não o tipo de cast:</p>
+    <ol>
+      <li><code>Physics.RaycastAll</code> — novo array em cada chamada → lixo para o GC</li>
+      <li><code>new HashSet&lt;Renderer&gt;()</code> — novo conjunto em cada frame</li>
+      <li><code>new List&lt;Renderer&gt;()</code> — nova lista em cada frame</li>
+      <li><code>GetComponent&lt;Renderer&gt;()</code> em cada hit — lookup repetido no mesmo collider</li>
+    </ol>
+  </div>
+
+  <h3>8a. Ray vs Sphere — quanto custa?</h3>
+
+  <table>
+    <tr><th>Abordagem</th><th>Custo</th><th>Quando usar</th></tr>
+    <tr><td>1× <code>RaycastAll</code></td><td>1 query + alocação de array</td><td>Protótipo, aprendizagem</td></tr>
+    <tr><td>3–5× <code>Raycast</code></td><td>Várias queries independentes</td><td>Raramente melhor que 1 sphere</td></tr>
+    <tr><td>1× <code>SphereCastNonAlloc</code></td><td>1 query (volume) + zero alocação</td><td><strong>Recomendado</strong> para produção</td></tr>
+    <tr><td>Centenas de casts/frame</td><td>⚠️ Pode notar-se</td><td>Evitar</td></tr>
+  </table>
+
+  <p><code>SphereCastAll</code> é mais caro que um único raio porque a física testa um volume em vez de uma linha. Mas continua a ser <strong>uma query</strong>, enquanto três ou cinco raios são três ou cinco queries. Para third-person: ✅ 1 <code>SphereCastNonAlloc</code> por frame costuma ser mais do que suficiente.</p>
+
+  <h3>8b. Campos extra — declara uma vez, reutiliza sempre</h3>
+
+  <p>Adiciona estes campos à classe (junto dos outros <code>private readonly</code>):</p>
+
+<pre><code>        [Tooltip("Raio do sweep. Apanha postes finos que um raio único falha.")]
+        public float sphereRadius = 0.25f;
+
+        private readonly Dictionary&lt;Collider, Renderer&gt; rendererCache = new();
+        private readonly RaycastHit[] hitBuffer = new RaycastHit[32];
+        private readonly HashSet&lt;Renderer&gt; currentHits = new();
+        private readonly List&lt;Renderer&gt; toRestore = new();</code></pre>
 
   <ul>
-    <li><strong>Smooth fade</strong> — lerp <code>fadeAlpha</code> over time instead of snapping.</li>
-    <li><strong>Spherecast</strong> — use <code>Physics.SphereCastAll</code> with a small radius so thin poles don't get missed.</li>
-    <li><strong>MaterialPropertyBlock</strong> — avoid creating new Material instances; set alpha on a shared fade material per renderer (more advanced, better performance).</li>
-    <li><strong>Dither fade</strong> — looks opaque-ish but clips pixels; avoids transparent sorting issues.</li>
-    <li><strong>Debug draw</strong> — <code>Debug.DrawRay(transform.position, dir, Color.red)</code> to visualize the ray in the Scene view.</li>
+    <li><code>hitBuffer[32]</code> — o Unity escreve aqui; não crias array novo. Se tiveres &gt;32 occluders na mesma linha (raro), aumenta para 64.</li>
+    <li><code>currentHits</code> / <code>toRestore</code> — faz <code>.Clear()</code> no início de cada frame em vez de <code>new</code>.</li>
+    <li><code>rendererCache</code> — <code>GetComponent</code> só na primeira vez que um collider é atingido.</li>
   </ul>
 
-  <h2>9. Common gotchas</h2>
+  <h3>8c. LateUpdate optimizado — substitui o Chunk 1 + 2 + 3</h3>
+
+  <p>Troca o bloco do raycast + loops por isto:</p>
+
+<pre><code>        void LateUpdate()
+        {
+            if (player == null || fadeMaterial == null) return;
+
+            Vector3 dir = player.position - transform.position;
+            float dist = dir.magnitude;
+            if (dist &lt; Mathf.Epsilon) return;
+
+            currentHits.Clear();
+            toRestore.Clear();
+
+            int hitCount = Physics.SphereCastNonAlloc(
+                transform.position,
+                sphereRadius,
+                dir / dist,
+                hitBuffer,
+                dist,
+                occluderLayer
+            );
+
+            for (int i = 0; i &lt; hitCount; i++)
+            {
+                Collider collider = hitBuffer[i].collider;
+                if (collider == null) continue;
+
+                if (!rendererCache.TryGetValue(collider, out Renderer rend))
+                {
+                    rend = collider.GetComponent&lt;Renderer&gt;();
+                    rendererCache[collider] = rend;
+                }
+
+                if (rend == null) continue;
+
+                currentHits.Add(rend);
+                ApplyFade(rend);
+            }
+
+            foreach (var kvp in fadedRenderers)
+            {
+                if (kvp.Key == null)
+                {
+                    DestroyFadeMaterials(kvp.Value);
+                    continue;
+                }
+
+                if (!currentHits.Contains(kvp.Key))
+                    toRestore.Add(kvp.Key);
+            }
+
+            foreach (Renderer rend in toRestore)
+                RestoreRenderer(rend);
+        }</code></pre>
+
+  <div class="card tip">
+    <span class="label tip">Resumo visual</span>
+    <div class="flow">LateUpdate (cada frame)
+│
+├─ currentHits.Clear()      ← reutiliza HashSet
+├─ toRestore.Clear()        ← reutiliza List
+├─ SphereCastNonAlloc → hitBuffer[32]   ← zero alocação
+├─ loop hits → rendererCache → ApplyFade
+└─ comparar fadedRenderers vs currentHits → RestoreRenderer</div>
+  </div>
+
+  <h3>8d. Ajustes no Inspector</h3>
+
+  <table>
+    <tr><th>Campo</th><th>Valor típico</th><th>Notas</th></tr>
+    <tr><td><code>sphereRadius</code></td><td>0.15 – 0.4</td><td>Maior = apanha mais objetos finos; não precisa de ser enorme</td></tr>
+    <tr><td><code>hitBuffer</code> length</td><td>32 (ou 64)</td><td>Só aumenta se o cast “enche” o buffer</td></tr>
+  </table>
+
+  <h3>8e. Como validar no Profiler</h3>
+
+  <ul>
+    <li>Abre <strong>Window → Analysis → Profiler</strong>, entra em Play mode.</li>
+    <li>Filtra por <code>CameraOcclusionFade</code> / <code>LateUpdate</code>.</li>
+    <li>Antes: vês picos em <strong>GC.Alloc</strong> todos os frames.</li>
+    <li>Depois: <code>GC.Alloc</code> neste script deve ir a <strong>0 B</strong> (ou quase) no loop de occlusion.</li>
+    <li>Se <code>GetComponent</code> ainda aparecer alto, o cache já trata disso — confirma que <code>rendererCache</code> está a ser usado.</li>
+  </ul>
+
+  <div class="card">
+    <span class="label goal">Melhor equilíbrio</span>
+    <p><strong>SphereCastNonAlloc</strong> + buffers reutilizáveis + cache de renderers. Simples de manter, uma query por frame, sem lixo para o GC. As secções 5–6 ficam como versão “didáctica”; esta é a versão “production-ready” quando quiseres colar no teu script.</p>
+  </div>
+
+  <h2>9. Coisas para experimentar (exercícios)</h2>
+
+  <ul>
+    <li><strong>Smooth fade</strong> — faz lerp de <code>fadeAlpha</code> ao longo do tempo em vez de snap instantâneo.</li>
+    <li><strong>MaterialPropertyBlock</strong> — evita criar instâncias de <code>Material</code>; define alpha num material partilhado por renderer (mais avançado, melhor performance).</li>
+    <li><strong>Dither fade</strong> — parece semi-opaco mas corta pixels; evita problemas de ordenação de transparentes.</li>
+    <li><strong>Debug draw</strong> — <code>Debug.DrawRay(transform.position, dir, Color.red)</code> para ver o sweep na Scene view.</li>
+  </ul>
+
+  <h2>10. Problemas comuns</h2>
 
   <table>
     <tr><th>Problem</th><th>Likely cause</th></tr>
@@ -1061,6 +1197,8 @@ For renderers no longer hit  →  restore original materials</div>
     <tr><td>Pink materials</td><td>Shader not found — make sure <code>AF_OcclusionFade.shader</code> compiled without errors.</td></tr>
     <tr><td>Wrong texture on fade</td><td>Original shader uses a property name you didn't handle — inspect the material in Unity and add it to <code>CopyVisuals</code>.</td></tr>
     <tr><td>Memory climbing</td><td>Fade materials not destroyed — verify <code>DestroyFadeMaterials</code> runs on restore.</td></tr>
+    <tr><td>GC spikes / stutter</td><td><code>RaycastAll</code> + <code>new HashSet</code>/<code>new List</code> every frame — ver secção 8.</td></tr>
+    <tr><td>Poste fino não faz fade</td><td>Raio único falha o collider — usa <code>SphereCastNonAlloc</code> com <code>sphereRadius</code> ~0.25 (secção 8).</td></tr>
   </table>
 
   <footer>

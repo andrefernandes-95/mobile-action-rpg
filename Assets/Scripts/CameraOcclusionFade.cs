@@ -12,6 +12,11 @@ namespace AF
 
         [Range(0f, 1f)] public float fadeAlpha = 0.25f;
 
+        private readonly Dictionary<Collider, Renderer> rendererCache = new();
+        private readonly RaycastHit[] hitBuffer = new RaycastHit[32];
+        private readonly HashSet<Renderer> currentHits = new();
+        private readonly List<Renderer> toRestore = new();
+
         private readonly Dictionary<Renderer, OccludeRenderer> fadedRenderers = new();
 
         private class OccludeRenderer
@@ -42,24 +47,46 @@ namespace AF
 
             Vector3 dir = player.position + player.transform.up - transform.position;
             float dist = dir.magnitude;
-
-            Ray ray = new Ray(transform.position, dir);
-            RaycastHit[] hits = Physics.RaycastAll(ray, dist, occluderLayer);
-
-            var currentHits = new HashSet<Renderer>();
-            foreach (RaycastHit hit in hits)
+            if (dist < Mathf.Epsilon)
             {
-                Renderer renderer = hit.collider.GetComponent<Renderer>();
-                if (renderer == null)
+                return;
+            }
+
+            currentHits.Clear();
+            toRestore.Clear();
+
+            int hitCount = Physics.RaycastNonAlloc(
+                transform.position,
+                dir / dist,
+                hitBuffer,
+                dist,
+                occluderLayer
+            );
+
+
+            for (int i = 0; i < hitCount; i++)
+            {
+                Collider collider = hitBuffer[i].collider;
+                if (collider == null)
                 {
                     continue;
                 }
 
-                currentHits.Add(renderer);
-                ApplyFade(renderer);
+                if (!rendererCache.TryGetValue(collider, out Renderer rend))
+                {
+                    rend = collider.GetComponent<Renderer>();
+                    rendererCache[collider] = rend;
+                }
+
+                if (rend == null)
+                {
+                    continue;
+                }
+
+                currentHits.Add(rend);
+                ApplyFade(rend);
             }
 
-            var toRestore = new List<Renderer>();
             foreach (var kvp in fadedRenderers)
             {
                 if (kvp.Key == null)
