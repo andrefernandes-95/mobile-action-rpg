@@ -8,7 +8,7 @@ namespace AF
         public Transform player;
         public LayerMask occluderLayer;
 
-        public Material fadeMaterial;
+        [HideInInspector] public Material fadeMaterial;
 
         [Range(0f, 1f)] public float fadeAlpha = 0.25f;
 
