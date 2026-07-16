@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 
 namespace AF
-{   
+{
     [RequireComponent(typeof(AudioSource))]
     public class Dodge : MonoBehaviour
     {
@@ -22,9 +22,17 @@ namespace AF
         [SerializeField] AudioClip dodgeSfx;
         AudioSource audioSource => GetComponent<AudioSource>();
 
-        public void PerformDodge(Vector3 direction, string animationName)
+        // Private
+        PlayerInput playerInput;
+
+        void Awake()
         {
-            if (isDodging) 
+            playerInput = GetComponent<PlayerInput>();
+        }
+
+        public void PerformDodge(string animationName)
+        {
+            if (isDodging)
             {
                 return;
             }
@@ -38,6 +46,12 @@ namespace AF
             characterManager.agent.velocity = Vector3.zero;
 
             characterManager.animator.Play(animationName);
+
+            Vector3 direction = transform.forward;
+            if (playerInput != null)
+            {
+                direction = playerInput.GetDodgeDirection();
+            }
 
             StartCoroutine(DodgeRoutine(direction));
         }

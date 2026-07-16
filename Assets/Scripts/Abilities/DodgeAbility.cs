@@ -9,7 +9,7 @@ namespace AF
 
         public override void OnStart(CharacterManager characterManager)
         {
-            characterManager.dodge.PerformDodge(characterManager.GetDodgeDirection(), dodgeAnimation.name);
+            characterManager.dodge.PerformDodge(dodgeAnimation.name);
         }
 
         public override void OnEnd(CharacterManager characterManager)

@@ -36,15 +36,8 @@ namespace AF
 
         void Update()
         {
-            // --- Attack Input ---
-            if (Input.GetKeyDown(KeyCode.Z))
-            {
-                OnAttack();
-                return; // prevent movement on same frame
-            }
-
             // --- Special Input ---
-            if (Input.GetKeyDown(KeyCode.X))
+            if (Input.GetKeyDown(KeyCode.Space))
             {
                 OnSpecialAbility();
                 return; // prevent movement on same frame

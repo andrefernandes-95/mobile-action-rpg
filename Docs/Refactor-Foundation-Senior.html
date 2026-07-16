@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>As Profundezas — Refactor para uma boa foundation (sem Event Bus)</title>
+  <style>
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --surface2: #242836; --text: #e6e9f0;
+      --muted: #9aa3b5; --accent: #6c9eff; --accent2: #7ee787; --warn: #f0b429;
+      --danger: #ff8ba7; --border: #343a4d; --code-bg: #12151c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; padding: 2rem 1rem 4rem; }
+    .wrap { max-width: 980px; margin: 0 auto; }
+    header { margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+    .subtitle { color: var(--muted); font-size: 1.05rem; }
+    h2 { font-size: 1.4rem; margin: 2.6rem 0 0.75rem; color: var(--accent); padding-top: 0.5rem; }
+    h3 { font-size: 1.08rem; margin: 1.6rem 0 0.5rem; color: var(--accent2); }
+    h4 { font-size: 0.95rem; margin: 1.1rem 0 0.4rem; color: #ffcb6b; }
+    p, li { margin-bottom: 0.65rem; }
+    ul, ol { padding-left: 1.35rem; margin-bottom: 1rem; }
+    a { color: var(--accent); }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem 1.35rem; margin: 1rem 0 1.5rem; }
+    .card.warn { border-color: #6b5420; background: #1c1810; }
+    .card.tip { border-color: #1f4d35; background: #101a14; }
+    .card.info { border-color: #234; background: #0f1620; }
+    .card.danger { border-color: #5a2436; background: #1c1014; }
+    .label { display: inline-block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.2rem 0.5rem; border-radius: 4px; margin-bottom: 0.6rem; }
+    .label.goal { background: #1e3a5f; color: var(--accent); }
+    .label.warn { background: #4a3810; color: var(--warn); }
+    .label.tip { background: #1a3d2b; color: var(--accent2); }
+    .label.info { background: #1e2f45; color: var(--accent); }
+    .label.danger { background: #4a1f2e; color: var(--danger); }
+    .flow { font-family: Consolas, monospace; font-size: 0.8rem; background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; overflow-x: auto; white-space: pre; line-height: 1.5; color: var(--muted); margin: 1rem 0; }
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.1rem; overflow-x: auto; font-family: Consolas, monospace; font-size: 0.82rem; line-height: 1.55; margin: 0.75rem 0 1.25rem; }
+    code { font-family: Consolas, monospace; font-size: 0.9em; background: var(--surface2); padding: 0.1em 0.35em; border-radius: 4px; }
+    pre code { background: none; padding: 0; font-size: 1em; }
+    pre.before { border-left: 3px solid var(--danger); }
+    pre.after { border-left: 3px solid var(--accent2); }
+    .tag { display:inline-block; font-size:0.7rem; font-weight:700; padding:0.1rem 0.45rem; border-radius:4px; margin-right:0.4rem; }
+    .tag.before { background:#4a1f2e; color:var(--danger); }
+    .tag.after { background:#1a3d2b; color:var(--accent2); }
+    .filename { display: block; font-family: Consolas, monospace; font-size: 0.75rem; color: var(--accent2); margin: 1rem 0 -0.5rem; padding-left: 0.2rem; }
+    .filename::before { content: "\01F4C4  "; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.88rem; }
+    th, td { border: 1px solid var(--border); padding: 0.55rem 0.75rem; text-align: left; vertical-align: top; }
+    th { background: var(--surface2); color: var(--accent); }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.35rem; margin: 1.5rem 0; }
+    .toc a { text-decoration: none; } .toc a:hover { text-decoration: underline; }
+    .prio { font-size:0.72rem; font-weight:700; padding:0.12rem 0.5rem; border-radius:999px; margin-left:0.5rem; vertical-align:middle; }
+    .prio.p1 { background:#1a3d2b; color:var(--accent2); }
+    .prio.p2 { background:#1e2f45; color:var(--accent); }
+    .prio.p3 { background:#2a2431; color:#c792ea; }
+    footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Refactor para uma boa foundation</h1>
+    <p class="subtitle">Análise do código atual de <em>As Profundezas</em> e reescrita segundo práticas senior — mantendo tudo o que discutimos <strong>exceto o Event Bus global</strong>. Cada ponto liga a um ficheiro real do teu projeto, com "antes" e "depois".</p>
+  </header>
+
+  <div class="card info">
+    <span class="label info">A regra desta sessão: sem Event Bus — mas atenção à distinção</span>
+    <p>Vetaste o <strong>Event Bus global</strong> (aquele <code>EventBus&lt;T&gt;</code> estático, pub/sub para o jogo inteiro). Concordo — para o tamanho deste projeto é complexidade a mais e foi o único ponto que eu próprio marquei como "faz só quando doer".</p>
+    <p style="margin-bottom:0"><strong>Mas cuidado com um mal-entendido:</strong> quando eu falar em "eventos locais" na <code>Health</code> (secção 3), isso <em>não é</em> o Event Bus. É o mesmo que um <code>onClick</code> de um componente React: um sinal <strong>local</strong>, deste objeto, com subscritores explícitos e visíveis. Sem estado global, sem strings, sem teia invisível. Se mesmo assim preferires zero eventos, dou-te a alternativa por chamada direta.</p>
+  </div>
+
+  <div class="toc">
+    <strong>Índice (por prioridade)</strong>
+    <ol>
+      <li><a href="#dano">Tipos de dano: de 5 campos hardcoded para um <code>DamageType</code> (ScriptableObject) <span class="prio p1">fazer já</span></a></li>
+      <li><a href="#pipeline">O fluxo de dano: quebrar o acoplamento em <code>DamageReceiver</code> <span class="prio p1">fazer já</span></a></li>
+      <li><a href="#health">Health: estado puro + reações desacopladas (sem bus) <span class="prio p1">fazer já</span></a></li>
+      <li><a href="#alloc">Alocações por frame: parar de <code>Instantiate</code> ScriptableObjects <span class="prio p1">fazer já</span></a></li>
+      <li><a href="#perception">Bug de linha de visão no <code>Perception</code> <span class="prio p1">fazer já</span></a></li>
+      <li><a href="#strings">Strings mágicas de animação → hashes <span class="prio p2">a seguir</span></a></li>
+      <li><a href="#deps">Dependência escondida: <code>FindAnyObjectByType</code> <span class="prio p2">a seguir</span></a></li>
+      <li><a href="#dup">Duplicação: movimento, distâncias, cooldown de ataque <span class="prio p2">a seguir</span></a></li>
+      <li><a href="#busy">O <code>isBusy</code> como máquina de estados implícita <span class="prio p3">quando doer</span></a></li>
+      <li><a href="#foundation">A foundation alvo (estrutura + ordem)</a></li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <span class="label goal">Resumo executivo da análise</span>
+    <p>O teu código está <strong>bom para um protótipo</strong> — o padrão data-driven com <code>ScriptableObject</code> (Ability, AIState) é exatamente a escolha certa, e o <code>CharacterManager</code> como raiz de composição é sólido. Os problemas são os típicos de código que cresceu depressa: <strong>responsabilidades misturadas</strong> (a <code>Health</code> faz de tudo), <strong>acoplamento</strong> (quem calcula dano espreita para dentro de quem ataca), <strong>duplicação em 3 sítios</strong> (os tipos de dano) e <strong>alocações por frame</strong> (Instantiate de SOs). Nada disto é grave agora; tudo isto será grave daqui a 3 meses. É a altura certa para consolidar.</p>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="dano">1. Tipos de dano: 5 campos hardcoded → <code>DamageType</code> (ScriptableObject) <span class="prio p1">fazer já</span></h2>
+
+  <p>Hoje os cinco tipos de dano estão hardcoded em <strong>três ficheiros diferentes</strong>. Adicionar um tipo novo (ex.: "veneno", perfeito para a alquimista Ivy) obriga a editar código C#. Isto é o oposto do "adicionar conteúdo = criar um asset".</p>
+
+  <div class="card tip">
+    <span class="label tip">Decisão de design (fechada)</span>
+    <p><strong>Não usamos um <code>enum</code> para o tipo de dano.</strong> Usamos um <code>ScriptableObject</code> — o mesmo padrão que já usas em <code>Ability</code> e <code>AIState</code>. Um tipo novo = Create → asset no Project, sem recompilar. Mantém o modelo simples: <strong>um tipo + um valor de dano</strong> por golpe (sem arrays, sem pacotes multi-tipo).</p>
+  </div>
+
+  <span class="filename">Assets/Scripts/Abilities/MeleeAttack.cs — os campos</span>
+<pre class="before"><code><span class="tag before">antes</span>public int slashDamage = 0;
+public int bluntDamage = 0;
+public int pierceDamage = 0;
+public int fireDamage = 0;
+public int frostDamage = 0;</code></pre>
+
+  <span class="filename">Assets/Scripts/DamageReceiver.cs — o cálculo (repara na inconsistência!)</span>
+<pre class="before"><code><span class="tag before">antes</span>[Range(0f, 1f)] public float slashReduction = 1f;   // é 0..1 (percentagem)
+// ...
+if (attackAbility.slashDamage &gt; 0)
+    damage += Mathf.Clamp(attackAbility.slashDamage - slashReduction, 0, Mathf.Infinity);
+//                                                  ^^^ subtrai um valor 0..1 a um dano inteiro</code></pre>
+
+  <div class="card danger">
+    <span class="label danger">Bug real que encontrei</span>
+    <p>A <code>slashReduction</code> tem <code>[Range(0,1)]</code> — parece uma <strong>percentagem</strong>. Mas depois é <strong>subtraída como valor absoluto</strong>: <code>slashDamage - slashReduction</code>. Com dano 30 e redução 0.8, o resultado é 29.2 → arredonda para 29. Ou seja: <strong>as reduções praticamente não fazem nada</strong>. A intenção era certamente <code>dano × (1 − redução)</code>. Este tipo de bug esconde-se precisamente porque a lógica está espalhada e repetida.</p>
+  </div>
+
+  <h3>O "depois": <code>DamageType</code> como ScriptableObject</h3>
+
+  <p>Cada tipo de dano é um <strong>asset</strong> (Slash, Blunt, Fire, Poison…). A arma/ataque aponta para um e declara quanto dano causa. O receptor procura a redução associada a <em>esse</em> asset.</p>
+
+  <span class="filename">conceito — DamageType.cs</span>
+<pre class="after"><code><span class="tag after">depois</span>namespace AF
+{
+    using UnityEngine;
+
+    [CreateAssetMenu(menuName = "AF/Data/Damage Type")]
+    public class DamageType : ScriptableObject
+    {
+        public string displayName;   // "Corte", "Fogo", "Veneno"...
+        public Sprite icon;          // opcional — UI / floating text
+        public Color uiColor = Color.white;
+    }
+}</code></pre>
+
+  <span class="filename">conceito — na arma / MeleeAttack</span>
+<pre class="after"><code><span class="tag after">depois</span>[Header("Damage")]
+public DamageType damageType;   // arrasta o asset "Slash" / "Fire" / ...
+public int damage = 20;</code></pre>
+
+  <span class="filename">conceito — redução no receptor (lista em vez de 5 campos)</span>
+<pre class="after"><code><span class="tag after">depois</span>[System.Serializable]
+public struct DamageResistance
+{
+    public DamageType type;          // referência ao mesmo SO
+    [Range(0f, 1f)] public float reduction; // 0 = sem redução, 1 = imune
+}
+
+public List&lt;DamageResistance&gt; resistances;
+
+float GetReduction(DamageType type)
+{
+    for (int i = 0; i &lt; resistances.Count; i++)
+        if (resistances[i].type == type)
+            return resistances[i].reduction;
+    return 0f;
+}
+
+// Fórmula correcta (multiplicativa):
+int finalDamage = Mathf.RoundToInt(damage * (1f - GetReduction(damageType)));</code></pre>
+
+  <div class="card tip">
+    <span class="label tip">Porquê SO e não enum?</span>
+    <ul style="margin-bottom:0">
+      <li><strong>Conteúdo sem código</strong> — criar "Poison" é Create Asset, não editar C# e recompilar.</li>
+      <li><strong>Dados ricos</strong> — nome, ícone, cor de UI vivem no asset (um enum só dá um identificador).</li>
+      <li><strong>Coerente com o projecto</strong> — já pensas em dados com <code>Ability</code>, <code>AIState</code>; o tipo de dano é mais um dado.</li>
+      <li><strong>Simples</strong> — um SO + um <code>int damage</code>. Sem arrays, sem <code>DamagePacket</code> multi-tipo.</li>
+    </ul>
+  </div>
+
+  <div class="card info">
+    <span class="label info">Como criar os assets no Unity</span>
+    <p>Botão direito → Create → AF → Data → Damage Type. Crias um por tipo (<code>DT_Slash</code>, <code>DT_Fire</code>, <code>DT_Poison</code>…). Nas armas e nas resistências, arrastas a referência. Adicionar tipo novo = novo asset + arrastar onde fizer sentido.</p>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="pipeline">2. O fluxo de dano: quebrar o acoplamento <span class="prio p1">fazer já</span></h2>
+
+  <p>Hoje quem <em>recebe</em> o dano espreita para dentro de quem <em>ataca</em> para descobrir os números:</p>
+
+  <span class="filename">Assets/Scripts/DamageReceiver.cs</span>
+<pre class="before"><code><span class="tag before">antes</span>public void ApplyDamage(CharacterManager attacker)
+{
+    // O receptor tem de saber que o atacante tem um combatManager,
+    // que tem uma "current ability", que pode ser um MeleeAttack...
+    MeleeAttack attackAbility = attacker.combatManager.GetCurrentAbility() as MeleeAttack;
+    if (attackAbility != null) { /* lê slashDamage, etc. */ }
+}</code></pre>
+
+  <div class="card danger">
+    <span class="label danger">O smell: "feature envy" + Law of Demeter</span>
+    <p><code>attacker.combatManager.GetCurrentAbility() as MeleeAttack</code> é uma cadeia de 3 saltos e um cast frágil. Se o ataque não for um <code>MeleeAttack</code> (uma bola de fogo? uma armadilha do Duval?), o dano é <strong>silenciosamente zero</strong>. O receptor sabe coisas a mais sobre o atacante.</p>
+  </div>
+
+  <h3>O "depois": o atacante <em>declara</em> o que faz; o receptor <em>resolve</em></h3>
+
+  <p>Inverte-se o fluxo: em vez de o receptor ir buscar, o atacante <strong>entrega uma requisição de dano</strong>. Isto é um <code>struct</code> imutável — o "contrato" do golpe. Nada de bus, é uma chamada de método direta.</p>
+
+<pre class="after"><code><span class="tag after">depois</span>public readonly struct DamageRequest
+{
+    public readonly CharacterManager Source;
+    public readonly DamageType Type;   // referência ao ScriptableObject
+    public readonly int Amount;
+    public readonly Vector3 HitPoint;
+
+    public DamageRequest(CharacterManager source, DamageType type, int amount, Vector3 hitPoint)
+    { Source = source; Type = type; Amount = amount; HitPoint = hitPoint; }
+}
+
+public interface IDamageable
+{
+    DamageResult Receive(in DamageRequest request);
+}</code></pre>
+
+  <p>A <code>Hitbox</code>, ao acertar, constrói a <code>DamageRequest</code> a partir da arma/ability atual (<code>damageType</code> + <code>damage</code>) e chama <code>target.Receive(request)</code>. O receptor aplica a redução desse tipo e devolve um <code>DamageResult</code>. Agora:</p>
+  <ul>
+    <li>Qualquer fonte de dano (melee, fogo, armadilha, veneno) usa o mesmo caminho — só mudam o asset <code>DamageType</code> e o valor.</li>
+    <li>Não há casts frágeis nem saltos de 3 níveis.</li>
+    <li>É testável: constróis uma <code>DamageRequest</code> num teste e verificas o <code>DamageResult</code>, sem cena, sem animação.</li>
+  </ul>
+
+  <div class="card info">
+    <span class="label info">Precisas de uma "chain of responsibility"?</span>
+    <p>Na versão senior falei de um pipeline de estágios. <strong>Ainda não precisas.</strong> Começa com um método <code>Receive</code> claro que faz: 1) checar invulnerabilidade (o teu <code>IsInvulnerable()</code> do dodge já existe), 2) aplicar reduções, 3) devolver resultado. Quando tiveres 5+ regras (críticos, lifesteal, stagger), aí sim partes o método numa cadeia. Uma abstração de cada vez.</p>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="health">3. Health: estado puro + reações desacopladas (sem bus) <span class="prio p1">fazer já</span></h2>
+
+  <p>Este é o ponto que já tínhamos identificado. O teu <code>Die()</code> faz quatro trabalhos diferentes:</p>
+
+  <span class="filename">Assets/Scripts/Health.cs</span>
+<pre class="before"><code><span class="tag before">antes</span>void Die()
+{
+    characterManager.animator.Play("Death");          // animação
+    characterManager.agent.ResetPath();               // navegação
+    characterManager.agent.enabled = false;
+    characterManager.isBusy = true;                   // estado de combate
+    var player = characterManager.GetPlayer();
+    if (player != null) player.lockOn.UnregisterChasingEnemy(characterManager); // lock-on do player
+}</code></pre>
+
+  <p>Sempre que quiseres uma reação nova à morte (dropar loot/minério, dar XP ao herói — a ironia do GDD, screen shake, som), este método incha. E não consegues testar "a vida chega a 0?" sem um Animator e um NavMeshAgent na cena.</p>
+
+  <h3>Opção A (recomendada): eventos locais — <em>não</em> é o Event Bus</h3>
+
+<pre class="after"><code><span class="tag after">depois</span>public sealed class Health : MonoBehaviour
+{
+    public int Current { get; private set; }
+    public int Max = 100;
+    public bool IsDead =&gt; Current &lt;= 0;
+
+    // Sinais LOCAIS deste componente. Subscritores explícitos, sem estado global.
+    public event System.Action&lt;DamageResult&gt; OnDamaged;
+    public event System.Action OnDied;
+
+    public void Apply(in DamageResult result)
+    {
+        if (IsDead) return;
+        Current = Mathf.Max(0, Current - result.FinalDamage);
+        OnDamaged?.Invoke(result);
+        if (Current == 0) OnDied?.Invoke();
+    }
+}</code></pre>
+
+  <p>E cada reação vira um pequeno componente no mesmo personagem, que subscreve no <code>OnEnable</code> e <strong>dessubscreve no <code>OnDisable</code></strong> (a regra de ouro para não haver leaks):</p>
+
+<pre class="after"><code><span class="tag after">depois</span>public class DeathReactor : MonoBehaviour   // um por responsabilidade
+{
+    [SerializeField] CharacterManager cm;
+    [SerializeField] Health health;
+
+    void OnEnable()  =&gt; health.OnDied += HandleDeath;
+    void OnDisable() =&gt; health.OnDied -= HandleDeath;   // simétrico, sempre!
+
+    void HandleDeath()
+    {
+        cm.animator.Play(AnimHashes.Death);   // ver secção 6
+        cm.agent.enabled = false;
+        cm.isBusy = true;
+    }
+}
+// Outros: LootDropReactor, LockOnReactor... cada um subscreve o que lhe interessa.</code></pre>
+
+  <div class="card tip">
+    <span class="label tip">Porque isto não é o Event Bus que vetaste</span>
+    <p>O Event Bus global é <em>estático</em>: qualquer sistema do jogo emite/escuta sem referência direta, e ninguém sabe quem escuta. Aqui, os eventos <strong>pertencem a uma instância de <code>Health</code></strong>, os subscritores estão no <strong>mesmo GameObject</strong>, e vês as ligações no Inspector. É observação <em>local</em> e explícita — a diferença é a mesma entre um <code>onClick</code> de um botão e um sistema de pub/sub global.</p>
+  </div>
+
+  <h3>Opção B (se quiseres mesmo zero eventos)</h3>
+  <p>A <code>Health</code> expõe só o estado (<code>Current</code>, <code>IsDead</code>, <code>Apply</code>) e um único componente <code>CharacterDeathHandler</code> — referenciado diretamente — trata da reação, chamado pela <code>Health</code> via uma referência serializada. Menos flexível (uma só reação, ou uma que chama as outras por ordem), mas 100% sem eventos. Recomendo a A; menciono a B porque respeita a tua preferência se a levares ao extremo.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="alloc">4. Alocações por frame: parar de clonar ScriptableObjects <span class="prio p1">fazer já</span></h2>
+
+  <p>Isto liga diretamente à conversa que tivemos sobre <code>NonAlloc</code> e lixo para o Garbage Collector. Encontrei <strong>dois</strong> sítios que clonam <code>ScriptableObject</code>s com frequência:</p>
+
+  <span class="filename">Assets/Scripts/CombatManager.cs</span>
+<pre class="before"><code><span class="tag before">antes</span>public void SetCurrentAbility(Ability next)
+{
+    if (currentAbility != null) currentAbility.OnEnd(characterManager);
+    currentAbility = Instantiate(next);   // ← novo objeto CADA ataque
+    currentAbility?.OnStart(characterManager);
+}</code></pre>
+
+  <span class="filename">Assets/Scripts/StateMachine.cs</span>
+<pre class="before"><code><span class="tag before">antes</span>public void SwitchState(AIState newState)
+{
+    currentState?.Exit(this);
+    currentState = Instantiate(newState);  // ← novo objeto CADA transição
+    currentState?.Enter(this);
+}</code></pre>
+
+  <div class="card danger">
+    <span class="label danger">O problema</span>
+    <p>Um auto-atacante (Vampire Survivors!) dispara ataques constantemente. Uma IA muda de estado várias vezes por segundo × dezenas de inimigos. Cada <code>Instantiate</code> de um SO cria um objeto novo que o GC terá de limpar → <strong>stutters periódicos</strong> em mobile. Provavelmente clonaste para teres estado por-instância (ex.: <code>lastAttackTime</code>) sem sujar o asset partilhado — instinto correto, solução cara.</p>
+  </div>
+
+  <h3>O "depois": separar dados imutáveis de estado de runtime</h3>
+  <p>O <code>ScriptableObject</code> é <strong>dados partilhados e só-de-leitura</strong> (o "flyweight"). O estado que muda (cooldowns, timers, alvo atual) vive num objeto de runtime <em>por personagem</em>, não numa cópia do asset.</p>
+
+<pre class="after"><code><span class="tag after">depois</span>// O SO nunca é clonado nem mutado. É só a receita.
+public class Ability : ScriptableObject { /* dados imutáveis */ }
+
+// O estado de runtime vive à parte, por personagem:
+public class AbilityRuntime
+{
+    public Ability data;      // referência partilhada (não clonada)
+    public float cooldownEndTime;
+    // ... o que muda durante o jogo
+}</code></pre>
+
+  <p>O mesmo princípio resolve o <code>StateMachine</code>: os <code>AIState</code> tornam-se sem-estado (recebem tudo por parâmetro ou lêem de um pequeno "blackboard" no controlador), e deixas de precisar de os clonar. Repara que o teu <code>StateCombat</code> guarda <code>lastAttackTime</code> <em>dentro</em> do SO — é exatamente por isso que sentiste a necessidade de <code>Instantiate</code>. Move esse <code>lastAttackTime</code> para o controlador e o clone deixa de ser preciso.</p>
+
+  <div class="card tip">
+    <span class="label tip">Regra geral</span>
+    <p><strong>Nunca guardes estado mutável de runtime dentro de um <code>ScriptableObject</code>.</strong> Se um SO tem um campo que muda durante o jogo, ou o clonas (caro) ou tens bugs de estado partilhado. A saída é separar "receita" (SO) de "estado" (objeto de runtime).</p>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="perception">5. Bug de linha de visão no Perception <span class="prio p1">fazer já</span></h2>
+
+  <span class="filename">Assets/Scripts/Perception.cs</span>
+<pre class="before"><code><span class="tag before">antes</span>if (Physics.Raycast(pos, dir.normalized, dist, ~0, QueryTriggerInteraction.Ignore))
+{
+    return true;   // "vejo o jogador"
+}
+return false;</code></pre>
+
+  <div class="card danger">
+    <span class="label danger">A lógica está invertida</span>
+    <p>Este raycast usa <code>~0</code> (bate em <em>tudo</em>) e devolve <code>true</code> se acertar em <strong>qualquer</strong> coisa dentro da distância. Ou seja: se houver uma <strong>parede a tapar</strong> o jogador, o raio bate na parede e a IA conclui que "vê o jogador". É o contrário do que queres. Uma linha de visão correta devia: disparar o raio e confirmar que o <em>primeiro</em> que acerta é o jogador (ou que nada opaco o bloqueia).</p>
+  </div>
+
+<pre class="after"><code><span class="tag after">depois</span>// Bate só em camadas que bloqueiam visão; se o raio chega "limpo" ao jogador, vê-o.
+if (Physics.Raycast(pos, dir.normalized, out RaycastHit hit, dist, obstacleMask,
+                    QueryTriggerInteraction.Ignore))
+{
+    // Bateu num obstáculo ANTES do jogador → visão bloqueada.
+    return hit.collider.GetComponentInParent&lt;CharacterManager&gt;() == player;
+}
+return true;   // nada bloqueou → vê o jogador</code></pre>
+
+  <p>Nota: define uma <code>LayerMask obstacleMask</code> no Inspector com o que bloqueia visão (paredes, props), em vez de <code>~0</code>. Mais barato e correto.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="strings">6. Strings mágicas de animação → hashes <span class="prio p2">a seguir</span></h2>
+
+  <p>Espalhados pelo código: <code>animator.Play("Death")</code>, <code>animator.SetFloat("Speed", ...)</code>. Strings mágicas não têm verificação em compilação (um typo = bug silencioso) e são re-hashadas a cada chamada.</p>
+
+<pre class="before"><code><span class="tag before">antes</span>characterManager.animator.Play("Death");
+animator.SetFloat("Speed", agent.desiredVelocity.magnitude, 0.1f, Time.deltaTime);</code></pre>
+
+<pre class="after"><code><span class="tag after">depois</span>public static class AnimHashes
+{
+    public static readonly int Death = Animator.StringToHash("Death");
+    public static readonly int Speed = Animator.StringToHash("Speed");
+}
+// uso:
+animator.Play(AnimHashes.Death);
+animator.SetFloat(AnimHashes.Speed, speed, 0.1f, Time.deltaTime);</code></pre>
+
+  <p>Já tens um <code>enum AnimationName</code> usado no <code>MeleeAttack</code> — bom instinto. Estende essa ideia a <em>todas</em> as animações e parâmetros, e usa hashes (int) em vez de strings nas chamadas quentes.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="deps">7. Dependência escondida: <code>FindAnyObjectByType</code> <span class="prio p2">a seguir</span></h2>
+
+  <span class="filename">Assets/Scripts/CharacterManager.cs</span>
+<pre class="before"><code><span class="tag before">antes</span>public PlayerInput GetPlayerInput()
+{
+    if (_playerInput == null)
+        _playerInput = FindAnyObjectByType&lt;PlayerInput&gt;(FindObjectsInactive.Include);
+    return _playerInput;
+}</code></pre>
+
+  <p>Cada <code>CharacterManager</code> (jogador <em>e</em> inimigos) procura o <code>PlayerInput</code> na cena. Funciona, mas é uma dependência <em>descoberta</em> em runtime, lenta e invisível. Como o <code>IsPlayer()</code> e o <code>GetPlayer()</code> dependem disto, muita coisa passa por aqui.</p>
+
+  <div class="card tip">
+    <span class="label tip">O "depois" pragmático (sem framework de DI)</span>
+    <p>Um <strong>Service Locator</strong> minúsculo e explícito resolve, sem a complexidade de injeção de dependências a sério:</p>
+  </div>
+
+<pre class="after"><code><span class="tag after">depois</span>public static class GameContext
+{
+    public static CharacterManager Player { get; set; }   // definido pelo PlayerInput no arranque
+}
+// CharacterManager fica:
+public bool IsPlayer() =&gt; GameContext.Player == this;
+public CharacterManager GetPlayer() =&gt; GameContext.Player;</code></pre>
+
+  <p>Uma referência, definida uma vez quando o jogador aparece (ou quando trocas de personagem no teu <code>PlayerInput.SetCharacter</code>). Sem <code>Find</code> por objeto, sem custo por chamada. Nota: isto continua a ser estado global, mas <strong>uma referência simples e explícita</strong> não é o mesmo que um event bus — é aceitável e comum. Se preferires, podes injetar a referência nos inimigos quando a factory os cria (secção 10 da nota senior).</p>
+
+  <!-- ============================================================ -->
+  <h2 id="dup">8. Duplicação: movimento, distâncias, cooldown <span class="prio p2">a seguir</span></h2>
+
+  <h4>8.1 Movimento relativo à câmara — calculado duas vezes</h4>
+  <p>Em <code>PlayerInput</code>, o bloco "camForward/camRight, zerar y, normalizar, combinar" aparece <strong>igual</strong> em <code>HandleMovement()</code> e em <code>GetDodgeDirection()</code>. Extrai um helper <code>GetCameraRelativeInput()</code> e chama-o nos dois sítios. Uma fonte de verdade.</p>
+
+  <h4>8.2 Distâncias com raiz quadrada desnecessária</h4>
+  <p><code>StateChase</code> e <code>StateCombat</code> usam <code>Vector3.Distance(...)</code> (que faz <code>sqrt</code>) só para comparar com um limite. O teu <code>LockOn</code> já faz certo com <code>sqrMagnitude</code>. Uniformiza: compara quadrados quando só queres saber "mais perto que X".</p>
+
+  <h4>8.3 Cooldown de ataque em dois modelos diferentes</h4>
+  <p>A IA tem cooldown em <code>StateCombat</code> (<code>Time.time &gt;= lastAttackTime + attackCooldown</code>). O jogador, no plano de auto-ataque, teria outro timer. <strong>Unifica</strong>: o ritmo de ataque devia vir da <em>arma</em> (como discutimos), e o mesmo componente de "quando posso atacar?" servir jogador e IA. Coerência de mundo (armas partilhadas) <em>e</em> menos código.</p>
+
+  <div class="card info">
+    <span class="label info">Princípio DRY com juízo</span>
+    <p>DRY (Don't Repeat Yourself) não é "nunca duplicar" — é "não duplicar <em>conhecimento</em>". Os três casos acima são o mesmo conhecimento em dois sítios: se mudares a regra num, tens de lembrar-te do outro. É esse o perigo, não a repetição visual.</p>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="busy">9. O <code>isBusy</code> como máquina de estados implícita <span class="prio p3">quando doer</span></h2>
+
+  <p>O booleano <code>isBusy</code> é ligado/desligado em muitos sítios: <code>CombatManager.Attack</code>, <code>Dodge</code>, <code>Health.Die</code>, <code>CharacterManager.OnIdle</code>. É uma máquina de estados <strong>implícita</strong> espalhada — o género de coisa que gera bugs "o personagem ficou preso sem se mexer" difíceis de reproduzir.</p>
+
+  <div class="card tip">
+    <span class="label tip">Não faças já — mas fica atento</span>
+    <p>Enquanto for só "livre vs ocupado", o booleano chega. Quando começares a ter estados de ação do jogador (Atacar / Esquivar / Atordoado / Morto) com regras de transição, promove isto a uma <strong>máquina de estados explícita</strong> para o personagem (como já tens para a IA). O sinal de que chegou a hora: quando te vires a escrever <code>if (!isBusy &amp;&amp; !isDodging &amp;&amp; !isStunned &amp;&amp; ...)</code>.</p>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="foundation">10. A foundation alvo</h2>
+
+  <h3>Organização de pastas sugerida</h3>
+  <p>À medida que isto cresce, agrupa por <em>domínio</em>, não por tipo de ficheiro:</p>
+  <div class="flow">Assets/Scripts/
+   ├── Core/          GameContext, AnimHashes, helpers
+   ├── Combat/        DamageType (SO), DamageResistance, DamageRequest, DamageResult,
+   │                  IDamageable, CombatManager, Hitbox, AutoAttackController
+   ├── Characters/    CharacterManager, Health, DeathReactor, LootDropReactor...
+   ├── Abilities/     Ability (SO), AbilityRuntime, MeleeAttack, DodgeAbility
+   ├── AI/            StateMachine, AIState, State*, Blackboard
+   ├── Items/         WeaponItem, BuffItem, MineralItem, CharacterClass
+   └── Input/         PlayerInput</div>
+
+  <h3>Ordem de execução recomendada</h3>
+  <ol>
+    <li><strong>DamageType (ScriptableObject) + um <code>int damage</code></strong> (secção 1) — corrige o bug de reduções e é a base de tudo o resto.</li>
+    <li><strong>DamageRequest + IDamageable</strong> (secção 2) — desacopla o fluxo de dano.</li>
+    <li><strong>Health estado puro + 1 DeathReactor</strong> (secção 3) — separa responsabilidades.</li>
+    <li><strong>Tirar estado dos SOs</strong> (secção 4) — <code>lastAttackTime</code> fora do <code>StateCombat</code>, elimina os <code>Instantiate</code>.</li>
+    <li><strong>Corrigir o Perception</strong> (secção 5) — é um bug funcional, rápido de resolver.</li>
+    <li>Depois: hashes de animação, GameContext, deduplicação (secções 6–8).</li>
+  </ol>
+
+  <div class="card danger">
+    <span class="label danger">Aviso senior (o mais importante)</span>
+    <p>Não faças isto tudo de uma vez num "big bang refactor" — é a forma mais rápida de partir um projeto que funciona. Faz <strong>um ponto de cada vez</strong>, testa em Play mode, e só avanças quando estiver estável. Cada secção acima é independente por design, precisamente para poderes parar a meio sem deixar o jogo partido. Um refactor que não podes interromper é um refactor mal planeado.</p>
+  </div>
+
+  <table>
+    <tr><th>Faz já (retorno imediato)</th><th>A seguir (quando estabilizar)</th><th>Só quando doer</th></tr>
+    <tr>
+      <td>DamageType (SO) · fluxo de dano · Health+reactor · tirar estado dos SOs · bug do Perception</td>
+      <td>hashes de animação · GameContext · deduplicação de movimento/distância/cooldown</td>
+      <td>máquina de estados do jogador · chain of responsibility · pooling a sério · DOD para hordes</td>
+    </tr>
+  </table>
+
+  <div class="card">
+    <span class="label goal">🔢 Para investigar (matemática)</span>
+    <p>A correção do bug de reduções (secção 1) muda o modelo de dano de <strong>subtração</strong> para <strong>multiplicação</strong>:</p>
+    <ul style="margin-bottom:0">
+      <li><strong>Subtrativo:</strong> <code>dano_final = dano − armadura</code>. O que acontece a um golpe fraco (dano 5) contra armadura alta (10)? E porque é que isto torna golpes pequenos inúteis?</li>
+      <li><strong>Multiplicativo:</strong> <code>dano_final = dano × (1 − redução)</code>, redução em 0..1. Porque é que este modelo escala melhor e nunca torna o dano negativo? Que valor de redução reduz o dano a metade?</li>
+    </ul>
+  </div>
+
+  <div class="card tip">
+    <span class="label tip">Desafio</span>
+    <p>Começa pela secção 1. Cria o <code>DamageType</code> como ScriptableObject e 2–3 assets (Slash, Fire, Poison). Depois pergunta: a lista de <code>DamageResistance</code> deve viver no <code>DamageReceiver</code> (como agora) ou vir da <code>CharacterClass</code> + armadura equipada? Não há resposta única — mas a tua escolha define como a armadura vai funcionar no jogo. Qual preferes, e porquê?</p>
+  </div>
+
+  <footer>
+    <p>As Profundezas — refactor para foundation, sem Event Bus. Companheiro de <code>Docs/CombatArchitecture-Senior.html</code> (padrões) e <code>Docs/CombatClassesItems-Inspiracao.html</code> (sistemas). Refatora um ponto de cada vez; testa entre cada um.</p>
+  </footer>
+
+</div>
+</body>
+</html>

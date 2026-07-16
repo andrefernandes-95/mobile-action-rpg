@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>As Profundezas — Foundation Code (código completo)</title>
+  <style>
+    :root {
+      --bg:#0f1117; --surface:#1a1d27; --surface2:#242836; --text:#e6e9f0;
+      --muted:#9aa3b5; --accent:#6c9eff; --accent2:#7ee787; --warn:#f0b429;
+      --danger:#ff8ba7; --border:#343a4d; --code:#12151c;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;padding:2rem 1rem 4rem}
+    .wrap{max-width:980px;margin:0 auto}
+    header{margin-bottom:2rem;padding-bottom:1.25rem;border-bottom:1px solid var(--border)}
+    h1{font-size:1.85rem;margin-bottom:.4rem}
+    .sub{color:var(--muted);font-size:1rem}
+    h2{font-size:1.25rem;color:var(--accent);margin:2.2rem 0 .7rem;padding-top:.3rem}
+    h3{font-size:1rem;color:var(--accent2);margin:1.3rem 0 .4rem}
+    p,li{margin-bottom:.55rem;color:var(--muted)}
+    ul,ol{padding-left:1.25rem;margin-bottom:.9rem}
+    a{color:var(--accent)}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;margin:1rem 0}
+    .card.warn{border-color:#6b5420;background:#1c1810}
+    .card.fix{border-color:#5a2436;background:#1c1014}
+    .label{display:inline-block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:.15rem .45rem;border-radius:4px;margin-bottom:.5rem}
+    .label.warn{background:#4a3810;color:var(--warn)}
+    .label.fix{background:#4a1f2e;color:var(--danger)}
+    .label.ok{background:#1a3d2b;color:var(--accent2)}
+    .toc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;margin:1.2rem 0}
+    .toc a{text-decoration:none}.toc a:hover{text-decoration:underline}
+    .path{font-family:Consolas,monospace;font-size:.75rem;color:var(--accent2);margin:1rem 0 -.35rem}
+    .path::before{content:"📄 "}
+    pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem;overflow-x:auto;font-family:Consolas,monospace;font-size:.8rem;line-height:1.5;margin:.5rem 0 1.1rem;color:#d6deeb}
+    code{font-family:Consolas,monospace;font-size:.88em;background:var(--surface2);padding:.05em .3em;border-radius:3px}
+    pre code{background:none;padding:0;font-size:1em}
+    .flow{font-family:Consolas,monospace;font-size:.78rem;background:var(--code);border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem;white-space:pre;overflow-x:auto;color:var(--muted);margin:1rem 0}
+    footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--border);color:var(--muted);font-size:.85rem}
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Foundation Code — combate completo</h1>
+  <p class="sub">Um único documento. Código concreto para substituir/estender o que tens. Namespace <code>AF</code>. Sem Event Bus. <code>DamageType</code> = ScriptableObject.</p>
+</header>
+
+<div class="card fix">
+  <span class="label fix">O teu CS0171 (agora)</span>
+  <p>Em <code>DamagePacket.cs</code> o campo chama-se <code>DamageType</code>, mas o construtor faz <code>Type = type</code>. Em structs <code>readonly</code>, <strong>todos</strong> os campos têm de ser atribuídos no construtor. O compilador vê <code>DamageType</code> sem valor → CS0171.</p>
+  <p style="margin-bottom:0">Corrigir: <code>DamageType = type;</code> (não <code>Type</code>). No <code>ResistanceManager</code> usas <code>damagePacket.damageType</code> — em C# o nome do campo é <code>DamageType</code> (PascalCase). Abaixo está o ficheiro completo correcto.</p>
+</div>
+
+<nav class="toc">
+  <strong>Secções</strong>
+  <ol>
+    <li><a href="#s0">Mapa de ficheiros + fluxo</a></li>
+    <li><a href="#s1">Damage — tipos, packet, resistência, resultado</a></li>
+    <li><a href="#s2">Health + DeathReactor</a></li>
+    <li><a href="#s3">DamageReceiver / CharacterDamageReceiver / Hitbox</a></li>
+    <li><a href="#s4">Abilities — Ability, MeleeAttack</a></li>
+    <li><a href="#s5">CombatManager + AutoAttackController</a></li>
+    <li><a href="#s6">Core — GameContext, AnimHashes</a></li>
+    <li><a href="#s7">CharacterManager (ajustes)</a></li>
+    <li><a href="#s8">AI — StateMachine + CombatRuntime (sem Instantiate do SO)</a></li>
+    <li><a href="#s9">Ordem de wiring no Unity</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================ -->
+<h2 id="s0">0. Mapa de ficheiros + fluxo</h2>
+
+<div class="flow">Assets/Scripts/
+├── Core/
+│   ├── GameContext.cs
+│   └── AnimHashes.cs
+├── Damage/
+│   ├── DamageType.cs          (SO)
+│   ├── DamagePacket.cs
+│   ├── DamageResult.cs
+│   ├── DamageResistance.cs
+│   ├── ResistanceManager.cs
+│   └── IDamageable.cs
+├── Characters/
+│   ├── Health.cs
+│   ├── DeathReactor.cs
+│   ├── DamageReceiver.cs
+│   └── CharacterDamageReceiver.cs
+├── Combat/
+│   ├── Hitbox.cs
+│   ├── CombatManager.cs
+│   └── AutoAttackController.cs
+├── Abilities/
+│   ├── Ability.cs
+│   └── MeleeAttack.cs
+└── AI/
+    ├── StateMachine.cs
+    └── CombatStateRuntime.cs   (estado fora do SO)
+
+Fluxo:
+MeleeAttack (damageType + damage)
+  → Hitbox cria DamagePacket
+    → CharacterDamageReceiver.Receive(packet)
+      → ResistanceManager.GetReduction
+        → Health.Apply(result)
+          → OnDied → DeathReactor</div>
+
+<!-- ============================================================ -->
+<h2 id="s1">1. Damage</h2>
+
+<div class="path">Assets/Scripts/Damage/DamageType.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    [CreateAssetMenu(menuName = "AF/Damage/Damage Type")]
+    public sealed class DamageType : ScriptableObject
+    {
+        public string displayName;
+        public Sprite icon;
+        public Color uiColor = Color.white;
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Damage/DamagePacket.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    /// &lt;summary&gt;
+    /// Contrato do golpe. Todos os campos readonly têm de ser atribuídos no construtor
+    /// (senão CS0171).
+    /// &lt;/summary&gt;
+    public readonly struct DamagePacket
+    {
+        public readonly CharacterManager Source;
+        public readonly DamageType DamageType;
+        public readonly int Amount;
+        public readonly Vector3 HitPoint;
+
+        public DamagePacket(
+            CharacterManager source,
+            DamageType damageType,
+            int amount,
+            Vector3 hitPoint)
+        {
+            Source = source;
+            DamageType = damageType; // &lt;-- NÃO "Type = ..."
+            Amount = amount;
+            HitPoint = hitPoint;
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Damage/DamageResult.cs</div>
+<pre><code>namespace AF
+{
+    public readonly struct DamageResult
+    {
+        public readonly int RawAmount;
+        public readonly int FinalDamage;
+        public readonly DamageType DamageType;
+        public readonly CharacterManager Source;
+        public readonly bool WasBlocked; // invulnerável / cancelado
+
+        public DamageResult(
+            int rawAmount,
+            int finalDamage,
+            DamageType damageType,
+            CharacterManager source,
+            bool wasBlocked)
+        {
+            RawAmount = rawAmount;
+            FinalDamage = finalDamage;
+            DamageType = damageType;
+            Source = source;
+            WasBlocked = wasBlocked;
+        }
+
+        public static DamageResult Blocked(DamagePacket packet)
+        {
+            return new DamageResult(packet.Amount, 0, packet.DamageType, packet.Source, true);
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Damage/DamageResistance.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    [System.Serializable]
+    public struct DamageResistance
+    {
+        public DamageType damageType;
+
+        [Tooltip("0 = sem redução; 1 = imune")]
+        [Range(0f, 1f)]
+        public float reduction;
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Damage/ResistanceManager.cs</div>
+<pre><code>using System.Collections.Generic;
+using UnityEngine;
+
+namespace AF
+{
+    public class ResistanceManager : MonoBehaviour
+    {
+        public List&lt;DamageResistance&gt; resistances = new();
+
+        public float GetReduction(DamageType damageType)
+        {
+            if (damageType == null) return 0f;
+
+            for (int i = 0; i &lt; resistances.Count; i++)
+            {
+                if (resistances[i].damageType == damageType)
+                    return resistances[i].reduction;
+            }
+
+            return 0f;
+        }
+
+        public int ApplyReduction(DamageType damageType, int amount)
+        {
+            float reduction = GetReduction(damageType);
+            return Mathf.RoundToInt(amount * (1f - reduction));
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Damage/IDamageable.cs</div>
+<pre><code>namespace AF
+{
+    public interface IDamageable
+    {
+        DamageResult Receive(in DamagePacket packet);
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s2">2. Health + DeathReactor</h2>
+
+<div class="path">Assets/Scripts/Characters/Health.cs</div>
+<pre><code>using System;
+using UnityEngine;
+
+namespace AF
+{
+    public class Health : MonoBehaviour
+    {
+        [SerializeField] int maxHealth = 100;
+
+        public int Current { get; private set; }
+        public int Max =&gt; maxHealth;
+        public bool IsDead =&gt; Current &lt;= 0;
+
+        public event Action&lt;DamageResult&gt; OnDamaged;
+        public event Action OnDied;
+
+        void Awake()
+        {
+            Current = maxHealth;
+        }
+
+        public void SetMax(int value, bool refill = true)
+        {
+            maxHealth = Mathf.Max(1, value);
+            if (refill) Current = maxHealth;
+            else Current = Mathf.Min(Current, maxHealth);
+        }
+
+        public void Apply(in DamageResult result)
+        {
+            if (IsDead || result.WasBlocked || result.FinalDamage &lt;= 0)
+            {
+                if (result.WasBlocked)
+                    OnDamaged?.Invoke(result);
+                return;
+            }
+
+            Current = Mathf.Max(0, Current - result.FinalDamage);
+            OnDamaged?.Invoke(result);
+
+            if (Current == 0)
+                OnDied?.Invoke();
+        }
+
+        // Compatibilidade com código antigo que chama TakeDamage(int)
+        public void TakeDamage(int damage)
+        {
+            if (IsDead || damage &lt;= 0) return;
+
+            var result = new DamageResult(damage, damage, null, null, false);
+            Apply(result);
+        }
+
+        public bool IsDeadCheck() =&gt; IsDead;
+
+        // Alias para o teu código actual (IsDead())
+        public bool IsDeadLegacy() =&gt; IsDead;
+    }
+}</code></pre>
+
+<div class="card warn">
+  <span class="label warn">Nota de migração</span>
+  <p style="margin-bottom:0">O teu código chama <code>health.IsDead()</code> e <code>health.TakeDamage(int)</code>. Mantém estes métodos no ficheiro abaixo (versão final limpa), ou substitui as chamadas por <code>IsDead</code> / <code>Apply</code>.</p>
+</div>
+
+<div class="path">Assets/Scripts/Characters/Health.cs — versão limpa (recomendada)</div>
+<pre><code>using System;
+using UnityEngine;
+
+namespace AF
+{
+    public class Health : MonoBehaviour
+    {
+        [SerializeField] int maxHealth = 100;
+
+        public int Current { get; private set; }
+        public int Max =&gt; maxHealth;
+        public bool IsDead =&gt; Current &lt;= 0;
+
+        public event Action&lt;DamageResult&gt; OnDamaged;
+        public event Action OnDied;
+
+        void Awake()
+        {
+            Current = maxHealth;
+        }
+
+        public void Apply(in DamageResult result)
+        {
+            if (IsDead) return;
+            if (result.WasBlocked || result.FinalDamage &lt;= 0)
+            {
+                OnDamaged?.Invoke(result);
+                return;
+            }
+
+            Current = Mathf.Max(0, Current - result.FinalDamage);
+            OnDamaged?.Invoke(result);
+
+            if (Current == 0)
+                OnDied?.Invoke();
+        }
+
+        /// &lt;summary&gt;Compat: código antigo.&lt;/summary&gt;
+        public void TakeDamage(int damage)
+        {
+            Apply(new DamageResult(damage, damage, null, null, false));
+        }
+
+        public bool IsDead() =&gt; IsDead;
+    }
+}</code></pre>
+
+<div class="card fix">
+  <span class="label fix">Cuidado C#</span>
+  <p style="margin-bottom:0"><code>public bool IsDead =&gt; ...</code> e <code>public bool IsDead() =&gt; IsDead;</code> no mesmo tipo <strong>colide</strong> (propriedade vs método com o mesmo nome). Escolhe UMA: ou propriedade <code>IsDead</code> e actualizas as chamadas <code>health.IsDead()</code> → <code>health.IsDead</code>, ou só o método. Versão final abaixo usa só o método <code>IsDead()</code> para bater certo com o teu código actual.</p>
+</div>
+
+<div class="path">Assets/Scripts/Characters/Health.cs — FINAL (compatível com o teu código)</div>
+<pre><code>using System;
+using UnityEngine;
+
+namespace AF
+{
+    public class Health : MonoBehaviour
+    {
+        [SerializeField] int maxHealth = 100;
+        int current;
+
+        public int Current =&gt; current;
+        public int Max =&gt; maxHealth;
+
+        public event Action&lt;DamageResult&gt; OnDamaged;
+        public event Action OnDied;
+
+        void Awake()
+        {
+            current = maxHealth;
+        }
+
+        public bool IsDead() =&gt; current &lt;= 0;
+
+        public void Apply(in DamageResult result)
+        {
+            if (IsDead()) return;
+
+            if (result.WasBlocked || result.FinalDamage &lt;= 0)
+            {
+                OnDamaged?.Invoke(result);
+                return;
+            }
+
+            current = Mathf.Max(0, current - result.FinalDamage);
+            OnDamaged?.Invoke(result);
+
+            if (current == 0)
+                OnDied?.Invoke();
+        }
+
+        public void TakeDamage(int damage)
+        {
+            Apply(new DamageResult(damage, damage, null, null, false));
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Characters/DeathReactor.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    /// &lt;summary&gt;
+    /// Reage a Health.OnDied. Subscreve OnEnable / dessubscreve OnDisable.
+    /// &lt;/summary&gt;
+    public class DeathReactor : MonoBehaviour
+    {
+        [SerializeField] CharacterManager characterManager;
+        [SerializeField] Health health;
+
+        void OnEnable()
+        {
+            if (health != null)
+                health.OnDied += HandleDeath;
+        }
+
+        void OnDisable()
+        {
+            if (health != null)
+                health.OnDied -= HandleDeath;
+        }
+
+        void HandleDeath()
+        {
+            if (characterManager == null) return;
+
+            characterManager.animator.Play(AnimHashes.Death);
+            characterManager.agent.ResetPath();
+            characterManager.agent.enabled = false;
+            characterManager.isBusy = true;
+
+            CharacterManager player = GameContext.Player;
+            if (player != null &amp;&amp; player.lockOn != null)
+                player.lockOn.UnregisterChasingEnemy(characterManager);
+        }
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s3">3. Receivers + Hitbox</h2>
+
+<div class="path">Assets/Scripts/Characters/DamageReceiver.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    public class DamageReceiver : MonoBehaviour, IDamageable
+    {
+        [SerializeField] ResistanceManager resistanceManager;
+
+        public virtual DamageResult Receive(in DamagePacket packet)
+        {
+            if (IsInvulnerable())
+                return DamageResult.Blocked(packet);
+
+            int final = packet.Amount;
+            if (resistanceManager != null)
+                final = resistanceManager.ApplyReduction(packet.DamageType, packet.Amount);
+
+            var result = new DamageResult(
+                packet.Amount,
+                final,
+                packet.DamageType,
+                packet.Source,
+                false);
+
+            TakeDamage(result);
+            return result;
+        }
+
+        public virtual void TakeDamage(in DamageResult result)
+        {
+            // override no CharacterDamageReceiver
+        }
+
+        public virtual bool IsInvulnerable() =&gt; false;
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Characters/CharacterDamageReceiver.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    public class CharacterDamageReceiver : DamageReceiver
+    {
+        [SerializeField] CharacterManager characterManager;
+
+        public override void TakeDamage(in DamageResult result)
+        {
+            characterManager.health.Apply(result);
+        }
+
+        public override bool IsInvulnerable()
+        {
+            return characterManager.dodge != null &amp;&amp; characterManager.dodge.isDodging;
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Combat/Hitbox.cs</div>
+<pre><code>using System.Collections.Generic;
+using UnityEngine;
+
+namespace AF
+{
+    public class Hitbox : MonoBehaviour
+    {
+        [SerializeField] bool isActive;
+
+        readonly List&lt;IDamageable&gt; targetsHit = new();
+        CharacterManager hitboxOwner;
+
+        public Transform swingSpawnRef;
+
+        void Awake()
+        {
+            hitboxOwner = GetComponentInParent&lt;CharacterManager&gt;();
+        }
+
+        public void OpenHitbox()
+        {
+            targetsHit.Clear();
+            isActive = true;
+            hitboxOwner.combatManager.onHitboxOpen?.Invoke(this);
+        }
+
+        public void CloseHitbox()
+        {
+            isActive = false;
+            hitboxOwner.combatManager.onHitboxClose?.Invoke(this);
+        }
+
+        void OnTriggerStay(Collider other)
+        {
+            if (!isActive) return;
+
+            IDamageable damageable = null;
+
+            if (other.CompareTag("DamageReceiver")
+                &amp;&amp; other.TryGetComponent(out DamageReceiver receiver))
+            {
+                damageable = receiver;
+            }
+            else if (other.TryGetComponent(out CharacterManager cm)
+                     &amp;&amp; cm.characterDamageReceiver != null)
+            {
+                damageable = cm.characterDamageReceiver;
+            }
+
+            if (damageable == null) return;
+            HandleDamage(other, damageable);
+        }
+
+        void HandleDamage(Collider other, IDamageable damageable)
+        {
+            // Evitar self-hit
+            if (damageable is Component c
+                &amp;&amp; c.transform.root == hitboxOwner.transform.root)
+                return;
+
+            if (targetsHit.Contains(damageable)) return;
+            targetsHit.Add(damageable);
+
+            Vector3 hitPosition = other.ClosestPoint(other.transform.position);
+            hitboxOwner.combatManager.onEnemyHit?.Invoke(hitPosition);
+
+            if (!hitboxOwner.combatManager.TryBuildDamagePacket(hitPosition, out DamagePacket packet))
+                return;
+
+            damageable.Receive(packet);
+        }
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s4">4. Abilities</h2>
+
+<div class="path">Assets/Scripts/Abilities/Ability.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    public class Ability : ScriptableObject
+    {
+        [Header("Info")]
+        public new string name;
+        [TextArea] public string description;
+        public Sprite icon;
+
+        [Header("Cooldown")]
+        public float cooldown;
+
+        public virtual void OnStart(CharacterManager characterManager) { }
+        public virtual void OnEnd(CharacterManager characterManager) { }
+
+        /// &lt;summary&gt;
+        /// Devolve false se esta ability não causa dano directo (ex.: dodge).
+        /// &lt;/summary&gt;
+        public virtual bool TryBuildDamagePacket(
+            CharacterManager source,
+            Vector3 hitPoint,
+            out DamagePacket packet)
+        {
+            packet = default;
+            return false;
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Abilities/MeleeAttack.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    [CreateAssetMenu(menuName = "AF/Data/Ability/Melee Attack")]
+    public class MeleeAttack : Ability
+    {
+        [Header("Animation")]
+        public AnimationName[] animations;
+
+        [Header("Damage")]
+        public DamageType damageType;
+        public int damage = 20;
+
+        [Header("VFX")]
+        [SerializeField] GameObject swingEffect;
+        [SerializeField] GameObject hitImpact;
+
+        public override void OnStart(CharacterManager characterManager)
+        {
+            characterManager.combatManager.onEnemyHit.AddListener(OnEnemyHit);
+            characterManager.combatManager.onHitboxOpen.AddListener(OnHitboxOpen);
+            characterManager.combatManager.onHitboxClose.AddListener(OnHitboxClose);
+
+            if (animations != null &amp;&amp; animations.Length &gt; 0)
+            {
+                int i = Random.Range(0, animations.Length);
+                characterManager.animator.Play(animations[i].ToString());
+            }
+        }
+
+        public override void OnEnd(CharacterManager characterManager)
+        {
+            characterManager.combatManager.onEnemyHit.RemoveListener(OnEnemyHit);
+            characterManager.combatManager.onHitboxOpen.RemoveListener(OnHitboxOpen);
+            characterManager.combatManager.onHitboxClose.RemoveListener(OnHitboxClose);
+        }
+
+        public override bool TryBuildDamagePacket(
+            CharacterManager source,
+            Vector3 hitPoint,
+            out DamagePacket packet)
+        {
+            if (damageType == null || damage &lt;= 0)
+            {
+                packet = default;
+                return false;
+            }
+
+            packet = new DamagePacket(source, damageType, damage, hitPoint);
+            return true;
+        }
+
+        void OnHitboxOpen(Hitbox hitbox)
+        {
+            if (swingEffect != null &amp;&amp; hitbox.swingSpawnRef != null)
+                Object.Instantiate(swingEffect, hitbox.swingSpawnRef.position, Quaternion.identity);
+        }
+
+        void OnHitboxClose(Hitbox hitbox) { }
+
+        void OnEnemyHit(Vector3 hitPosition)
+        {
+            if (hitImpact != null)
+                Object.Instantiate(hitImpact, hitPosition, Quaternion.identity);
+        }
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s5">5. CombatManager + AutoAttack</h2>
+
+<div class="path">Assets/Scripts/Combat/CombatManager.cs</div>
+<pre><code>using UnityEngine;
+using UnityEngine.Events;
+
+namespace AF
+{
+    public class CombatManager : MonoBehaviour
+    {
+        [Header("Abilities")]
+        [SerializeField] Ability attackAbility;
+        [SerializeField] Ability specialAbility;
+
+        public Ability AttackAbility =&gt; attackAbility;
+        public Ability SpecialAbility =&gt; specialAbility;
+
+        [Header("Components")]
+        [SerializeField] CharacterManager characterManager;
+
+        [Header("Debug")]
+        [SerializeField] Ability currentAbility;
+
+        [HideInInspector] public UnityEvent&lt;Hitbox&gt; onHitboxOpen = new();
+        [HideInInspector] public UnityEvent&lt;Hitbox&gt; onHitboxClose = new();
+        [HideInInspector] public UnityEvent&lt;Vector3&gt; onEnemyHit = new();
+
+        // Runtime state (não muta o ScriptableObject)
+        float abilityCooldownEndTime;
+
+        public void Attack()
+        {
+            if (characterManager.isBusy) return;
+            if (Time.time &lt; abilityCooldownEndTime) return;
+            if (attackAbility == null) return;
+
+            characterManager.isBusy = true;
+            characterManager.agent.ResetPath();
+            SetCurrentAbility(attackAbility);
+        }
+
+        public void OnSpecialAbility()
+        {
+            if (characterManager.isBusy) return;
+            if (specialAbility == null) return;
+
+            characterManager.isBusy = true;
+            characterManager.agent.ResetPath();
+            SetCurrentAbility(specialAbility);
+        }
+
+        public void SetCurrentAbility(Ability next)
+        {
+            if (currentAbility != null)
+                currentAbility.OnEnd(characterManager);
+
+            // NÃO Instantiate — usa a referência partilhada do asset
+            currentAbility = next;
+            currentAbility?.OnStart(characterManager);
+
+            if (next != null)
+                abilityCooldownEndTime = Time.time + next.cooldown;
+        }
+
+        public Ability GetCurrentAbility() =&gt; currentAbility;
+
+        public bool TryBuildDamagePacket(Vector3 hitPoint, out DamagePacket packet)
+        {
+            if (currentAbility == null)
+            {
+                packet = default;
+                return false;
+            }
+
+            return currentAbility.TryBuildDamagePacket(characterManager, hitPoint, out packet);
+        }
+
+        public void EquipAttackAbility(Ability ability)
+        {
+            attackAbility = ability;
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Combat/AutoAttackController.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    public class AutoAttackController : MonoBehaviour
+    {
+        [SerializeField] CharacterManager characterManager;
+        [SerializeField] float engageRange = 2.5f;
+        [SerializeField] float attackInterval = 1.0f;
+
+        float attackTimer;
+
+        void OnEnable()
+        {
+            attackTimer = 0f;
+        }
+
+        public void SetAttackInterval(float interval)
+        {
+            attackInterval = Mathf.Max(0.05f, interval);
+        }
+
+        void Update()
+        {
+            if (characterManager == null) return;
+            if (characterManager.health.IsDead()) return;
+            if (characterManager.isBusy) return;
+
+            if (attackTimer &gt; 0f)
+                attackTimer -= Time.deltaTime;
+
+            if (!HasTargetInRange()) return;
+            if (attackTimer &gt; 0f) return;
+
+            characterManager.combatManager.Attack();
+            attackTimer = attackInterval;
+        }
+
+        bool HasTargetInRange()
+        {
+            LockOn lockOn = characterManager.lockOn;
+            if (lockOn == null || !lockOn.isLockedOn || lockOn.lockOnTarget == null)
+                return false;
+
+            float sqr = (lockOn.lockOnTarget.position - transform.position).sqrMagnitude;
+            return sqr &lt;= engageRange * engageRange;
+        }
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s6">6. Core</h2>
+
+<div class="path">Assets/Scripts/Core/GameContext.cs</div>
+<pre><code>namespace AF
+{
+    public static class GameContext
+    {
+        public static CharacterManager Player { get; private set; }
+
+        public static void SetPlayer(CharacterManager character)
+        {
+            Player = character;
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Core/AnimHashes.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    public static class AnimHashes
+    {
+        public static readonly int Death = Animator.StringToHash("Death");
+        public static readonly int Speed = Animator.StringToHash("Speed");
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s7">7. CharacterManager (ajustes)</h2>
+
+<div class="path">Assets/Scripts/CharacterManager.cs — substitui GetPlayer / IsPlayer / anim Speed</div>
+<pre><code>namespace AF
+{
+    using UnityEngine;
+    using UnityEngine.AI;
+
+    public class CharacterManager : MonoBehaviour
+    {
+        [Header("Name")]
+        public new string name = "";
+
+        [Header("Components")]
+        public Animator animator;
+        public NavMeshAgent agent;
+
+        [Header("Character Components")]
+        public Health health;
+        public Hitbox hitbox;
+        public CharacterDamageReceiver characterDamageReceiver;
+        public ResistanceManager resistanceManager;
+        public Dodge dodge;
+        public Perception perception;
+        public LockOn lockOn;
+        public CombatManager combatManager;
+
+        [Header("Locomotion")]
+        public float rotationSpeed = 10f;
+
+        public bool isBusy = false;
+
+        [Header("Patrol")]
+        public Transform[] patrolPoints;
+
+        float stoppingDistance;
+
+        void Awake()
+        {
+            stoppingDistance = agent.stoppingDistance;
+        }
+
+        void Start()
+        {
+            agent.updateRotation = false;
+        }
+
+        public void OnIdle()
+        {
+            isBusy = false;
+        }
+
+        void Update()
+        {
+            UpdateRotation();
+            UpdateAnimation();
+        }
+
+        public void Move(Vector3 direction)
+        {
+            if (isBusy) return;
+            agent.SetDestination(transform.position + direction);
+        }
+
+        public void Stop()
+        {
+            agent.ResetPath();
+        }
+
+        void UpdateRotation()
+        {
+            if (health.IsDead()) return;
+
+            if (lockOn != null &amp;&amp; lockOn.isLockedOn &amp;&amp; lockOn.lockOnTarget != null)
+            {
+                Vector3 dir = lockOn.lockOnTarget.position - agent.nextPosition;
+                dir.y = 0f;
+                Quaternion targetRot = Quaternion.LookRotation(dir.normalized);
+                float t = Mathf.Clamp01(lockOn.lockOnRotationSpeed * Time.deltaTime);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, t);
+                return;
+            }
+
+            Vector3 moveDir = agent.desiredVelocity;
+            if (moveDir.sqrMagnitude &lt; 0.01f) return;
+
+            Quaternion moveRot = Quaternion.LookRotation(moveDir.normalized);
+            transform.rotation = Quaternion.Slerp(transform.rotation, moveRot, rotationSpeed * Time.deltaTime);
+        }
+
+        void UpdateAnimation()
+        {
+            animator.SetFloat(AnimHashes.Speed, agent.desiredVelocity.magnitude, 0.1f, Time.deltaTime);
+        }
+
+        public bool IsPlayer() =&gt; GameContext.Player == this;
+
+        public CharacterManager GetPlayer() =&gt; GameContext.Player;
+
+        public Vector3 GetDodgeDirection()
+        {
+            // Mantém a tua lógica no PlayerInput; fallback:
+            return transform.forward;
+        }
+
+        public void GiveControlToAI()
+        {
+            agent.stoppingDistance = stoppingDistance;
+        }
+
+        public void GiveControlToPlayer()
+        {
+            agent.stoppingDistance = 0f;
+            GameContext.SetPlayer(this);
+        }
+    }
+}</code></pre>
+
+<div class="card warn">
+  <span class="label warn">PlayerInput</span>
+  <p style="margin-bottom:0">No teu <code>PlayerInput.SetCharacter</code>, quando chamas <code>GiveControlToPlayer()</code>, o <code>GameContext.Player</code> fica definido. Podes também chamar <code>GameContext.SetPlayer(character)</code> explicitamente no <code>SetCharacter</code>. O <code>GetDodgeDirection</code> no CharacterManager acima é stub — mantém o teu método actual que usa <code>PlayerInput</code> se ainda precisares, ou passa a direcção pelo input.</p>
+</div>
+
+<div class="path">Assets/Scripts/PlayerInput.cs — só o SetCharacter (patch)</div>
+<pre><code>void SetCharacter(CharacterManager character)
+{
+    if (characterManager != null)
+        characterManager.GiveControlToAI();
+
+    characterManager = character;
+    characterManager.GiveControlToPlayer(); // já faz GameContext.SetPlayer(this)
+    onSetCurrentCharacter?.Invoke(characterManager);
+}
+
+public Vector3 GetDodgeDirection()
+{
+    // ... o teu código actual de câmara/joystick ...
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s8">8. AI — estado de combate fora do SO</h2>
+
+<div class="path">Assets/Scripts/AI/CombatStateRuntime.cs</div>
+<pre><code>namespace AF
+{
+    /// &lt;summary&gt;
+    /// Estado mutável da IA de combate — NÃO vive dentro do ScriptableObject.
+    /// &lt;/summary&gt;
+    public class CombatStateRuntime
+    {
+        public float LastAttackTime = float.NegativeInfinity;
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/StateMachine.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    public class StateMachine : MonoBehaviour
+    {
+        public CharacterManager character;
+
+        [Header("AI States")]
+        public AIState idleState;
+        public AIState patrolState;
+        public AIState chaseState;
+        public AIState combatState;
+
+        [HideInInspector] public AIState currentState;
+
+        // Runtime por personagem (não clona o SO)
+        public readonly CombatStateRuntime CombatRuntime = new();
+
+        void Start()
+        {
+            SwitchState(patrolState != null ? patrolState : idleState);
+        }
+
+        void Update()
+        {
+            if (!character.IsPlayer())
+                currentState?.Tick(this);
+        }
+
+        public void SwitchState(AIState newState)
+        {
+            if (newState == null) return;
+            // Compara por tipo de asset original se precisares; aqui usamos referência do asset
+            if (currentState == newState) return;
+
+            currentState?.Exit(this);
+            currentState = newState; // NÃO Instantiate
+            currentState?.Enter(this);
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/StateCombat.cs — usa CombatRuntime</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    [CreateAssetMenu(menuName = "AF/AI/States/Combat")]
+    public class StateCombat : AIState
+    {
+        [Header("Attack")]
+        public float attackCooldown = 1.2f;
+
+        [Header("Disengage")]
+        public float disengageMultiplier = 1.3f;
+
+        public override void Enter(StateMachine controller)
+        {
+            controller.CombatRuntime.LastAttackTime = -attackCooldown;
+            controller.character.Stop();
+        }
+
+        public override void Tick(StateMachine controller)
+        {
+            var player = controller.character.GetPlayer();
+            if (player == null) return;
+
+            float sqrDist = (controller.transform.position - player.transform.position).sqrMagnitude;
+            float sight = controller.character.perception.sightRange;
+            float disengageSqr = (sight * disengageMultiplier) * (sight * disengageMultiplier);
+            float stop = controller.character.agent.stoppingDistance;
+            float stopSqr = stop * stop;
+
+            if (player.health.IsDead())
+            {
+                controller.SwitchState(controller.patrolState != null
+                    ? controller.patrolState
+                    : controller.idleState);
+                return;
+            }
+
+            if (sqrDist &gt; disengageSqr || sqrDist &gt; stopSqr)
+            {
+                controller.SwitchState(controller.chaseState);
+                return;
+            }
+
+            Vector3 dir = player.transform.position - controller.transform.position;
+            dir.y = 0f;
+            if (dir.sqrMagnitude &gt; 0.01f)
+            {
+                Quaternion rot = Quaternion.LookRotation(dir);
+                controller.transform.rotation = Quaternion.Slerp(
+                    controller.transform.rotation,
+                    rot,
+                    Time.deltaTime * controller.character.rotationSpeed);
+            }
+
+            if (!controller.character.isBusy
+                &amp;&amp; Time.time &gt;= controller.CombatRuntime.LastAttackTime + attackCooldown)
+            {
+                controller.CombatRuntime.LastAttackTime = Time.time;
+                controller.character.combatManager.Attack();
+            }
+        }
+
+        public override void Exit(StateMachine controller)
+        {
+            controller.character.Stop();
+        }
+    }
+}</code></pre>
+
+<div class="card warn">
+  <span class="label warn">Partilhar SO de AIState entre inimigos</span>
+  <p style="margin-bottom:0">Se vários inimigos usam o <strong>mesmo</strong> asset <code>StateCombat</code> e o SO for 100% sem estado (como acima), está correcto. O estado (<code>LastAttackTime</code>) está no <code>StateMachine.CombatRuntime</code> de cada inimigo. Não voltes a pôr campos mutáveis no SO.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s9">9. Ordem de wiring no Unity</h2>
+
+<ol>
+  <li>Create → AF/Damage/Damage Type → cria <code>DT_Slash</code>, <code>DT_Fire</code>, etc.</li>
+  <li>No asset <code>MeleeAttack</code>: remove os 5 campos antigos; arrasta <code>damageType</code> + define <code>damage</code>.</li>
+  <li>No personagem: adiciona <code>ResistanceManager</code>, <code>DeathReactor</code>, (opcional) <code>AutoAttackController</code>.</li>
+  <li><code>DeathReactor</code>: liga <code>health</code> + <code>characterManager</code>.</li>
+  <li><code>CharacterDamageReceiver</code> / <code>DamageReceiver</code>: liga <code>resistanceManager</code>.</li>
+  <li><code>CharacterManager</code>: liga <code>resistanceManager</code>.</li>
+  <li>Substitui ficheiros um a um: DamagePacket (fix CS0171) → Health → Receivers → Hitbox → MeleeAttack → CombatManager → StateMachine/StateCombat.</li>
+  <li>Play mode: ataca um dummy; confirma redução multiplicativa e morte via DeathReactor.</li>
+</ol>
+
+<div class="card">
+  <span class="label ok">Checklist rápido</span>
+  <ul style="margin-bottom:0">
+    <li><code>DamagePacket</code> construtor: <code>DamageType = type;</code></li>
+    <li><code>ResistanceManager</code>: compara <code>packet.DamageType</code></li>
+    <li>Fórmula: <code>amount * (1f - reduction)</code></li>
+    <li>Sem <code>Instantiate</code> de Ability / AIState</li>
+    <li>Sem Event Bus — só <code>Health.OnDied</code> local</li>
+  </ul>
+</div>
+
+<footer>
+  Documento único e incremental. Próxima secção a acrescentar quando quiseres: WeaponItem, BuffLoadout, CharacterClass, Blacksmith / PlayerProfile.
+</footer>
+
+</div>
+</body>
+</html>

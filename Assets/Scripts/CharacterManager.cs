@@ -30,7 +30,6 @@ namespace AF
         [Header("Patrol")]
         public Transform[] patrolPoints;
 
-        PlayerInput _playerInput;
 
         float stoppingDistance;
 
@@ -73,7 +72,7 @@ namespace AF
 
         void UpdateRotation()
         {
-            if (health.IsDead())
+            if (health.IsDead)
             {
                 return;
             }
@@ -109,29 +108,12 @@ namespace AF
 
         public bool IsPlayer()
         {
-            return GetPlayerInput().characterManager == this;
+            return GameContext.Player == this;
         }
 
         public CharacterManager GetPlayer()
         {
-            return GetPlayerInput().characterManager;
-        }
-
-        public PlayerInput GetPlayerInput()
-        {
-            if (_playerInput == null)
-            {
-                _playerInput = FindAnyObjectByType<PlayerInput>(FindObjectsInactive.Include);
-            }
-
-            return _playerInput;
-        }
-
-        public Vector3 GetDodgeDirection()
-        {
-            if (IsPlayer()) return GetPlayerInput().GetDodgeDirection();
-
-            return transform.forward;
+            return GameContext.Player;
         }
 
         public void GiveControlToAI()
@@ -142,6 +124,7 @@ namespace AF
         public void GiveControlToPlayer()
         {
             agent.stoppingDistance = 0;
+            GameContext.SetPlayer(this);
         }
     }
 }

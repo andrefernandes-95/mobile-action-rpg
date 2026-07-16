@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>As Profundezas — Combate, Classes e Itens (inspiração)</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242836;
+      --text: #e6e9f0;
+      --muted: #9aa3b5;
+      --accent: #6c9eff;
+      --accent2: #7ee787;
+      --warn: #f0b429;
+      --border: #343a4d;
+      --code-bg: #12151c;
+      --keyword: #82aaff;
+      --string: #c3e88d;
+      --comment: #546e7a;
+      --type: #ffcb6b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .wrap { max-width: 960px; margin: 0 auto; }
+
+    header {
+      margin-bottom: 2.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+    .subtitle { color: var(--muted); font-size: 1.05rem; }
+
+    h2 {
+      font-size: 1.4rem;
+      margin: 2.5rem 0 0.75rem;
+      color: var(--accent);
+      padding-top: 0.5rem;
+    }
+
+    h3 { font-size: 1.08rem; margin: 1.6rem 0 0.5rem; color: var(--accent2); }
+    h4 { font-size: 0.98rem; margin: 1.2rem 0 0.4rem; color: var(--type); }
+
+    p, li { margin-bottom: 0.65rem; }
+    ul, ol { padding-left: 1.35rem; margin-bottom: 1rem; }
+    a { color: var(--accent); }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.35rem;
+      margin: 1rem 0 1.5rem;
+    }
+    .card.warn { border-color: #6b5420; background: #1c1810; }
+    .card.tip { border-color: #1f4d35; background: #101a14; }
+    .card.info { border-color: #234; background: #0f1620; }
+
+    .label {
+      display: inline-block;
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; padding: 0.2rem 0.5rem; border-radius: 4px;
+      margin-bottom: 0.6rem;
+    }
+    .label.goal { background: #1e3a5f; color: var(--accent); }
+    .label.warn { background: #4a3810; color: var(--warn); }
+    .label.tip  { background: #1a3d2b; color: var(--accent2); }
+    .label.info { background: #1e2f45; color: var(--accent); }
+
+    .flow {
+      font-family: Consolas, "Cascadia Code", monospace;
+      font-size: 0.8rem;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+      white-space: pre;
+      line-height: 1.5;
+      color: var(--muted);
+      margin: 1rem 0;
+    }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      font-family: Consolas, "Cascadia Code", monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      margin: 0.75rem 0 1.25rem;
+    }
+    code {
+      font-family: Consolas, "Cascadia Code", monospace;
+      font-size: 0.9em;
+      background: var(--surface2);
+      padding: 0.1em 0.35em;
+      border-radius: 4px;
+    }
+    pre code { background: none; padding: 0; font-size: 1em; }
+
+    .filename {
+      display: block;
+      font-family: Consolas, "Cascadia Code", monospace;
+      font-size: 0.75rem;
+      color: var(--accent2);
+      margin: 1rem 0 -0.5rem;
+      padding-left: 0.2rem;
+    }
+    .filename::before { content: "\01F4C4  "; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.9rem; }
+    th, td { border: 1px solid var(--border); padding: 0.55rem 0.75rem; text-align: left; vertical-align: top; }
+    th { background: var(--surface2); color: var(--accent); }
+
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.35rem;
+      margin: 1.5rem 0;
+    }
+    .toc ol { margin-bottom: 0; }
+    .toc a { text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+
+    footer {
+      margin-top: 3rem; padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted); font-size: 0.9rem;
+    }
+
+    .pill {
+      display: inline-block; font-size: 0.72rem; font-weight: 600;
+      padding: 0.15rem 0.5rem; border-radius: 999px;
+      border: 1px solid var(--border); color: var(--muted); margin-left: 0.4rem;
+    }
+    .pill.new { color: var(--accent2); border-color: #1f4d35; }
+    .pill.exists { color: var(--accent); border-color: #234; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>As Profundezas — Combate, Classes e Itens</h1>
+    <p class="subtitle">Documento de <strong>inspiração</strong>: código ilustrativo em C# para o combate estilo Vampire Survivors + Soulslike, classes de personagem e itens (armas, buffs, minérios). Pensado para leres, perceberes e implementares tu próprio.</p>
+  </header>
+
+  <div class="card warn">
+    <span class="label warn">Lê primeiro</span>
+    <p>Este ficheiro <strong>não é para colar directamente no projecto</strong>. É um mapa de ideias com código de exemplo. Cada bloco existe para explicar <em>uma decisão de arquitectura</em> — o objectivo é dar-te intuição para depois escreveres a tua própria versão, coerente com o que já tens.</p>
+    <p style="margin-bottom:0">As convenções seguem o teu projecto real: namespace <code>AF</code>, habilidades como <code>ScriptableObject</code> (tal como <code>Ability</code>, <code>MeleeAttack</code>, <code>DodgeAbility</code>), e o <code>CharacterManager</code> como hub central de referências.</p>
+  </div>
+
+  <div class="toc">
+    <strong>Índice</strong>
+    <ol>
+      <li><a href="#arquitetura">O que já tens (mapa mental)</a></li>
+      <li><a href="#combate">Sistema de combate — auto-ataque com timing</a></li>
+      <li><a href="#classes">Classes de personagem</a></li>
+      <li><a href="#itens">Itens — armas, buffs e minérios</a></li>
+      <li><a href="#ligar">Como tudo se liga</a></li>
+      <li><a href="#persistencia">Persistência e New Game Plus</a></li>
+      <li><a href="#proximos">Próximos passos e exercícios</a></li>
+    </ol>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="arquitetura">1. O que já tens (mapa mental)</h2>
+
+  <p>Antes de adicionar seja o que for, vale a pena ver o fluxo de combate que já existe no projecto. Pensa nisto como a "árvore de componentes" de uma app front-end: há um componente-raiz (<code>CharacterManager</code>) que segura referências para os filhos especializados.</p>
+
+  <div class="flow">CharacterManager  (o "componente-raiz" — segura referências)
+   ├── Health              vida + morte
+   ├── Hitbox              volume que causa dano quando "aberto"
+   ├── CharacterDamageReceiver   recebe dano (com reduções por tipo)
+   ├── Dodge               esquiva com i-frames
+   ├── Perception          deteta inimigos
+   ├── LockOn              escolhe o alvo mais próximo
+   └── CombatManager       orquestra as habilidades
+
+Fluxo de um ataque hoje (manual):
+CombatManager.Attack()
+   → SetCurrentAbility(attackAbility)        // Instantiate do ScriptableObject
+      → MeleeAttack.OnStart()                // toca animação, subscreve eventos
+         → (animação abre a Hitbox)
+            → Hitbox.OpenHitbox()            // dispara onHitboxOpen
+               → OnTriggerStay deteta alvo
+                  → DamageReceiver.ApplyDamage()  // calcula dano por tipo
+                     → Health.TakeDamage()</div>
+
+  <div class="card info">
+    <span class="label info">A observação-chave</span>
+    <p>O teu ataque já é <strong>dirigido por dados</strong>: o <code>MeleeAttack</code> é um <code>ScriptableObject</code> com os valores de dano. Isto é exactamente o alicerce certo para Vampire Survivors — só falta uma peça: <strong>quem carrega no botão de atacar</strong>. Hoje é manual (<code>CombatManager.Attack()</code>); vamos torná-lo automático e ritmado.</p>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="combate">2. Sistema de combate — auto-ataque com timing</h2>
+
+  <p>O requisito: <em>"a arma ataca automaticamente de X em X tempo (configurável por arma e skills)"</em> e <em>"quando um inimigo está presente e junto a nós, ficamos em lock-on virados para ele"</em>. Boas notícias: o lock-on já faz metade disto. Falta o <strong>relógio</strong> que dispara o ataque.</p>
+
+  <h3>2.1 A ideia: um temporizador que "carrega no botão" por ti</h3>
+
+  <p>Analogia front-end: é como um <code>setInterval</code> que, a cada tick, verifica "há alvo válido?" e, se sim, invoca a acção de ataque. A diferença é que em Unity não usamos <code>setInterval</code> — descontamos <code>Time.deltaTime</code> a um contador dentro do <code>Update()</code>, para respeitar pausas e a escala de tempo do jogo.</p>
+
+  <span class="filename">Assets/Scripts/Combat/AutoAttackController.cs <span class="pill new">novo</span></span>
+<pre><code>namespace AF
+{
+    using UnityEngine;
+
+    // Vive no mesmo GameObject do CharacterManager (jogador E inimigos podem usá-lo).
+    public class AutoAttackController : MonoBehaviour
+    {
+        [SerializeField] CharacterManager characterManager;
+
+        [Header("Arma equipada (dados)")]
+        [SerializeField] WeaponItem equippedWeapon;   // ver secção 4
+
+        [Header("Alcance de deteção do alvo")]
+        [SerializeField] float engageRange = 2.5f;
+
+        float attackTimer;
+
+        void OnEnable()
+        {
+            // Começa "pronto a atacar" para o primeiro golpe não ter delay artificial.
+            attackTimer = 0f;
+        }
+
+        void Update()
+        {
+            if (equippedWeapon == null) return;
+            if (characterManager.health.IsDead()) return;
+            if (characterManager.isBusy) return;      // já está a meio de uma ação
+
+            // 1) O relógio corre sempre, mesmo sem alvo — assim o primeiro golpe é imediato.
+            if (attackTimer > 0f)
+                attackTimer -= Time.deltaTime;
+
+            // 2) Sem alvo válido em alcance? Não gastamos o ataque.
+            if (!HasTargetInRange()) return;
+
+            // 3) Ainda em cooldown? Espera.
+            if (attackTimer > 0f) return;
+
+            // 4) Ataca e rearma o relógio com o intervalo DA ARMA.
+            characterManager.combatManager.Attack();
+            attackTimer = equippedWeapon.GetAttackInterval();
+        }
+
+        bool HasTargetInRange()
+        {
+            LockOn lockOn = characterManager.lockOn;
+            if (lockOn == null || !lockOn.isLockedOn || lockOn.lockOnTarget == null)
+                return false;
+
+            float sqrDist =
+                (lockOn.lockOnTarget.position - transform.position).sqrMagnitude;
+
+            return sqrDist &lt;= engageRange * engageRange;
+        }
+    }
+}</code></pre>
+
+  <div class="card tip">
+    <span class="label tip">Porque comparar <code>sqrMagnitude</code> e não <code>Distance</code>?</span>
+    <p>Calcular uma distância real precisa de uma raiz quadrada (lenta). Comparar o <em>quadrado</em> da distância com o <em>quadrado</em> do alcance dá o mesmo resultado booleano sem a raiz. É o mesmo truque que o teu <code>LockOn</code> já usa (repara no <code>closestSqrDist</code>). Micro-otimização, mas grátis e idiomática.</p>
+  </div>
+
+  <h3>2.2 O "X em X tempo configurável por arma e skills"</h3>
+
+  <p>Repara na linha <code>attackTimer = equippedWeapon.GetAttackInterval();</code>. O intervalo não está no controlador — está <strong>na arma</strong>. É isso que torna cada arma diferente: um machado pesado de Orc pode ter intervalo <code>1.4s</code>, uma adaga <code>0.4s</code>. E as "skills" podem reduzir esse intervalo (ver secção 4 sobre buffs).</p>
+
+  <div class="card warn">
+    <span class="label warn">Ponto de fricção que discutimos</span>
+    <p>No GDD anotámos que <strong>inimigos e jogador partilham armas/habilidades</strong>. Este <code>AutoAttackController</code> foi desenhado a pensar nisso: como lê tudo do <code>CharacterManager</code> e da <code>WeaponItem</code>, o <em>mesmo</em> script serve para um esqueleto inimigo ou para o teu Orc. A diferença é só que dados lá pões. Coerência de mundo com custo de código zero — mas lembra-te: cada arma tem agora de ser balanceada nos <strong>dois</strong> lados.</p>
+  </div>
+
+  <h3>2.3 Uma pequena melhoria ao <code>CombatManager</code></h3>
+
+  <p>Hoje o teu <code>CombatManager</code> tem a <code>attackAbility</code> fixada no Inspector. Se a arma é que manda, faz sentido a arma <em>fornecer</em> a habilidade de ataque. Uma forma minimamente invasiva:</p>
+
+  <span class="filename">Assets/Scripts/CombatManager.cs <span class="pill exists">alteração sugerida</span></span>
+<pre><code>// ... dentro de CombatManager, além do que já tens:
+
+public void EquipWeapon(WeaponItem weapon)
+{
+    // A arma traz a sua própria habilidade de ataque (um MeleeAttack, por ex.).
+    attackAbility = weapon.attackAbility;
+}
+</code></pre>
+
+  <p>Assim, trocar de arma passa a ser "trocar os dados", e o <code>AutoAttackController</code> nem precisa de saber que a arma mudou — continua a chamar <code>combatManager.Attack()</code>. Baixo acoplamento: cada peça sabe o mínimo sobre as outras.</p>
+
+  <h3>2.4 E o "timing é essencial"? (a alma soulslike)</h3>
+
+  <p>Se o ataque é automático, onde entra a perícia do jogador? Nas <strong>duas coisas que ficam manuais</strong>: mover-se e esquivar. O teu <code>DodgeAbility</code> + os i-frames do <code>CharacterDamageReceiver</code> (repara: <code>IsInvulnerable()</code> devolve <code>characterManager.dodge.isDodging</code>) já são a base. O jogador não escolhe <em>quando</em> ataca; escolhe <em>onde está</em> e <em>quando fica invulnerável</em>. É o mesmo contrato de Vampire Survivors, mas com a leitura de padrões de um Souls.</p>
+
+  <div class="flow">Auto-ataque  →  tira a decisão de "quando bater" (ritmo constante)
+Dodge + i-frames  →  devolve a decisão de "quando não levar" (timing)
+Posicionamento  →  a terceira decisão contínua (alcance, hordas)</div>
+
+  <!-- ============================================================ -->
+  <h2 id="classes">3. Classes de personagem</h2>
+
+  <p>Requisito: <em>"personagem principal deriva de heróis pré-feitos com classes predefinidas; o Orc usa armas pesadas (machados, grandes espadas)"</em>. Traduzido: cada classe é um <strong>conjunto de dados</strong> — vida base, poder base, que tipos de arma pode usar e com que arma começa.</p>
+
+  <h3>3.1 Um enum para tipos de arma</h3>
+
+  <span class="filename">Assets/Scripts/Items/WeaponType.cs <span class="pill new">novo</span></span>
+<pre><code>namespace AF
+{
+    public enum WeaponType
+    {
+        Heavy,   // machados, grandes espadas — o Orc
+        Sword,
+        Dagger,
+        Staff,
+        Bow
+    }
+}</code></pre>
+
+  <h3>3.2 A classe como <code>ScriptableObject</code></h3>
+
+  <p>Porquê <code>ScriptableObject</code> outra vez? Porque uma "classe" é <strong>dados partilhados e imutáveis</strong> — como um módulo de configuração que importas. Todos os Orcs partilham a mesma definição de classe; não faz sentido cada instância carregar a sua cópia. (Front-end: é a diferença entre uma constante exportada de um módulo e o estado local de um componente.)</p>
+
+  <span class="filename">Assets/Scripts/Classes/CharacterClass.cs <span class="pill new">novo</span></span>
+<pre><code>namespace AF
+{
+    using UnityEngine;
+
+    [CreateAssetMenu(menuName = "AF/Data/Character Class")]
+    public class CharacterClass : ScriptableObject
+    {
+        [Header("Identidade")]
+        public string className;
+        [TextArea] public string description;
+        public Sprite portrait;
+
+        [Header("Atributos base")]
+        public int baseHealth = 100;
+        public int baseAttackPower = 10;
+        public float baseMoveSpeed = 3.5f;
+
+        [Header("Restrições de arma")]
+        public WeaponType[] allowedWeaponTypes;
+        public WeaponItem startingWeapon;
+
+        public bool CanUse(WeaponItem weapon)
+        {
+            foreach (WeaponType allowed in allowedWeaponTypes)
+                if (allowed == weapon.weaponType)
+                    return true;
+            return false;
+        }
+    }
+}</code></pre>
+
+  <h3>3.3 Aplicar a classe ao personagem</h3>
+
+  <p>Quando o personagem nasce, "aplica" a classe: define a vida no <code>Health</code> e equipa a arma inicial. Um pequeno componente trata disto no <code>Awake()</code>.</p>
+
+  <span class="filename">Assets/Scripts/Classes/CharacterClassProfile.cs <span class="pill new">novo</span></span>
+<pre><code>namespace AF
+{
+    using UnityEngine;
+
+    public class CharacterClassProfile : MonoBehaviour
+    {
+        [SerializeField] CharacterManager characterManager;
+        [SerializeField] CharacterClass characterClass;
+        [SerializeField] AutoAttackController autoAttack;
+
+        void Awake()
+        {
+            // Atributos base vindos da classe.
+            characterManager.health.health = characterClass.baseHealth;
+
+            // Equipa a arma inicial (se a classe a permitir — deve permitir).
+            WeaponItem starting = characterClass.startingWeapon;
+            if (starting != null &amp;&amp; characterClass.CanUse(starting))
+            {
+                characterManager.combatManager.EquipWeapon(starting);
+                autoAttack.SetWeapon(starting);   // pequeno setter no controlador
+            }
+        }
+    }
+}</code></pre>
+
+  <div class="card tip">
+    <span class="label tip">Exemplo: a classe Orc</span>
+    <p>No Unity criarias um asset (botão direito → Create → AF → Data → Character Class) e preenchias:</p>
+    <ul style="margin-bottom:0">
+      <li><code>className</code>: "Orc"</li>
+      <li><code>baseHealth</code>: 140 (é resistente)</li>
+      <li><code>baseAttackPower</code>: 14</li>
+      <li><code>allowedWeaponTypes</code>: <code>[ Heavy ]</code> — só armas pesadas</li>
+      <li><code>startingWeapon</code>: o asset "Machado Grande"</li>
+    </ul>
+  </div>
+
+  <p>Repara que <strong>não escreves uma classe C# por cada herói</strong>. "Orc", "Goblin", etc. são todos <em>assets</em> do mesmo tipo <code>CharacterClass</code>. Adicionar uma classe nova é criar um ficheiro de dados, não compilar código. É esta a magia do design orientado a dados que o teu projecto já abraça.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="itens">4. Itens — armas, buffs e minérios</h2>
+
+  <h3>4.1 Armas <span class="pill new">novo</span></h3>
+
+  <p>A arma junta três coisas: <strong>identidade</strong> (nome, ícone, tipo), <strong>comportamento</strong> (a habilidade de ataque) e <strong>ritmo/poder</strong> (intervalo e escalonamento por upgrade).</p>
+
+  <span class="filename">Assets/Scripts/Items/WeaponItem.cs</span>
+<pre><code>namespace AF
+{
+    using UnityEngine;
+
+    [CreateAssetMenu(menuName = "AF/Data/Item/Weapon")]
+    public class WeaponItem : ScriptableObject
+    {
+        [Header("Identidade")]
+        public string displayName;
+        [TextArea] public string description;
+        public Sprite icon;
+        public WeaponType weaponType;
+
+        [Header("Comportamento de ataque")]
+        public MeleeAttack attackAbility;   // reutiliza o teu Ability existente!
+
+        [Header("Ritmo")]
+        public float baseAttackInterval = 1.2f;      // segundos entre golpes
+        public float intervalReductionPerLevel = 0.03f;
+        public float minInterval = 0.2f;             // teto de velocidade
+
+        [Header("Progressão (ferreiro)")]
+        [Range(0, 10)] public int upgradeLevel = 0;
+        public int bonusDamagePerLevel = 2;
+
+        public float GetAttackInterval()
+        {
+            float interval = baseAttackInterval - upgradeLevel * intervalReductionPerLevel;
+            return Mathf.Max(minInterval, interval);
+        }
+    }
+}</code></pre>
+
+  <div class="card warn">
+    <span class="label warn">Armadilha importante: não mutes o ScriptableObject em runtime</span>
+    <p>Tentador: subir de nível a arma fazendo <code>weapon.upgradeLevel++</code>. <strong>Não faças isso.</strong> Um <code>ScriptableObject</code> é um asset partilhado — mudá-lo em runtime altera o ficheiro no editor e afecta <em>todas</em> as instâncias e saves. É o equivalente a mutar um objecto importado de um módulo global em JS: parece que funciona, até rebentar.</p>
+    <p style="margin-bottom:0">Solução: guarda o nível de upgrade <strong>por save</strong>, numa estrutura à parte (ver secção 6), e usa o asset só como "valores base". O <code>upgradeLevel</code> no exemplo acima é para prototipagem rápida — em produção, vem do save.</p>
+  </div>
+
+  <h3>4.2 Buffs (os "anéis") — no máximo 2 <span class="pill new">novo</span></h3>
+
+  <p>Requisito: <em>"podes ter até dois buffs de uma só vez (alteram mecânicas de jogo, como os anéis em Dark Souls)"</em>. A palavra-chave é <strong>mecânicas</strong>, não só números. Por isso um buff não é um saco de <code>+10 força</code>: é um objecto com <code>OnEquip</code> / <code>OnUnequip</code> que pode mexer no que quiser.</p>
+
+  <span class="filename">Assets/Scripts/Items/BuffItem.cs</span>
+<pre><code>namespace AF
+{
+    using UnityEngine;
+
+    // Abstrato: cada buff concreto decide o que faz ao ser equipado.
+    public abstract class BuffItem : ScriptableObject
+    {
+        [Header("Identidade")]
+        public string buffName;
+        [TextArea] public string description;
+        public Sprite icon;
+
+        public abstract void OnEquip(CharacterManager characterManager);
+        public abstract void OnUnequip(CharacterManager characterManager);
+    }
+}</code></pre>
+
+  <h4>Exemplo de buff concreto</h4>
+
+  <span class="filename">Assets/Scripts/Items/Buffs/SwiftStrikesBuff.cs</span>
+<pre><code>namespace AF
+{
+    using UnityEngine;
+
+    [CreateAssetMenu(menuName = "AF/Data/Item/Buff/Swift Strikes")]
+    public class SwiftStrikesBuff : BuffItem
+    {
+        [Range(0f, 0.5f)] public float attackSpeedBonus = 0.2f; // 20% mais rápido
+
+        public override void OnEquip(CharacterManager cm)
+        {
+            var auto = cm.GetComponent&lt;AutoAttackController&gt;();
+            if (auto != null) auto.AddIntervalMultiplier(1f - attackSpeedBonus);
+        }
+
+        public override void OnUnequip(CharacterManager cm)
+        {
+            var auto = cm.GetComponent&lt;AutoAttackController&gt;();
+            if (auto != null) auto.RemoveIntervalMultiplier(1f - attackSpeedBonus);
+        }
+    }
+}</code></pre>
+
+  <p>Isto implica um pequeno acrescento ao <code>AutoAttackController</code> — um multiplicador de intervalo que os buffs empilham. Deixo-te a assinatura como desafio (ver secção 7), mas a ideia é: o intervalo final = <code>weapon.GetAttackInterval() * produtoDosMultiplicadores</code>.</p>
+
+  <h4>O "loadout" de 2 buffs</h4>
+
+  <span class="filename">Assets/Scripts/Items/BuffLoadout.cs</span>
+<pre><code>namespace AF
+{
+    using System.Collections.Generic;
+    using UnityEngine;
+
+    public class BuffLoadout : MonoBehaviour
+    {
+        public const int MaxBuffs = 2;   // a regra do design, num só sítio
+
+        [SerializeField] CharacterManager characterManager;
+        readonly List&lt;BuffItem&gt; equipped = new();
+
+        public bool Equip(BuffItem buff)
+        {
+            if (equipped.Count &gt;= MaxBuffs) return false;   // cheio
+            if (equipped.Contains(buff)) return false;       // já equipado
+
+            equipped.Add(buff);
+            buff.OnEquip(characterManager);
+            return true;
+        }
+
+        public void Unequip(BuffItem buff)
+        {
+            if (equipped.Remove(buff))
+                buff.OnUnequip(characterManager);
+        }
+
+        public IReadOnlyList&lt;BuffItem&gt; Equipped =&gt; equipped;
+    }
+}</code></pre>
+
+  <div class="card tip">
+    <span class="label tip">Nota de tom (liga ao GDD)</span>
+    <p>Como os buffs vêm de heróis derrotados, os nomes são espaço para a sátira: um anel "Currículo do Willkard" que dá bónus quando há público a ver, ou "Sede de Combate do Hroth" que acelera o ataque mas baixa a defesa. A mecânica serve a piada e vice-versa.</p>
+  </div>
+
+  <h3>4.3 Minérios e o ferreiro <span class="pill new">novo</span></h3>
+
+  <p>Requisito: <em>"podes encontrar minérios para melhorar a tua arma permanentemente no ferreiro"</em>. O minério é uma moeda de crafting; o ferreiro é onde a gastas para subir o <code>upgradeLevel</code> de uma arma — <strong>no save</strong>, não no asset (lembra-te da armadilha acima).</p>
+
+  <span class="filename">Assets/Scripts/Items/MineralItem.cs</span>
+<pre><code>namespace AF
+{
+    using UnityEngine;
+
+    [CreateAssetMenu(menuName = "AF/Data/Item/Mineral")]
+    public class MineralItem : ScriptableObject
+    {
+        public string displayName;
+        public Sprite icon;
+        [Tooltip("Raridade influencia quanto contribui para um upgrade.")]
+        public int upgradeValue = 1;
+    }
+}</code></pre>
+
+  <span class="filename">Assets/Scripts/Systems/Blacksmith.cs</span>
+<pre><code>namespace AF
+{
+    using UnityEngine;
+
+    public class Blacksmith : MonoBehaviour
+    {
+        [SerializeField] PlayerProfile profile;   // o save (ver secção 6)
+
+        // Devolve true se conseguiu melhorar.
+        public bool UpgradeWeapon(WeaponItem weapon, int mineralCost)
+        {
+            int currentLevel = profile.GetWeaponLevel(weapon);
+            if (currentLevel &gt;= 10) return false;             // já no máximo
+
+            if (profile.mineralCount &lt; mineralCost) return false; // sem recursos
+
+            profile.mineralCount -= mineralCost;
+            profile.SetWeaponLevel(weapon, currentLevel + 1);
+            return true;
+        }
+    }
+}</code></pre>
+
+  <!-- ============================================================ -->
+  <h2 id="ligar">5. Como tudo se liga</h2>
+
+  <p>Vale a pena ver o grafo de dependências antes de escreveres uma linha. Setas = "conhece / usa".</p>
+
+  <div class="flow">                        CharacterClass (dados)
+                              │  aplica atributos + arma inicial
+                              ▼
+   AutoAttackController ──▶ CombatManager ──▶ Ability/MeleeAttack ──▶ Hitbox ──▶ DamageReceiver ──▶ Health
+        │  lê ritmo               ▲                                                     
+        ▼                         │ EquipWeapon()                                       
+     WeaponItem (dados) ──────────┘                                                     
+        ▲                                                                               
+        │ nível de upgrade vem do save                                                  
+   PlayerProfile (save) ◀── Blacksmith gasta minérios                                   
+        ▲                                                                               
+        │                                                                               
+   BuffLoadout (máx 2) ──▶ BuffItem.OnEquip() ──▶ altera AutoAttackController / stats</div>
+
+  <div class="card info">
+    <span class="label info">Regra de ouro da arquitectura</span>
+    <p>Os <strong>dados</strong> (ScriptableObjects: classe, arma, buff, minério) não conhecem ninguém — são inertes. Os <strong>comportamentos</strong> (MonoBehaviours no personagem) é que leem esses dados e agem. Isto mantém o combate testável e os inimigos a partilharem exactamente o mesmo código do jogador.</p>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="persistencia">6. Persistência e New Game Plus</h2>
+
+  <p>Requisitos: <em>ouro melhora atributos; armas ficam guardadas e levam-se em NG+; minérios melhoram armas.</em> Tudo isto é <strong>estado do jogador</strong>, separado dos assets. Uma estrutura central (o "save") resolve.</p>
+
+  <span class="filename">Assets/Scripts/Systems/PlayerProfile.cs <span class="pill new">esboço</span></span>
+<pre><code>namespace AF
+{
+    using System.Collections.Generic;
+    using UnityEngine;
+
+    // Podia ser um ScriptableObject de runtime OU uma classe serializada para JSON.
+    // O que importa: é UMA fonte de verdade para o progresso permanente.
+    public class PlayerProfile : MonoBehaviour
+    {
+        [Header("Moedas")]
+        public int gold;
+        public int mineralCount;
+
+        [Header("Meta-progressão de atributos")]
+        public int bonusMaxHealth;
+        public int bonusAttackPower;
+
+        [Header("Coleção de armas (persistem em NG+)")]
+        public List&lt;WeaponItem&gt; unlockedWeapons = new();
+
+        // Nível de upgrade POR arma — a chave é o asset, o valor é o nível no save.
+        readonly Dictionary&lt;WeaponItem, int&gt; weaponLevels = new();
+
+        public int GetWeaponLevel(WeaponItem w)
+            =&gt; weaponLevels.TryGetValue(w, out int lvl) ? lvl : 0;
+
+        public void SetWeaponLevel(WeaponItem w, int lvl)
+            =&gt; weaponLevels[w] = lvl;
+
+        public void UnlockWeapon(WeaponItem w)
+        {
+            if (!unlockedWeapons.Contains(w))
+                unlockedWeapons.Add(w);
+        }
+    }
+}</code></pre>
+
+  <div class="card warn">
+    <span class="label warn">Detalhe de serialização</span>
+    <p>Um <code>Dictionary</code> não é serializável pelo Unity "out of the box", e guardar referências directas a <code>ScriptableObject</code> num ficheiro de save é frágil (o que acontece se renomeares o asset?). Na prática usarias um <strong>id string estável</strong> por arma (ex.: <code>"weapon_orc_greataxe"</code>) como chave. Fica registado como decisão para quando fores implementar a sério — não deixes o save depender de referências de assets.</p>
+  </div>
+
+  <h3>NG+ em uma linha</h3>
+  <p>Como as armas e a meta-progressão vivem no <code>PlayerProfile</code> e não na cena, um New Game Plus é literalmente: <strong>recomeçar as cenas do jogo mantendo o mesmo <code>PlayerProfile</code></strong>. No GDD demos-lhe até uma justificação narrativa (outro grupo de heróis-clichê atraído pela fama das Profundezas).</p>
+
+  <!-- ============================================================ -->
+  <h2 id="proximos">7. Próximos passos e exercícios</h2>
+
+  <p>Sugestão de ordem de implementação — do que dá valor mais depressa para o mais acessório:</p>
+
+  <ol>
+    <li><strong>AutoAttackController</strong> — mete o combate a "jogar-se sozinho" com uma arma fixa. É o coração Vampire Survivors.</li>
+    <li><strong>WeaponItem + EquipWeapon</strong> — troca de armas a mudar o ritmo/dano.</li>
+    <li><strong>CharacterClass</strong> — o Orc com vida alta e só armas pesadas.</li>
+    <li><strong>BuffLoadout + 1 buff simples</strong> — sente o "altera mecânicas".</li>
+    <li><strong>PlayerProfile + Blacksmith</strong> — fecha o ciclo de progressão permanente.</li>
+  </ol>
+
+  <div class="card tip">
+    <span class="label tip">Desafios (tenta antes de veres a solução noutro lado)</span>
+    <ul style="margin-bottom:0">
+      <li>Implementa <code>AddIntervalMultiplier</code> / <code>RemoveIntervalMultiplier</code> no <code>AutoAttackController</code>. Dica: guarda uma lista de multiplicadores e multiplica-os todos ao calcular o intervalo final. Porque é que remover por valor pode ser traiçoeiro se dois buffs derem o mesmo multiplicador?</li>
+      <li>Como impedirias o jogador de equipar uma arma que a classe não permite, <em>na UI</em>, em vez de só no código? (Pensa em <code>CharacterClass.CanUse</code> a pintar o botão a cinzento.)</li>
+      <li>O auto-ataque dispara em lock-on. E se quiseres uma arma de área que ataca mesmo sem alvo fixo (mais Vampire Survivors puro)? Que campo acrescentarias à <code>WeaponItem</code>?</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="label goal">🔢 Para investigar (matemática)</span>
+    <p>O intervalo de ataque com upgrades é uma <strong>função linear</strong>: <code>intervalo(n) = base − n · redução</code>, travada por um mínimo. Duas perguntas para pensar:</p>
+    <ul style="margin-bottom:0">
+      <li>A partir de que nível <code>n</code> a arma atinge o <code>minInterval</code>? (Resolve <code>base − n·redução = minInterval</code> em ordem a <code>n</code>.)</li>
+      <li>Se em vez de subtracção linear usasses <em>multiplicação</em> (<code>intervalo = base · 0.97ⁿ</code>), como mudaria a sensação de progressão? Qual das duas nunca chega a zero — e porque é que isso pode ser <em>desejável</em> para o balanceamento?</li>
+    </ul>
+  </div>
+
+  <footer>
+    <p>As Profundezas — documento de inspiração para combate, classes e itens. Vê também o design geral em <code>Docs/GDD-AsProfundezas.md</code>. Código ilustrativo: adapta, não coles às cegas.</p>
+  </footer>
+
+</div>
+</body>
+</html>

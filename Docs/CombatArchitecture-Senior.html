@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>As Profundezas — Arquitetura de Combate (nível senior)</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242836;
+      --text: #e6e9f0;
+      --muted: #9aa3b5;
+      --accent: #6c9eff;
+      --accent2: #7ee787;
+      --warn: #f0b429;
+      --danger: #ff8ba7;
+      --border: #343a4d;
+      --code-bg: #12151c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.65;
+      padding: 2rem 1rem 4rem;
+    }
+    .wrap { max-width: 980px; margin: 0 auto; }
+    header { margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+    .subtitle { color: var(--muted); font-size: 1.05rem; }
+    h2 { font-size: 1.42rem; margin: 2.6rem 0 0.75rem; color: var(--accent); padding-top: 0.5rem; }
+    h3 { font-size: 1.1rem; margin: 1.7rem 0 0.5rem; color: var(--accent2); }
+    h4 { font-size: 0.98rem; margin: 1.2rem 0 0.4rem; color: #ffcb6b; }
+    p, li { margin-bottom: 0.65rem; }
+    ul, ol { padding-left: 1.35rem; margin-bottom: 1rem; }
+    a { color: var(--accent); }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem 1.35rem; margin: 1rem 0 1.5rem; }
+    .card.warn { border-color: #6b5420; background: #1c1810; }
+    .card.tip { border-color: #1f4d35; background: #101a14; }
+    .card.info { border-color: #234; background: #0f1620; }
+    .card.danger { border-color: #5a2436; background: #1c1014; }
+    .label { display: inline-block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.2rem 0.5rem; border-radius: 4px; margin-bottom: 0.6rem; }
+    .label.goal { background: #1e3a5f; color: var(--accent); }
+    .label.warn { background: #4a3810; color: var(--warn); }
+    .label.tip { background: #1a3d2b; color: var(--accent2); }
+    .label.info { background: #1e2f45; color: var(--accent); }
+    .label.danger { background: #4a1f2e; color: var(--danger); }
+    .flow { font-family: Consolas, "Cascadia Code", monospace; font-size: 0.8rem; background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; overflow-x: auto; white-space: pre; line-height: 1.5; color: var(--muted); margin: 1rem 0; }
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.1rem; overflow-x: auto; font-family: Consolas, "Cascadia Code", monospace; font-size: 0.82rem; line-height: 1.55; margin: 0.75rem 0 1.25rem; }
+    code { font-family: Consolas, "Cascadia Code", monospace; font-size: 0.9em; background: var(--surface2); padding: 0.1em 0.35em; border-radius: 4px; }
+    pre code { background: none; padding: 0; font-size: 1em; }
+    .filename { display: block; font-family: Consolas, monospace; font-size: 0.75rem; color: var(--accent2); margin: 1rem 0 -0.5rem; padding-left: 0.2rem; }
+    .filename::before { content: "\01F4C4  "; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.88rem; }
+    th, td { border: 1px solid var(--border); padding: 0.55rem 0.75rem; text-align: left; vertical-align: top; }
+    th { background: var(--surface2); color: var(--accent); }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.35rem; margin: 1.5rem 0; }
+    .toc a { text-decoration: none; } .toc a:hover { text-decoration: underline; }
+    .pattern { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 0.12rem 0.5rem; border-radius: 999px; border: 1px solid #2c4a6b; color: var(--accent); margin-left: 0.4rem; vertical-align: middle; }
+    .verdict { border-left: 3px solid var(--accent2); padding-left: 1rem; margin: 1rem 0; color: var(--text); }
+    .verdict.no { border-color: var(--danger); }
+    footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Arquitetura de Combate — nível senior</h1>
+    <p class="subtitle">Como um engenheiro experiente (à la FromSoftware) pegaria nos sistemas de combate, classes e itens de <em>As Profundezas</em> e os transformaria numa base épica, extensível e testável. <strong>Só ideias e arquitetura</strong> — contratos, padrões e diagramas, não implementação para colar.</p>
+  </header>
+
+  <div class="card info">
+    <span class="label info">O que muda quando pensas como senior</span>
+    <p>Um júnior pergunta "como faço isto funcionar?". Um senior pergunta "<strong>como faço isto sobreviver a 100 horas de conteúdo, 200 inimigos no ecrã e 6 meses de mudanças de design sem virar spaghetti?</strong>". A resposta quase nunca é "mais código" — é <strong>fronteiras mais claras</strong>. Este documento é sobre onde traçar essas fronteiras.</p>
+  </div>
+
+  <div class="toc">
+    <strong>Índice</strong>
+    <ol>
+      <li><a href="#principios">Os 5 princípios que guiam tudo</a></li>
+      <li><a href="#health">A tua pergunta 1: a Health deve "receber chamadas"?</a></li>
+      <li><a href="#stats">Stat system com modificadores</a></li>
+      <li><a href="#pipeline">O Damage Pipeline (Chain of Responsibility)</a></li>
+      <li><a href="#eventbus">A tua pergunta 2: Event Bus — sim, mas com regras</a></li>
+      <li><a href="#command">Command + input buffering (a alma soulslike)</a></li>
+      <li><a href="#ai">IA: de FSM para HFSM / Behaviour Tree + Blackboard</a></li>
+      <li><a href="#horde">Bullet-heaven a sério: pooling e data-oriented</a></li>
+      <li><a href="#composition">Composição, Factories e injeção de dependências</a></li>
+      <li><a href="#mapa">Mapa dos padrões (o resumo)</a></li>
+      <li><a href="#overeng">Aviso: quando NÃO fazer nada disto</a></li>
+    </ol>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="principios">1. Os 5 princípios que guiam tudo</h2>
+
+  <p>Antes dos padrões, a filosofia. Todos os padrões abaixo são só <em>consequências</em> destes princípios:</p>
+
+  <ol>
+    <li><strong>Composição &gt; herança.</strong> Um inimigo não "é um" tipo rígido; é um saco de componentes e dados. Queres um Orc que lança fogo? Compões, não crias uma subclasse <code>FireOrc</code>.</li>
+    <li><strong>Dados &gt; código.</strong> O máximo de comportamento possível vive em <code>ScriptableObject</code>s e assets. Adicionar conteúdo = criar dados, não recompilar.</li>
+    <li><strong>Desacoplamento por contratos.</strong> Os sistemas falam por <em>interfaces</em> e <em>eventos</em>, não por referências concretas. O combate não sabe que existe UI; a UI escuta o combate.</li>
+    <li><strong>Determinismo onde importa.</strong> A lógica de combate deve ser previsível e testável fora de cena — se depende de <code>Update()</code> e de <code>FindObjectOfType</code>, não consegues testar nem depurar.</li>
+    <li><strong>O custo certo.</strong> Cada abstração paga-se com complexidade. Só a adicionas quando a dor de <em>não</em> a ter já se sente. (Ver secção 11 — isto é tão importante como as outras quatro.)</li>
+  </ol>
+
+  <!-- ============================================================ -->
+  <h2 id="health">2. A tua pergunta 1: a Health deve "receber chamadas para deduzir vida"?</h2>
+
+  <p>Resposta curta: <strong>sim, mas a tua <code>Health</code> atual faz demasiado</strong>. Vamos olhar para o que tens hoje:</p>
+
+  <span class="filename">Assets/Scripts/Health.cs (atual)</span>
+<pre><code>void Die()
+{
+    characterManager.animator.Play("Death");        // (A) sabe de animação
+    characterManager.agent.ResetPath();             // (B) sabe de navegação
+    characterManager.agent.enabled = false;
+    characterManager.isBusy = true;                 // (C) sabe de estado de combate
+    var player = characterManager.GetPlayer();
+    player.lockOn.UnregisterChasingEnemy(...);      // (D) sabe do lock-on do player
+}</code></pre>
+
+  <div class="card danger">
+    <span class="label danger">O "code smell"</span>
+    <p>A <code>Health</code> devia responder a <em>uma</em> pergunta: "quanta vida tenho?". Mas o teu <code>Die()</code> conhece animação, navegação, estado de combate e o lock-on do jogador. É a <strong>God Method</strong> em miniatura: sempre que adicionares uma reação à morte (dropar loot, dar XP aos heróis, tocar som, screen shake), este método cresce e fica impossível de testar. Analogia front-end: é um handler de <code>onClick</code> que, além de tratar o clique, também faz fetch, atualiza o router, escreve no localStorage e manda analytics. Toda a gente sabe que isso é mau — aqui é o mesmo.</p>
+  </div>
+
+  <h3>2.1 A separação senior: Health = estado puro + eventos</h3>
+
+  <p>A <code>Health</code> passa a ser <strong>burra e honesta</strong>: guarda números e <em>anuncia</em> o que aconteceu. Quem se importa que reaja.</p>
+
+  <span class="filename">conceito — Health como fonte de estado + sinais</span>
+<pre><code>public sealed class Health : MonoBehaviour
+{
+    public int Current { get; private set; }
+    public int Max { get; private set; }
+    public bool IsDead =&gt; Current &lt;= 0;
+
+    // Sinais: quem quiser reagir, subscreve. A Health não conhece ninguém.
+    public event System.Action&lt;DamageResult&gt; OnDamaged;
+    public event System.Action&lt;int&gt; OnHealed;
+    public event System.Action OnDied;
+
+    public void Apply(in DamageResult result)
+    {
+        if (IsDead) return;
+        Current = Mathf.Max(0, Current - result.FinalDamage);
+        OnDamaged?.Invoke(result);
+        if (Current == 0) OnDied?.Invoke();
+    }
+}</code></pre>
+
+  <p>Agora a morte "épica" monta-se com <strong>reatores</strong> independentes, cada um com uma responsabilidade. O animator subscreve <code>OnDied</code>. O loot subscreve <code>OnDied</code>. O lock-on do jogador subscreve <code>OnDied</code>. Nenhum sabe dos outros:</p>
+
+  <div class="flow">Health.OnDied
+   ├── DeathAnimationReactor   → toca "Death", desliga o agent
+   ├── LootDropReactor         → instancia ouro/minério/arma
+   ├── LockOnReactor           → remove-se da lista de ameaças do player
+   ├── AudioReactor            → som de morte
+   └── ProgressionReactor      → (ironia do GDD) dá XP ao herói que te matou</div>
+
+  <div class="card tip">
+    <span class="label tip">O ganho concreto</span>
+    <p>Adicionar "dropar loot ao morrer" deixa de tocar na <code>Health</code>. Crias um <code>LootDropReactor</code>, subscreves <code>OnDied</code>, e pronto. Isto é o <strong>Open/Closed Principle</strong>: aberto a extensão, fechado a modificação. E cada reator é testável isoladamente.</p>
+  </div>
+
+  <h3>2.2 Mas quem calcula o dano, então?</h3>
+
+  <p>Repara que a <code>Health.Apply()</code> recebe um <code>DamageResult</code> <em>já calculado</em>. A Health não decide reduções, críticos ou i-frames — isso é trabalho do <strong>pipeline</strong> (secção 4). A Health é só o <em>sink</em> final. Esta é a fronteira que muda tudo: <strong>separar "quanto dano" de "aplicar o dano"</strong>.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="stats">3. Stat system com modificadores <span class="pattern">Decorator / Strategy</span></h2>
+
+  <p>O teu design tem: ouro que sobe atributos, upgrades de arma, buffs que "alteram mecânicas", classes com stats base. Se cada um destes escrever directamente em campos (<code>health += 10</code>), vais ter bugs impossíveis: como remover <em>exatamente</em> o bónus de um anel quando o tiras, se três coisas mexeram no mesmo número?</p>
+
+  <p>A solução clássica de RPG: um stat é uma <strong>base + uma pilha de modificadores</strong>. O valor final é <em>calculado</em>, nunca escrito.</p>
+
+  <span class="filename">conceito — stats calculados a partir de modificadores</span>
+<pre><code>public enum StatType { MaxHealth, AttackPower, AttackSpeed, MoveSpeed, Armor }
+
+public enum ModifierOp { Flat, PercentAdd, PercentMult }
+
+public readonly struct StatModifier
+{
+    public readonly StatType Type;
+    public readonly ModifierOp Op;
+    public readonly float Value;
+    public readonly object Source;   // quem o adicionou (anel? arma? classe?)
+}
+
+// Valor final = (base + soma dos Flat) * (1 + soma dos PercentAdd) * produto dos PercentMult
+</code></pre>
+
+  <div class="card info">
+    <span class="label info">Porque três operações e não uma?</span>
+    <p>A ordem de aplicação define o "feeling" do balanceamento. <code>Flat</code> primeiro (armadura +5), depois <code>PercentAdd</code> (buffs somam-se: +10% e +10% = +20%), e <code>PercentMult</code> por último e multiplicativos entre si (um buff lendário "×1.5" que não se dilui somando-se aos outros). Isto é exactamente como Path of Exile e afins evitam que 10 bónus de +10% cheguem trivialmente a +100%.</p>
+  </div>
+
+  <p>Remover um anel é agora trivial e correcto: filtras os modificadores cujo <code>Source</code> é esse anel e recalculas. Sem drift, sem bugs de "o número não voltou ao valor original".</p>
+
+  <!-- ============================================================ -->
+  <h2 id="pipeline">4. O Damage Pipeline <span class="pattern">Chain of Responsibility</span></h2>
+
+  <p>Aqui é onde o combate fica épico e extensível. Em vez de um <code>if</code> gigante que trata i-frames, reduções, críticos, lifesteal, stagger e afins (o teu <code>DamageReceiver.ApplyDamage</code> já começa a acumular isto), modelas o dano como uma <strong>requisição que atravessa uma cadeia de estágios</strong>.</p>
+
+  <span class="filename">conceito — o contrato do dano</span>
+<pre><code>public readonly struct DamageRequest
+{
+    public readonly CharacterManager Source;
+    public readonly DamageType Type;       // ScriptableObject (não enum) — ver Refactor-Foundation
+    public readonly int Amount;
+    public readonly Vector3 HitPoint;
+    public readonly float Poise;           // para stagger / hyperarmor
+}
+
+public struct DamageContext          // muta ao longo da cadeia
+{
+    public DamageRequest Request;
+    public IDamageable Target;
+    public float RunningDamage;
+    public bool IsCritical;
+    public bool Cancelled;             // um estágio pode abortar (ex.: dodge)
+}
+
+public interface IDamageStage { void Process(ref DamageContext ctx); }</code></pre>
+
+  <p>E a cadeia é só uma lista ordenada de estágios. Cada um faz <em>uma</em> coisa:</p>
+
+  <div class="flow">DamageRequest
+   ▼
+[1] InvulnerabilityStage   → se target.IsDodging: ctx.Cancelled = true (para tudo)
+[2] ResistanceStage        → aplica reduções por tipo (o teu código atual)
+[3] CriticalStage          → rola crítico, marca ctx.IsCritical, multiplica
+[4] BuffHookStage          → lifesteal, dano bónus vs "heróis", etc.
+[5] PoiseStage             → acumula stagger; decide se há hitstun
+[6] ApplyStage             → Health.Apply(new DamageResult(ctx))
+   ▼
+DamageResult (para os eventos/UI)</div>
+
+  <div class="card tip">
+    <span class="label tip">Porque isto é "FromSoftware-tier"</span>
+    <p>Queres adicionar "o Orc causa +50% de dano a heróis com armadura pesada"? Escreves <em>um</em> estágio novo e insere-lo na lista — <strong>sem tocar</strong> em nada existente. Queres uma arma que ignora armadura? Um estágio que zera as reduções. Queres um boss com hyperarmor (não sofre stagger)? Configura o <code>PoiseStage</code>. Cada regra de combate é uma peça Lego isolada, ordenável e testável. É esta a diferença entre um combate que cresce e um que apodrece.</p>
+  </div>
+
+  <p>Onde vive a cadeia? Pode ser <strong>por personagem</strong> (montada a partir da classe + arma + buffs equipados) ou <strong>global</strong> com estágios que se auto-configuram do contexto. Começaria por-personagem: é mais fácil de raciocinar e cada inimigo pode ter a sua receita.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="eventbus">5. A tua pergunta 2: Event Bus — sim, mas com regras <span class="pattern">Observer / Mediator</span></h2>
+
+  <p>Perguntaste se fazia sentido um event bus. <strong>Faz</strong> — mas o erro clássico é mandar <em>tudo</em> pelo bus e transformar o jogo numa teia invisível onde ninguém sabe quem dispara o quê. A regra senior é uma linha divisória clara:</p>
+
+  <table>
+    <tr><th>Usa chamada direta / evento local quando…</th><th>Usa o Event Bus global quando…</th></tr>
+    <tr>
+      <td>A lógica é <strong>crítica e ordenada</strong> (o pipeline de dano, aplicar vida). Precisas de determinismo e de saber a ordem exata.</td>
+      <td>É uma <strong>notificação transversal</strong> "aconteceu X, quem quiser que reaja" (UI, áudio, conquistas, tutorial, estatísticas).</td>
+    </tr>
+    <tr>
+      <td>O emissor <strong>precisa</strong> de uma resposta ou de garantir que algo aconteceu.</td>
+      <td>O emissor <strong>não quer saber</strong> quem escuta (nem se alguém escuta).</td>
+    </tr>
+    <tr>
+      <td>Ex.: <code>Hitbox → pipeline → Health.Apply()</code>.</td>
+      <td>Ex.: <code>EnemyDied</code>, <code>BossPhaseChanged</code>, <code>PlayerLeveledUp</code>, <code>WeaponUpgraded</code>.</td>
+    </tr>
+  </table>
+
+  <h3>5.1 Um bus tipado (sem strings mágicas)</h3>
+
+  <p>Nada de <code>Raise("enemy_died")</code> com strings — é frágil e sem verificação em compilação. Um bus <strong>genérico por tipo de evento</strong> dá-te segurança de tipos e auto-complete:</p>
+
+  <span class="filename">conceito — event bus tipado</span>
+<pre><code>public interface IEvent { }
+
+public static class EventBus&lt;T&gt; where T : IEvent
+{
+    static event System.Action&lt;T&gt; handlers;
+    public static void Subscribe(System.Action&lt;T&gt; h)   =&gt; handlers += h;
+    public static void Unsubscribe(System.Action&lt;T&gt; h) =&gt; handlers -= h;
+    public static void Raise(in T e)                    =&gt; handlers?.Invoke(e);
+}
+
+// Eventos são structs pequenos e imutáveis:
+public readonly struct EnemyDied : IEvent
+{
+    public readonly CharacterManager Enemy;
+    public readonly CharacterManager Killer;
+    public readonly Vector3 Position;
+}
+
+// Emitir (do LootDropReactor, por ex.):  EventBus&lt;EnemyDied&gt;.Raise(new EnemyDied(...));
+// Escutar (na UI):                        EventBus&lt;EnemyDied&gt;.Subscribe(OnEnemyDied);</code></pre>
+
+  <div class="card danger">
+    <span class="label danger">As 3 armadilhas do event bus (todas te vão morder)</span>
+    <ul style="margin-bottom:0">
+      <li><strong>Leaks de subscrição.</strong> Se subscreves em <code>OnEnable</code> e não te dessubscreves em <code>OnDisable</code>, o handler fica vivo depois do objeto morrer → <code>NullReferenceException</code> fantasma ou objetos que não são libertados. Regra: <em>toda</em> subscrição tem a sua dessubscrição simétrica.</li>
+      <li><strong>Ordem indefinida.</strong> Se dois sistemas <em>precisam</em> de reagir por uma ordem específica, o bus é a ferramenta errada — usa uma cadeia explícita. O bus é para reações <em>independentes</em>.</li>
+      <li><strong>Debugging invisível.</strong> Um <code>Raise</code> pode acordar 10 sistemas que não vês no stack trace. Mitiga com um modo de log que imprime cada evento e os seus subscritores. Um bus sem observabilidade é uma dor de cabeça garantida.</li>
+    </ul>
+  </div>
+
+  <p><strong>Bónus:</strong> para o combate de um encontro específico (ex.: uma boss fight), um <em>bus com escopo</em> (instância, não estático) que morre no fim do encontro evita muitos destes problemas — o estado não sobrevive ao encontro.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="command">6. Command + input buffering <span class="pattern">Command</span></h2>
+
+  <p>O teu combate é auto-ataque, mas o <em>feeling</em> soulslike vem do dodge com timing. Em mobile, com lag de toque, "engolir" inputs mata a sensação. Os jogos da From resolvem isto com <strong>input buffering</strong>: um input é um <em>objeto</em> (comando) que entra numa fila com timestamp e é consumido dentro de uma janela.</p>
+
+  <span class="filename">conceito — comandos em buffer</span>
+<pre><code>public interface ICombatCommand
+{
+    void Execute(CharacterManager cm);
+}
+
+public readonly struct DodgeCommand : ICombatCommand { /* ... */ }
+
+// O buffer guarda (comando, tempo). Quando o personagem fica livre,
+// consome o comando mais recente ainda dentro da janela (ex.: 0.2s).
+// Resultado: carregas em dodge um bocadinho antes de poderes, e ele
+// dispara no instante exato em que a animação anterior liberta o controlo.</code></pre>
+
+  <div class="card tip">
+    <span class="label tip">Porque comando e não um bool?</span>
+    <p>Modelar o input como objeto dá-te de graça: <strong>fila</strong> (buffering), <strong>histórico</strong> (para combos ou replay), <strong>rede</strong> (enviar comandos em vez de estado), e <strong>teste</strong> (injetar comandos sem tocar no ecrã). Um <code>bool dodgePressed</code> não te dá nada disto.</p>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="ai">7. IA: de FSM para HFSM / Behaviour Tree + Blackboard <span class="pattern">State / Behaviour Tree / Blackboard</span></h2>
+
+  <p>Já tens uma máquina de estados (<code>StatePatrol</code>, <code>StateChase</code>, <code>StateCombat</code>). Para inimigos comuns é perfeita — não mexas. Para <strong>bosses</strong> (os teus heróis-clichê), uma FSM plana explode em transições ("de qualquer estado, se vida&lt;30%, ir para Enrage" × N estados). Duas evoluções:</p>
+
+  <ul>
+    <li><strong>HFSM (hierárquica):</strong> estados dentro de estados. "Combate" contém "Aproximar / Atacar / Recuar"; uma transição no pai (ex.: Enrage) aplica-se a todos os filhos. Mata a explosão de transições.</li>
+    <li><strong>Behaviour Tree:</strong> para padrões de boss ricos (sequências, seletores, decoradores de probabilidade). É o standard da indústria para IA de combate porque compõe comportamento a partir de nós reutilizáveis — muito parecido com compor uma árvore de componentes.</li>
+  </ul>
+
+  <p>Ambos precisam de um <strong>Blackboard</strong>: um quadro de dados partilhado (alvo atual, última posição vista, cooldowns) que os estados/nós leem e escrevem, em vez de se conhecerem uns aos outros. É o "estado partilhado" da IA, desacoplado.</p>
+
+  <div class="card info">
+    <span class="label info">Ligação ao GDD</span>
+    <p>Cada herói tem um padrão distinto (Willkard chama reforços, Cassandra usa ilusões, Hroth quebra guarda). Uma Behaviour Tree por boss, montada de nós partilhados (<code>MoveToTarget</code>, <code>TelegraphAttack</code>, <code>SummonAdds</code>), deixa-te criar um boss novo <em>compondo nós</em> — dados, não código novo.</p>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="horde">8. Bullet-heaven a sério: pooling e data-oriented <span class="pattern">Object Pool / DOD / Flyweight</span></h2>
+
+  <p>Vampire Survivors = centenas de inimigos e projéteis. Aqui a arquitectura "bonita" orientada a objetos bate na parede da performance, sobretudo em mobile. Três frentes:</p>
+
+  <h3>8.1 Object Pooling — nunca <code>Instantiate</code>/<code>Destroy</code> em loop</h3>
+  <p>Criar e destruir GameObjects por frame gera lixo para o Garbage Collector → stutter. Pré-alocas um pool e reutilizas. (Isto liga directamente à conversa que já tivemos sobre <code>NonAlloc</code> e evitar alocações por frame — é o mesmo princípio, ao nível dos objetos.)</p>
+
+  <h3>8.2 Data-Oriented Design para as hordes</h3>
+  <p>Para os inimigos comuns "burros" (andar em direção ao jogador, dano por colisão), um <code>MonoBehaviour</code> completo por inimigo é caro. A abordagem senior: <strong>um sistema que itera arrays de dados</strong> (posições, velocidades, vida) em vez de N objetos com <code>Update()</code> cada. É a mentalidade do Unity DOTS/ECS. Não precisas de adotar DOTS já — mas separa "inimigo-horda" (dados simples, atualizados em massa) de "inimigo-elite/boss" (objeto rico com IA própria).</p>
+
+  <div class="flow">Inimigo-horda   → dados em arrays, 1 sistema atualiza todos (barato, aos milhares)
+Inimigo-elite   → MonoBehaviour + FSM (dezenas)
+Boss            → Behaviour Tree + blackboard (1)</div>
+
+  <h3>8.3 Partição espacial</h3>
+  <p>"Que inimigos estão perto do jogador?" com 300 inimigos não se resolve com um loop O(n²). Uma grelha espacial (spatial hash) responde em O(1) por célula. É o que permite auto-ataque de área e lock-on baratos com muitos alvos.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="composition">9. Composição, Factories e injeção de dependências <span class="pattern">Factory / Builder / DI</span></h2>
+
+  <h3>9.1 Factory para spawns</h3>
+  <p>"Nascer um inimigo" não devia ser <code>Instantiate</code> espalhado por 5 sítios. Uma <code>EnemyFactory</code> centraliza: tira do pool, aplica a <code>CharacterClass</code>, monta o pipeline de dano, liga a IA. Um sítio para mudar, um sítio para testar.</p>
+
+  <h3>9.2 O problema do <code>FindObjectOfType</code></h3>
+  <p>O teu <code>CharacterManager.GetPlayerInput()</code> faz <code>FindAnyObjectByType</code>. Funciona, mas é uma dependência escondida e lenta. A alternativa senior é <strong>injetar</strong> dependências (passá-las na construção/inicialização) ou usar um <strong>Service Locator</strong> explícito (<code>Services.Get&lt;PlayerContext&gt;()</code>). A diferença: as dependências ficam <em>visíveis</em> e <em>substituíveis</em> (essencial para testes e para o modo em que o "jogador" é um inimigo com a mesma lógica).</p>
+
+  <div class="card tip">
+    <span class="label tip">Regra prática</span>
+    <p>Se um sistema faz <code>Find...</code> ou <code>GetComponent</code> repetidamente em runtime para descobrir com quem falar, isso é uma dependência que devia ser <strong>declarada</strong>, não <strong>descoberta</strong>. Descobre uma vez, guarda a referência, ou injeta-a.</p>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="mapa">10. Mapa dos padrões — o resumo</h2>
+
+  <table>
+    <tr><th>Padrão</th><th>Onde em As Profundezas</th><th>Que dor resolve</th></tr>
+    <tr><td>Strategy / Flyweight</td><td><code>Ability</code>, <code>WeaponItem</code>, <code>BuffItem</code> (ScriptableObjects)</td><td>Comportamento e dados partilhados sem duplicação; conteúdo = assets.</td></tr>
+    <tr><td>Chain of Responsibility</td><td>Damage Pipeline</td><td>Regras de combate como peças isoladas e ordenáveis.</td></tr>
+    <tr><td>Observer</td><td>Eventos da <code>Health</code>, Event Bus</td><td>Reações desacopladas (loot, UI, áudio) sem tocar no emissor.</td></tr>
+    <tr><td>Mediator</td><td><code>CombatManager</code></td><td>Orquestra habilidades sem que elas se conheçam.</td></tr>
+    <tr><td>Command</td><td>Input buffering do dodge</td><td>Timing responsivo, testável e "rede-ready".</td></tr>
+    <tr><td>State / HFSM / Behaviour Tree</td><td>IA de inimigos e bosses</td><td>Comportamento complexo sem explosão de transições.</td></tr>
+    <tr><td>Blackboard</td><td>Dados partilhados da IA</td><td>Estados da IA desacoplados entre si.</td></tr>
+    <tr><td>Object Pool</td><td>Inimigos, projéteis, VFX, dano flutuante</td><td>Zero alocações por frame → sem stutter em mobile.</td></tr>
+    <tr><td>Factory / Builder</td><td>Spawn de inimigos/itens</td><td>Construção centralizada e consistente.</td></tr>
+    <tr><td>Service Locator / DI</td><td>Contexto do jogador, serviços globais</td><td>Dependências visíveis e substituíveis.</td></tr>
+    <tr><td>Decorator (stat modifiers)</td><td>Stat system</td><td>Empilhar/remover bónus sem drift de valores.</td></tr>
+  </table>
+
+  <h3>Diagrama de alto nível</h3>
+  <div class="flow">          INPUT ──▶ CommandBuffer ──▶ CombatManager (Mediator)
+                                          │ escolhe Ability (Strategy, do WeaponItem)
+                                          ▼
+                                       Hitbox ──▶ DamageRequest
+                                                      │
+                                          ┌───────────▼───────────┐
+                                          │   DAMAGE PIPELINE      │  (Chain of Responsibility)
+                                          │  iframes→resist→crit→  │
+                                          │  buffs→poise→apply     │
+                                          └───────────┬───────────┘
+                                                      ▼
+                                     Health (estado puro) ──raise──▶ eventos
+                                                      │
+                    ┌─────────────────────────────────┼───────────────────────────┐
+                    ▼                 ▼                ▼               ▼             ▼
+               DeathAnim          LootDrop          UI/HUD          Audio      EventBus&lt;EnemyDied&gt;
+                                (Factory+Pool)                                  (Observer global)
+
+   STATS (base + modificadores)  ◀── Classe / Arma / Buffs      IA: HFSM/BT + Blackboard</div>
+
+  <!-- ============================================================ -->
+  <h2 id="overeng">11. Aviso: quando NÃO fazer nada disto <span class="pattern">o princípio mais senior de todos</span></h2>
+
+  <div class="card danger">
+    <span class="label danger">A marca real de um senior</span>
+    <p>Não é conhecer estes padrões — é saber <strong>quando não os usar</strong>. Cada abstração acima é uma dívida de complexidade. Aplicada cedo demais, atrasa-te e esconde bugs atrás de camadas. A regra: <strong>implementa a versão simples primeiro; refatora para o padrão quando a dor de não o ter for real.</strong></p>
+  </div>
+
+  <div class="verdict">
+    <strong>Faz já (o retorno é imediato):</strong> separar a <code>Health</code> em estado + eventos; um Damage Pipeline mínimo (mesmo com 2-3 estágios); object pooling para inimigos e projéteis. Estes pagam-se no primeiro mês.
+  </div>
+
+  <div class="verdict">
+    <strong>Faz quando doer:</strong> event bus global (quando tiveres 4+ sistemas a querer reagir ao mesmo acontecimento); Behaviour Trees (quando o primeiro boss ficar impossível de gerir com FSM); stat system completo (quando tiveres muitas fontes de bónus a colidir).
+  </div>
+
+  <div class="verdict no">
+    <strong>Provavelmente não precisas (ainda):</strong> DOTS/ECS a sério (só se o profiler gritar com milhares de inimigos); injeção de dependências com framework (um Service Locator simples chega para muito longe); rede/replay (a não ser que seja um objetivo do produto).
+  </div>
+
+  <div class="card">
+    <span class="label goal">🔢 Para investigar (matemática)</span>
+    <p>O stat system multiplicativo levanta uma pergunta gira. Se um buff dá <code>×1.1</code> e empilhas <code>n</code> deles multiplicativamente, o total é <code>1.1ⁿ</code> — <strong>crescimento exponencial</strong>. Com aditivos, <code>n</code> buffs de +10% dão <code>1 + 0.1n</code> — <strong>crescimento linear</strong>.</p>
+    <ul style="margin-bottom:0">
+      <li>Para <code>n = 10</code> buffs, quanto dá cada modelo? Porque é que o exponencial é perigoso para o balanceamento de late-game?</li>
+      <li>A partição espacial (secção 8.3) troca uma pesquisa <code>O(n²)</code> por algo perto de <code>O(n)</code>. Para <code>n = 300</code> inimigos, quantas comparações poupas por frame? (Compara <code>n²</code> com <code>n</code>.)</li>
+    </ul>
+  </div>
+
+  <div class="card tip">
+    <span class="label tip">Desafio final</span>
+    <p>Escolhe <strong>um</strong> sistema deste documento e desenha, em papel, os seus contratos (interfaces + eventos) <em>antes</em> de escrever código. Se conseguires explicar as fronteiras a outra pessoa em 2 minutos, o desenho está bom. Se precisares de 10, ainda está acoplado demais. Qual escolhes — o Damage Pipeline ou a Health event-driven?</p>
+  </div>
+
+  <footer>
+    <p>As Profundezas — arquitetura de combate de nível senior. Companheiro dos documentos <code>Docs/CombatClassesItems-Inspiracao.html</code> (implementação inicial) e <code>Docs/GDD-AsProfundezas.md</code> (design). Ideias e contratos: desenha as fronteiras antes de escrever a lógica.</p>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -9,11 +9,8 @@ namespace AF
         public AnimationName[] animations;
 
         [Header("Damage")]
-        public int slashDamage = 0;
-        public int bluntDamage = 0;
-        public int pierceDamage = 0;
-        public int fireDamage = 0;
-        public int frostDamage = 0;
+        public DamageType damageType;
+        public int amount;
 
         [Header("VFX")]
         [SerializeField] GameObject swingEffect;
@@ -54,6 +51,18 @@ namespace AF
             {
                 Instantiate(hitImpact, hitPosition, Quaternion.identity);
             }
+        }
+
+        public override bool TryBuildDamagePacket(CharacterManager source, Vector3 hitPoint, out DamagePacket packet)
+        {
+            if (damageType == null || amount <= 0)
+            {
+                packet = default;
+                return false;
+            }
+
+            packet = new DamagePacket(source, damageType, amount, hitPoint);
+            return true;
         }
     }
 }

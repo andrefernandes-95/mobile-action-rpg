@@ -14,6 +14,8 @@ namespace AF
 
         [HideInInspector] public AIState currentState;
 
+        public readonly CombatStateRuntime CombatRuntime = new();
+
 
         void Start()
         {
@@ -30,12 +32,19 @@ namespace AF
 
         public void SwitchState(AIState newState)
         {
-            if (currentState == newState) return;
+            if (newState == null)
+            {
+                return;
+            }
+
+            if (currentState == newState)
+            {
+                return;
+            }
 
             currentState?.Exit(this);
-            currentState = Instantiate(newState);
+            currentState = newState;
             currentState?.Enter(this);
         }
-
     }
 }

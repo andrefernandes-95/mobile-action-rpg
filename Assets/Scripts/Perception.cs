@@ -14,7 +14,7 @@ namespace AF
 
         public bool CanSeePlayer()
         {
-            if (characterManager == null || characterManager.IsPlayer() || characterManager.GetPlayer().health.IsDead())
+            if (characterManager == null || characterManager.IsPlayer() || characterManager.GetPlayer().health.IsDead)
             {
                 return false;
             }

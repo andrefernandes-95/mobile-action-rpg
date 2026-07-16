@@ -11,44 +11,40 @@ namespace AF
         [Header("Disengage")]
         public float disengageMultiplier = 1.3f;
 
-        private float lastAttackTime;
-
         public override void Enter(StateMachine controller)
         {
-            lastAttackTime = -attackCooldown;
+            controller.CombatRuntime.LastAttackTime = -attackCooldown;
             controller.character.Stop();
         }
 
         public override void Tick(StateMachine controller)
         {
             var player = controller.character.GetPlayer();
-            if (player == null) return;
+            if (player == null)
+            {
+                return;
+            }
 
-            float dist = Vector3.Distance(
-                controller.transform.position,
-                player.transform.position
-            );
-
-            // Target dead → leave combat
-            if (player.health.IsDead())
+            // Target dead, end combat
+            if (player.health.IsDead)
             {
                 controller.SwitchState(
                     controller.patrolState != null
                         ? controller.patrolState
                         : controller.idleState
                 );
+
                 return;
             }
 
-            // Too far → chase again
-            if (dist > controller.character.perception.sightRange * disengageMultiplier)
-            {
-                controller.SwitchState(controller.chaseState);
-                return;
-            }
+            float sqrDist = (controller.transform.position - player.transform.position).sqrMagnitude;
+            float sight = controller.character.perception.sightRange;
+            float disengageSqr = (sight * disengageMultiplier) * (sight * disengageMultiplier);
+            float stop = controller.character.agent.stoppingDistance;
+            float stopSqr = stop * stop;
 
-            // Out of attack range → chase
-            if (dist > controller.character.agent.stoppingDistance)
+            // Too far, return to chase
+            if (sqrDist > disengageSqr || sqrDist > stopSqr)
             {
                 controller.SwitchState(controller.chaseState);
                 return;
@@ -70,9 +66,9 @@ namespace AF
 
             // Attack with cooldown
             if (!controller.character.isBusy &&
-                Time.time >= lastAttackTime + attackCooldown)
+                Time.time >= controller.CombatRuntime.LastAttackTime + attackCooldown)
             {
-                lastAttackTime = Time.time;
+                controller.CombatRuntime.LastAttackTime = Time.time;
                 controller.character.combatManager.Attack();
             }
         }

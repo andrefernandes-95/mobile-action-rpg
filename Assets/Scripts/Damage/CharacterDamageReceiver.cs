@@ -1,21 +1,19 @@
+using UnityEngine;
+
 namespace AF
 {
-    using UnityEngine;
-
     public class CharacterDamageReceiver : DamageReceiver
     {
         [SerializeField] CharacterManager characterManager;
 
-        public override void TakeDamage(int damage)
+        public override void TakeDamage(in DamageResult result)
         {
-            base.TakeDamage(damage);
-
-            characterManager.health.TakeDamage((int)damage);
+            characterManager.health.Apply(result);
         }
 
         public override bool IsInvulnerable()
         {
-            return characterManager.dodge.isDodging;
+            return characterManager.dodge != null && characterManager.dodge.isDodging;
         }
     }
 }

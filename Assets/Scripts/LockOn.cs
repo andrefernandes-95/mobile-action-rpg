@@ -54,7 +54,7 @@ namespace AF
             for (int i = chasingEnemies.Count - 1; i >= 0; i--)
             {
                 var e = chasingEnemies[i];
-                if (e == null || e.health.IsDead())
+                if (e == null || e.health.IsDead)
                 {
                     chasingEnemies.RemoveAt(i);
                     continue;

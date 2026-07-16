@@ -77,41 +77,11 @@ Não forçar matemática em todas as respostas; só quando enriquecer a compreen
 
 ---
 
-## Contexto do projecto (Mining RPG)
+## Contexto do projecto
 
-**Género:** Mobile Action Adventure — dungeon crawler de mineração.
+Ver [`Docs/GDD-AsProfundezas.md`](Docs/GDD-AsProfundezas.md) para género, história, mapas, inimigos, bosses, gameplay, persistência e monetização — é o documento vivo de design do jogo.
 
-**Pitch de marketing (referência):**
-- Guilda de mineiros que explora masmorras em busca de tesouros.
-- Combate contra inimigos e bosses; proteger NPCs.
-- Armas e habilidades encontradas na run convertem-se em ouro no fim.
-- Ouro gasta-se em upgrades permanentes (meta-progressão).
-- Anéis com buffs de mecânicas.
-- Personagens com especializações diferentes.
-- Mapa com fog of war — minerar o ambiente para abrir novos caminhos.
-
-**O que estamos a construir de facto:**
-> **Vampire Survivors + Soulslike**, dentro desta temática de mineração.
-
-| Camada | Inspiração | O que traz ao jogo |
-|--------|------------|-------------------|
-| **Survivors** | Vampire Survivors | Runs curtas, hordas de inimigos, auto-ataque / habilidades passivas que escalam, escolhas de level-up durante a run, sensação de «power fantasy» crescente |
-| **Soulslike** | Dark Souls / Elden Ring (lite) | Dodge com i-frames, lock-on, ataques com commitment, leitura de padrões de boss, consequência real da morte (perder a run, não o progresso permanente) |
-| **Mineração** | Tema único | Fog of war destrutível, escolha de rotas, recursos como moeda intermédia, ambiente como puzzle + perigo |
-
-**Stack actual (Unity):**
-- Projecto `Dungeoncrawler 0.1` — Unity, mobile-first (joystick, orientação portrait).
-- Já existem: `CharacterManager`, `CombatManager`, `LockOn`, `Dodge`, AI com state machine (`StatePatrol`, `StateChase`, `StateCombat`), `Health`, `Ability`/`MeleeAttack`.
-- Assets: Synty (low-poly), HUD fantasy, lowpoly shaders.
-
-**Pilares de design a respeitar:**
-1. **Run-based** — cada entrada na masmorra é uma sessão; o ouro no fim financia o hub permanente.
-2. **Escalada de caos** — poucos inimigos no início, densidade tipo Survivors à medida que o jogador avança / escava.
-3. **Combate com peso** — dodge e lock-on dão profundidade; não é bullet heaven puro.
-4. **Mapa vivo** — minerar não é só cosmético; abre atalhos, salas secretas, ou desperta enxames.
-5. **Builds** — personagens + anéis + armas temporárias criam sinergias distintas por run.
-
-Usar este contexto para exemplos concretos sem editar ficheiros sem pedido explícito.
+Este ficheiro (`AGENT.md`) não deve voltar a acumular contexto do jogo em si — mantém-se apenas com regras de tom e método de trabalho. Actualizar o GDD, não este ficheiro, quando houver novas decisões de design.
 
 ---
 

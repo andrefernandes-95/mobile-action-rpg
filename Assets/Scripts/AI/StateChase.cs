@@ -29,8 +29,8 @@ namespace AF
             // Disengage
             if (
                 dist > controller.character.perception.sightRange * disengageMultiplier // If far away
-                || controller.character.health.IsDead() // Or Dead
-                || player.health.IsDead() // Or Player Is Dead
+                || controller.character.health.IsDead // Or Dead
+                || player.health.IsDead // Or Player Is Dead
             )
             {
                 controller.SwitchState(

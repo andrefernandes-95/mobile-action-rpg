@@ -6,7 +6,6 @@ namespace AF
     {
         [Header("Info")]
         public new string name;
-
         [TextArea] public string description;
         public Sprite icon;
 
@@ -22,6 +21,15 @@ namespace AF
         {
         }
 
-    }
+        public virtual bool TryBuildDamagePacket(
+            CharacterManager source,
+            Vector3 hitPoint,
+            out DamagePacket packet
+        )
+        {
+            packet = default;
+            return false;
+        }
 
+    }
 }
