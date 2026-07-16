@@ -67,6 +67,19 @@
     <li><a href="#s8">AI — StateMachine + CombatRuntime (sem Instantiate do SO)</a></li>
     <li><a href="#s9">Ordem de wiring no Unity</a></li>
   </ol>
+  <strong style="display:block;margin-top:.8rem">Camada de itens (nova)</strong>
+  <ol start="10">
+    <li><a href="#s10">WeaponType + WeaponItem</a></li>
+    <li><a href="#s11">CharacterClass + inicialização</a></li>
+    <li><a href="#s12">Equipar arma (patches a CombatManager / MeleeAttack / Health)</a></li>
+    <li><a href="#s13">Buffs — BuffItem, BuffLoadout, exemplos</a></li>
+    <li><a href="#s14">Persistência — MineralItem, PlayerProfile, Blacksmith</a></li>
+    <li><a href="#s15">Wiring da camada de itens</a></li>
+  </ol>
+  <strong style="display:block;margin-top:.8rem">Efeitos / performance</strong>
+  <ol start="16">
+    <li><a href="#s16">Object Pool de VFX (partículas de ataque)</a></li>
+  </ol>
 </nav>
 
 <!-- ============================================================ -->
@@ -1160,8 +1173,729 @@ namespace AF
   </ul>
 </div>
 
+<!-- ============================================================ -->
+<h2 id="s10">10. WeaponType + WeaponItem</h2>
+
+<div class="card">
+  <span class="label ok">Decisão de design</span>
+  <p style="margin-bottom:0">A <strong>arma decide o ritmo</strong> (intervalo entre golpes) e <strong>qual a ability de ataque</strong>. Os <strong>números de dano base vivem na <code>MeleeAttack</code></strong> (que já tem <code>damageType</code> + <code>damage</code>); a arma e a classe só acrescentam <strong>bónus</strong> por cima, via <code>CombatManager.DamageBonus</code> (secção 12). Assim há <em>uma</em> fonte de dano base e ninguém muta o ScriptableObject.</p>
+</div>
+
+<p><code>WeaponType</code> fica um <code>enum</code> simples — categorias raramente precisam de dados ricos (ao contrário do <code>DamageType</code>, que tem ícone/cor). Se um dia precisares de metadados por categoria, promoves a SO.</p>
+
+<div class="path">Assets/Scripts/Items/WeaponType.cs</div>
+<pre><code>namespace AF
+{
+    public enum WeaponType
+    {
+        Heavy,   // machados, grandes espadas — o Orc
+        Sword,
+        Dagger,
+        Staff,
+        Bow
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Items/WeaponItem.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    [CreateAssetMenu(menuName = "AF/Data/Item/Weapon")]
+    public class WeaponItem : ScriptableObject
+    {
+        [Header("Identidade")]
+        [Tooltip("Id estável para o save. NUNCA mudar depois de usado.")]
+        public string id;
+        public string displayName;
+        [TextArea] public string description;
+        public Sprite icon;
+        public WeaponType weaponType;
+
+        [Header("Comportamento")]
+        [Tooltip("Fornece damageType + damage base + animações/VFX.")]
+        public MeleeAttack attackAbility;
+
+        [Header("Ritmo")]
+        public float baseAttackInterval = 1.2f;
+        public float intervalReductionPerLevel = 0.03f;
+        public float minInterval = 0.2f;
+
+        [Header("Escalonamento por upgrade (ferreiro)")]
+        public int bonusDamagePerLevel = 2;
+
+        public float GetAttackInterval(int level)
+        {
+            float interval = baseAttackInterval - level * intervalReductionPerLevel;
+            return Mathf.Max(minInterval, interval);
+        }
+
+        public int GetBonusDamage(int level) =&gt; level * bonusDamagePerLevel;
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s11">11. CharacterClass + inicialização</h2>
+
+<div class="path">Assets/Scripts/Classes/CharacterClass.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    [CreateAssetMenu(menuName = "AF/Data/Character Class")]
+    public class CharacterClass : ScriptableObject
+    {
+        [Header("Identidade")]
+        public string className;
+        [TextArea] public string description;
+        public Sprite portrait;
+
+        [Header("Atributos base")]
+        public int baseHealth = 100;
+        public int baseAttackPower = 10;
+
+        [Header("Restrições de arma")]
+        public WeaponType[] allowedWeaponTypes;
+        public WeaponItem startingWeapon;
+
+        public bool CanUse(WeaponItem weapon)
+        {
+            if (weapon == null) return false;
+            for (int i = 0; i &lt; allowedWeaponTypes.Length; i++)
+                if (allowedWeaponTypes[i] == weapon.weaponType)
+                    return true;
+            return false;
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Classes/CharacterClassProfile.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    /// &lt;summary&gt;
+    /// Inicializa o personagem a partir da classe: vida base + arma inicial.
+    /// Corre em Start() para todos os Awake() já terem terminado.
+    /// &lt;/summary&gt;
+    public class CharacterClassProfile : MonoBehaviour
+    {
+        [SerializeField] CharacterManager characterManager;
+        [SerializeField] CharacterClass characterClass;
+        [SerializeField] WeaponEquipper weaponEquipper;
+
+        [Tooltip("Opcional. Se null, usa nível de upgrade 0.")]
+        [SerializeField] PlayerProfile profile;
+
+        void Start()
+        {
+            if (characterClass == null) return;
+
+            characterManager.health.Initialize(characterClass.baseHealth);
+
+            WeaponItem starting = characterClass.startingWeapon;
+            if (starting != null &amp;&amp; characterClass.CanUse(starting))
+            {
+                int level = profile != null ? profile.GetWeaponLevel(starting) : 0;
+                weaponEquipper.Equip(starting, level, characterClass.baseAttackPower);
+            }
+        }
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s12">12. Equipar arma (patches)</h2>
+
+<p>Três pequenas adições ao que já tens nas secções anteriores. São <strong>patches</strong>, não ficheiros novos (excepto o <code>WeaponEquipper</code>).</p>
+
+<h3>12.1 <code>Health.Initialize</code> (patch à secção 2)</h3>
+<div class="path">Assets/Scripts/Characters/Health.cs — acrescenta este método</div>
+<pre><code>public void Initialize(int max)
+{
+    maxHealth = Mathf.Max(1, max);
+    current = maxHealth;
+}
+
+public void AddMax(int delta, bool healToo = true)
+{
+    maxHealth = Mathf.Max(1, maxHealth + delta);
+    if (healToo) current = Mathf.Min(current + Mathf.Max(0, delta), maxHealth);
+    else current = Mathf.Min(current, maxHealth);
+}</code></pre>
+
+<h3>12.2 <code>CombatManager.DamageBonus</code> (patch à secção 5)</h3>
+<div class="path">Assets/Scripts/Combat/CombatManager.cs — acrescenta</div>
+<pre><code>public int DamageBonus { get; private set; }
+
+public void SetDamageBonus(int value) =&gt; DamageBonus = Mathf.Max(0, value);
+public void AddDamageBonus(int value) =&gt; DamageBonus = Mathf.Max(0, DamageBonus + value);</code></pre>
+
+<h3>12.3 <code>MeleeAttack.TryBuildDamagePacket</code> (patch à secção 4)</h3>
+<div class="path">Assets/Scripts/Abilities/MeleeAttack.cs — soma o bónus</div>
+<pre><code>public override bool TryBuildDamagePacket(
+    CharacterManager source,
+    Vector3 hitPoint,
+    out DamagePacket packet)
+{
+    if (damageType == null || damage &lt;= 0)
+    {
+        packet = default;
+        return false;
+    }
+
+    int amount = damage + source.combatManager.DamageBonus; // &lt;-- bónus da arma + classe + buffs
+    packet = new DamagePacket(source, damageType, amount, hitPoint);
+    return true;
+}</code></pre>
+
+<h3>12.4 <code>AutoAttackController</code> — intervalo com multiplicador (patch à secção 5)</h3>
+<div class="path">Assets/Scripts/Combat/AutoAttackController.cs — versão com buffs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    public class AutoAttackController : MonoBehaviour
+    {
+        [SerializeField] CharacterManager characterManager;
+        [SerializeField] float engageRange = 2.5f;
+
+        float baseInterval = 1f;
+        float intervalMultiplier = 1f;   // buffs alteram isto
+        float attackTimer;
+
+        float CurrentInterval =&gt; Mathf.Max(0.05f, baseInterval * intervalMultiplier);
+
+        void OnEnable() =&gt; attackTimer = 0f;
+
+        public void SetAttackInterval(float interval)
+        {
+            baseInterval = Mathf.Max(0.05f, interval);
+        }
+
+        // Usado pelos buffs (ex.: 0.8f = ataca 20% mais rápido)
+        public void MultiplyInterval(float m)
+        {
+            if (m &gt; 0f) intervalMultiplier *= m;
+        }
+
+        public void RemoveIntervalMultiplier(float m)
+        {
+            if (m &gt; 0f) intervalMultiplier /= m;
+        }
+
+        void Update()
+        {
+            if (characterManager == null) return;
+            if (characterManager.health.IsDead()) return;
+            if (characterManager.isBusy) return;
+
+            if (attackTimer &gt; 0f) attackTimer -= Time.deltaTime;
+
+            if (!HasTargetInRange()) return;
+            if (attackTimer &gt; 0f) return;
+
+            characterManager.combatManager.Attack();
+            attackTimer = CurrentInterval;
+        }
+
+        bool HasTargetInRange()
+        {
+            LockOn lockOn = characterManager.lockOn;
+            if (lockOn == null || !lockOn.isLockedOn || lockOn.lockOnTarget == null)
+                return false;
+
+            float sqr = (lockOn.lockOnTarget.position - transform.position).sqrMagnitude;
+            return sqr &lt;= engageRange * engageRange;
+        }
+    }
+}</code></pre>
+
+<h3>12.5 O <code>WeaponEquipper</code> (novo)</h3>
+<div class="path">Assets/Scripts/Items/WeaponEquipper.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    public class WeaponEquipper : MonoBehaviour
+    {
+        [SerializeField] CharacterManager characterManager;
+        [SerializeField] AutoAttackController autoAttack; // opcional (jogador/horda)
+
+        public WeaponItem Current { get; private set; }
+
+        public void Equip(WeaponItem weapon, int upgradeLevel, int classAttackPower)
+        {
+            if (weapon == null || weapon.attackAbility == null) return;
+
+            characterManager.combatManager.EquipAttackAbility(weapon.attackAbility);
+            characterManager.combatManager.SetDamageBonus(
+                classAttackPower + weapon.GetBonusDamage(upgradeLevel));
+
+            if (autoAttack != null)
+                autoAttack.SetAttackInterval(weapon.GetAttackInterval(upgradeLevel));
+
+            Current = weapon;
+        }
+    }
+}</code></pre>
+
+<div class="flow">Equip flow:
+CharacterClassProfile.Start()
+  → health.Initialize(baseHealth)
+  → weaponEquipper.Equip(startingWeapon, level, baseAttackPower)
+      → combatManager.EquipAttackAbility(weapon.attackAbility)
+      → combatManager.SetDamageBonus(classPower + weaponBonus)
+      → autoAttack.SetAttackInterval(weapon.GetAttackInterval(level))
+
+Dano final por golpe = ability.damage + combatManager.DamageBonus</div>
+
+<!-- ============================================================ -->
+<h2 id="s13">13. Buffs (máx. 2)</h2>
+
+<div class="path">Assets/Scripts/Items/BuffItem.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    public abstract class BuffItem : ScriptableObject
+    {
+        [Header("Identidade")]
+        public string buffName;
+        [TextArea] public string description;
+        public Sprite icon;
+
+        public abstract void OnEquip(CharacterManager characterManager);
+        public abstract void OnUnequip(CharacterManager characterManager);
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Items/BuffLoadout.cs</div>
+<pre><code>using System.Collections.Generic;
+using UnityEngine;
+
+namespace AF
+{
+    public class BuffLoadout : MonoBehaviour
+    {
+        public const int MaxBuffs = 2;
+
+        [SerializeField] CharacterManager characterManager;
+        readonly List&lt;BuffItem&gt; equipped = new();
+
+        public IReadOnlyList&lt;BuffItem&gt; Equipped =&gt; equipped;
+
+        public bool Equip(BuffItem buff)
+        {
+            if (buff == null) return false;
+            if (equipped.Count &gt;= MaxBuffs) return false;
+            if (equipped.Contains(buff)) return false;
+
+            equipped.Add(buff);
+            buff.OnEquip(characterManager);
+            return true;
+        }
+
+        public void Unequip(BuffItem buff)
+        {
+            if (equipped.Remove(buff))
+                buff.OnUnequip(characterManager);
+        }
+    }
+}</code></pre>
+
+<h3>Exemplos concretos</h3>
+<div class="path">Assets/Scripts/Items/Buffs/SwiftStrikesBuff.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    [CreateAssetMenu(menuName = "AF/Data/Item/Buff/Swift Strikes")]
+    public class SwiftStrikesBuff : BuffItem
+    {
+        [Range(0f, 0.5f)] public float attackSpeedBonus = 0.2f; // 20% mais rápido
+
+        public override void OnEquip(CharacterManager cm)
+        {
+            var auto = cm.GetComponent&lt;AutoAttackController&gt;();
+            if (auto != null) auto.MultiplyInterval(1f - attackSpeedBonus);
+        }
+
+        public override void OnUnequip(CharacterManager cm)
+        {
+            var auto = cm.GetComponent&lt;AutoAttackController&gt;();
+            if (auto != null) auto.RemoveIntervalMultiplier(1f - attackSpeedBonus);
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Items/Buffs/VigorBuff.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    [CreateAssetMenu(menuName = "AF/Data/Item/Buff/Vigor")]
+    public class VigorBuff : BuffItem
+    {
+        public int bonusMaxHealth = 40;
+
+        public override void OnEquip(CharacterManager cm)
+        {
+            cm.health.AddMax(bonusMaxHealth);
+        }
+
+        public override void OnUnequip(CharacterManager cm)
+        {
+            cm.health.AddMax(-bonusMaxHealth, healToo: false);
+        }
+    }
+}</code></pre>
+
+<div class="card warn">
+  <span class="label warn">Nota honesta sobre remover buffs por valor</span>
+  <p style="margin-bottom:0">O <code>SwiftStrikesBuff</code> multiplica e depois divide pelo mesmo valor — funciona, mas se dois buffs derem <em>exactamente</em> o mesmo multiplicador e removeres um, o resultado continua certo (divisão), <strong>mas</strong> erros de vírgula flutuante podem acumular. Para 2 buffs no máximo, é irrelevante. Se um dia tiveres um stat system a sério, guardas os modificadores numa lista com a fonte (como falámos no doc de arquitectura) e recalculas do zero.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s14">14. Persistência</h2>
+
+<div class="path">Assets/Scripts/Items/MineralItem.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    [CreateAssetMenu(menuName = "AF/Data/Item/Mineral")]
+    public class MineralItem : ScriptableObject
+    {
+        public string id;
+        public string displayName;
+        public Sprite icon;
+        public int upgradeValue = 1;
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Systems/PlayerProfile.cs</div>
+<pre><code>using System.Collections.Generic;
+using UnityEngine;
+
+namespace AF
+{
+    /// &lt;summary&gt;
+    /// Fonte única do progresso permanente. Persiste entre runs e New Game Plus.
+    /// (Serialização para ficheiro/JSON é um passo separado — aqui só o modelo em memória.)
+    /// &lt;/summary&gt;
+    public class PlayerProfile : MonoBehaviour
+    {
+        [Header("Moedas")]
+        public int gold;
+        public int mineralCount;
+
+        [Header("Atributos permanentes")]
+        public int bonusMaxHealth;
+        public int bonusAttackPower;
+
+        [Header("Coleção de armas (persistem em NG+)")]
+        public List&lt;WeaponItem&gt; unlockedWeapons = new();
+
+        // Nível de upgrade por arma — chave = weapon.id (string estável, NÃO a referência ao asset)
+        readonly Dictionary&lt;string, int&gt; weaponLevels = new();
+
+        public int GetWeaponLevel(WeaponItem weapon)
+        {
+            if (weapon == null || string.IsNullOrEmpty(weapon.id)) return 0;
+            return weaponLevels.TryGetValue(weapon.id, out int lvl) ? lvl : 0;
+        }
+
+        public void SetWeaponLevel(WeaponItem weapon, int level)
+        {
+            if (weapon == null || string.IsNullOrEmpty(weapon.id)) return;
+            weaponLevels[weapon.id] = Mathf.Max(0, level);
+        }
+
+        public void UnlockWeapon(WeaponItem weapon)
+        {
+            if (weapon != null &amp;&amp; !unlockedWeapons.Contains(weapon))
+                unlockedWeapons.Add(weapon);
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Systems/Blacksmith.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    public class Blacksmith : MonoBehaviour
+    {
+        [SerializeField] PlayerProfile profile;
+        [SerializeField] int maxWeaponLevel = 10;
+
+        public bool CanUpgrade(WeaponItem weapon, int mineralCost)
+        {
+            if (weapon == null) return false;
+            if (profile.GetWeaponLevel(weapon) &gt;= maxWeaponLevel) return false;
+            return profile.mineralCount &gt;= mineralCost;
+        }
+
+        public bool UpgradeWeapon(WeaponItem weapon, int mineralCost)
+        {
+            if (!CanUpgrade(weapon, mineralCost)) return false;
+
+            profile.mineralCount -= mineralCost;
+            profile.SetWeaponLevel(weapon, profile.GetWeaponLevel(weapon) + 1);
+            return true;
+        }
+    }
+}</code></pre>
+
+<div class="card fix">
+  <span class="label fix">Regra que já tínhamos combinado</span>
+  <p style="margin-bottom:0">O nível de upgrade vive no <strong>save (<code>PlayerProfile</code>)</strong>, indexado por <code>weapon.id</code> — <strong>nunca</strong> dentro do <code>WeaponItem</code> (que é um asset partilhado). Ao equipar, o <code>WeaponEquipper</code> lê o nível do profile e aplica bónus. Melhorar no ferreiro só muda o número no save.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s15">15. Wiring da camada de itens</h2>
+
+<ol>
+  <li>Cria os assets: Create → AF/Data/Item/Weapon (dá-lhe um <code>id</code> único), AF/Data/Character Class, AF/Data/Item/Buff/*, AF/Data/Item/Mineral.</li>
+  <li>Na <code>WeaponItem</code>: arrasta a <code>MeleeAttack</code> (que tem <code>damageType</code> + <code>damage</code>) para <code>attackAbility</code>.</li>
+  <li>No personagem do jogador: adiciona <code>WeaponEquipper</code>, <code>CharacterClassProfile</code>, <code>BuffLoadout</code>, e (se auto-ataque) <code>AutoAttackController</code>.</li>
+  <li>Liga no <code>WeaponEquipper</code>: <code>characterManager</code> + <code>autoAttack</code>.</li>
+  <li>Liga no <code>CharacterClassProfile</code>: <code>characterManager</code>, <code>characterClass</code> (ex.: Orc), <code>weaponEquipper</code>, e <code>profile</code> (se já tiveres).</li>
+  <li>Aplica os patches: <code>Health.Initialize/AddMax</code>, <code>CombatManager.DamageBonus</code>, <code>MeleeAttack</code> (somar bónus), <code>AutoAttackController</code> (multiplicador).</li>
+  <li>Cena de hub: um GameObject com <code>PlayerProfile</code> (marca <code>DontDestroyOnLoad</code> mais tarde) e <code>Blacksmith</code>.</li>
+  <li>Testa: Orc só equipa <code>Heavy</code>; melhora no ferreiro → intervalo desce e dano sobe; equipa 2 buffs, tenta um 3.º (deve falhar).</li>
+</ol>
+
+<div class="card">
+  <span class="label ok">Exemplo: classe Orc</span>
+  <ul style="margin-bottom:0">
+    <li><code>className</code>: Orc · <code>baseHealth</code>: 140 · <code>baseAttackPower</code>: 14</li>
+    <li><code>allowedWeaponTypes</code>: [ Heavy ]</li>
+    <li><code>startingWeapon</code>: "Machado Grande" (WeaponItem, weaponType = Heavy, attackAbility = MeleeAttack pesado, baseAttackInterval ~1.4)</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s16">16. Object Pool de VFX (partículas de ataque)</h2>
+
+<div class="card">
+  <span class="label ok">O problema</span>
+  <p style="margin-bottom:0">Neste momento a <code>MeleeAttack</code> faz <code>Object.Instantiate(swingEffect...)</code> e <code>Object.Instantiate(hitImpact...)</code> a <strong>cada golpe</strong>. Com um herói é irrelevante; com uma horda a bater ao mesmo tempo, são dezenas de <code>Instantiate</code>/<code>Destroy</code> por segundo → picos de GC e hitches. A solução é <strong>reciclar</strong> os efeitos: instancias uma vez, desligas em vez de destruir, e voltas a usar.</p>
+</div>
+
+<p>Três peças: um <strong>serviço</strong> (<code>VFXPool</code>) que guarda uma fila por prefab, um <strong>componente</strong> (<code>PooledEffect</code>) que cada efeito carrega e que se auto-devolve quando acaba, e um <strong>ponteiro global</strong> no <code>GameContext</code> para quem quiser tocar efeitos sem depender de referências.</p>
+
+<h3>16.1 <code>PooledEffect</code> — o efeito que se auto-devolve</h3>
+<div class="path">Assets/Scripts/VFX/PooledEffect.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    /// &lt;summary&gt;
+    /// Vive num prefab de partículas. Ao tocar, mede a duração e devolve-se
+    /// ao pool sozinho quando termina. Não destrói nada.
+    /// &lt;/summary&gt;
+    public class PooledEffect : MonoBehaviour
+    {
+        ParticleSystem[] systems;
+        VFXPool owner;
+        float returnTime;
+        bool playing;
+
+        public GameObject SourcePrefab { get; private set; }
+
+        void Awake()
+        {
+            // inclui inactivos para apanhar sub-emitters
+            systems = GetComponentsInChildren&lt;ParticleSystem&gt;(true);
+        }
+
+        public void Play(VFXPool pool, GameObject sourcePrefab)
+        {
+            owner = pool;
+            SourcePrefab = sourcePrefab;
+
+            float longest = 0.1f;
+            for (int i = 0; i &lt; systems.Length; i++)
+            {
+                ParticleSystem ps = systems[i];
+                ps.Clear(true);
+                ps.Play(true);
+
+                ParticleSystem.MainModule main = ps.main;
+                float life = main.duration + main.startLifetime.constantMax;
+                if (life &gt; longest) longest = life;
+            }
+
+            returnTime = Time.time + longest;
+            playing = true;
+        }
+
+        void Update()
+        {
+            if (!playing) return;
+            if (Time.time &lt; returnTime) return;
+
+            playing = false;
+            owner.Return(this);
+        }
+    }
+}</code></pre>
+
+<h3>16.2 <code>VFXPool</code> — o serviço</h3>
+<div class="path">Assets/Scripts/VFX/VFXPool.cs</div>
+<pre><code>using System.Collections.Generic;
+using UnityEngine;
+
+namespace AF
+{
+    public class VFXPool : MonoBehaviour
+    {
+        [Tooltip("Prefabs a pré-aquecer no arranque (evita hitch no 1.º uso).")]
+        [SerializeField] PrewarmEntry[] prewarm;
+
+        [System.Serializable]
+        public struct PrewarmEntry
+        {
+            public GameObject prefab;
+            public int count;
+        }
+
+        // uma fila por prefab
+        readonly Dictionary&lt;GameObject, Queue&lt;PooledEffect&gt;&gt; pools = new();
+
+        void Awake()
+        {
+            GameContext.SetVFXPool(this);
+
+            if (prewarm != null)
+            {
+                for (int i = 0; i &lt; prewarm.Length; i++)
+                    Prewarm(prewarm[i].prefab, prewarm[i].count);
+            }
+        }
+
+        public PooledEffect Play(GameObject prefab, Vector3 position, Quaternion rotation)
+        {
+            if (prefab == null) return null;
+
+            Queue&lt;PooledEffect&gt; pool = GetPool(prefab);
+            PooledEffect fx = pool.Count &gt; 0 ? pool.Dequeue() : Create(prefab);
+
+            fx.transform.SetPositionAndRotation(position, rotation);
+            fx.gameObject.SetActive(true);
+            fx.Play(this, prefab);
+            return fx;
+        }
+
+        public void Return(PooledEffect fx)
+        {
+            if (fx == null || fx.SourcePrefab == null) return;
+
+            fx.gameObject.SetActive(false);
+            GetPool(fx.SourcePrefab).Enqueue(fx);
+        }
+
+        public void Prewarm(GameObject prefab, int count)
+        {
+            if (prefab == null || count &lt;= 0) return;
+
+            Queue&lt;PooledEffect&gt; pool = GetPool(prefab);
+            for (int i = 0; i &lt; count; i++)
+            {
+                PooledEffect fx = Create(prefab);
+                fx.gameObject.SetActive(false);
+                pool.Enqueue(fx);
+            }
+        }
+
+        Queue&lt;PooledEffect&gt; GetPool(GameObject prefab)
+        {
+            if (!pools.TryGetValue(prefab, out Queue&lt;PooledEffect&gt; q))
+            {
+                q = new Queue&lt;PooledEffect&gt;();
+                pools[prefab] = q;
+            }
+            return q;
+        }
+
+        PooledEffect Create(GameObject prefab)
+        {
+            GameObject go = Instantiate(prefab, transform);
+            PooledEffect fx = go.GetComponent&lt;PooledEffect&gt;();
+            if (fx == null) fx = go.AddComponent&lt;PooledEffect&gt;();
+            return fx;
+        }
+    }
+}</code></pre>
+
+<h3>16.3 <code>GameContext</code> — patch (à secção 6)</h3>
+<div class="path">Assets/Scripts/Core/GameContext.cs — acrescenta</div>
+<pre><code>public static VFXPool VFX { get; private set; }
+
+public static void SetVFXPool(VFXPool pool) =&gt; VFX = pool;</code></pre>
+
+<h3>16.4 <code>MeleeAttack</code> — usar o pool (patch à secção 4)</h3>
+<div class="path">Assets/Scripts/Abilities/MeleeAttack.cs — troca os Instantiate</div>
+<pre><code>void OnHitboxOpen(Hitbox hitbox)
+{
+    if (swingEffect == null || hitbox.swingSpawnRef == null) return;
+
+    Vector3 pos = hitbox.swingSpawnRef.position;
+    Quaternion rot = hitbox.swingSpawnRef.rotation;
+
+    if (GameContext.VFX != null)
+        GameContext.VFX.Play(swingEffect, pos, rot);
+    else
+        Object.Instantiate(swingEffect, pos, rot); // fallback se não houver pool
+}
+
+void OnEnemyHit(Vector3 hitPosition)
+{
+    if (hitImpact == null) return;
+
+    if (GameContext.VFX != null)
+        GameContext.VFX.Play(hitImpact, hitPosition, Quaternion.identity);
+    else
+        Object.Instantiate(hitImpact, hitPosition, Quaternion.identity);
+}</code></pre>
+
+<div class="flow">Fluxo de um golpe:
+MeleeAttack.OnEnemyHit(hitPos)
+  → GameContext.VFX.Play(hitImpact, hitPos, rot)
+      → pool tem sobra? reutiliza : Instantiate (só desta vez)
+      → SetActive(true) + PooledEffect.Play() (mede duração)
+  ... partículas correm ...
+  → PooledEffect.Update() vê que acabou → VFXPool.Return()
+      → SetActive(false) + volta para a fila</div>
+
+<div class="card warn">
+  <span class="label warn">Configuração dos prefabs de partículas (importante)</span>
+  <ul style="margin-bottom:0">
+    <li>No <em>Particle System</em>: <strong>Stop Action = None</strong> (ou Disable). Se estiver em <em>Destroy</em>, o pool perde o objecto.</li>
+    <li>Desliga <strong>Play On Awake</strong> — quem manda tocar é o <code>PooledEffect.Play()</code>.</li>
+    <li>Efeitos <strong>looping</strong> nunca "acabam" → nunca voltam ao pool. Para VFX de impacto usa sempre não-looping. Se precisares de loop (ex.: aura), devolves manualmente com uma chamada explícita.</li>
+    <li>O prefab <em>não precisa</em> de ter o <code>PooledEffect</code> à mão — o pool adiciona-o se faltar. Mas adicioná-lo no prefab é mais limpo.</li>
+  </ul>
+</div>
+
+<div class="card">
+  <span class="label ok">Alternativa nativa</span>
+  <p style="margin-bottom:0">O Unity tem <code>UnityEngine.Pool.ObjectPool&lt;T&gt;</code> (desde 2021) com callbacks <code>onGet/onRelease/onDestroy</code>. Faz o mesmo trabalho; a versão acima é multi-prefab e auto-explicativa, mas se preferires menos código à tua responsabilidade, embrulha um <code>ObjectPool&lt;PooledEffect&gt;</code> por prefab. Para uma horda, este padrão simples chega e sobra.</p>
+</div>
+
+<h3>16.5 Wiring</h3>
+<ol>
+  <li>Cria um GameObject "Systems/VFXPool" na cena (ou no bootstrap) e adiciona <code>VFXPool</code>.</li>
+  <li>Em <code>prewarm</code>, mete os efeitos mais usados (swing, hit) com um <code>count</code> igual ao pior caso simultâneo (ex.: nº de inimigos numa horda).</li>
+  <li>Aplica o patch ao <code>GameContext</code> e à <code>MeleeAttack</code>.</li>
+  <li>Confirma os prefabs (Stop Action = None, Play On Awake off, não-looping).</li>
+  <li>Testa com o Profiler aberto: bate várias vezes → o <code>GC Alloc</code> por golpe deve cair para ~0 depois do prewarm.</li>
+</ol>
+
 <footer>
-  Documento único e incremental. Próxima secção a acrescentar quando quiseres: WeaponItem, BuffLoadout, CharacterClass, Blacksmith / PlayerProfile.
+  Documento único e incremental. Feito: fundação de dano + itens/classes/buffs/persistência + pool de VFX.
+  Próximo quando quiseres: gravação em disco (JSON) do <code>PlayerProfile</code>, UI de inventário/ferreiro, pool para os próprios inimigos, ou o ciclo de New Game Plus.
 </footer>
 
 </div>

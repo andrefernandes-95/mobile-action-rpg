@@ -70,6 +70,8 @@ namespace AF
                 return;
             }
 
+            targetsHit.Add(damageable);
+
             Vector3 hitPosition = other.ClosestPoint(other.transform.position);
             hitboxOwner.combatManager.onEnemyHit?.Invoke(hitPosition);
 

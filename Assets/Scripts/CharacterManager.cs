@@ -67,7 +67,10 @@ namespace AF
 
         public void Stop()
         {
-            agent.ResetPath();
+            if (agent.enabled && agent.isOnNavMesh)
+            {
+                agent.ResetPath();
+            }
         }
 
         void UpdateRotation()

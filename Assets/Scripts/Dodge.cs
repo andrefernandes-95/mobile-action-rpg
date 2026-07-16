@@ -48,10 +48,17 @@ namespace AF
             characterManager.animator.Play(animationName);
 
             Vector3 direction = transform.forward;
+            bool isLockedOn = characterManager.lockOn.isLockedOn;
+
             if (playerInput != null)
             {
-                direction = playerInput.GetDodgeDirection();
+                direction = playerInput.GetDodgeDirection(isLockedOn);
             }
+            else if (isLockedOn)
+            {
+                direction *= -1f;
+            }
+
 
             StartCoroutine(DodgeRoutine(direction));
         }

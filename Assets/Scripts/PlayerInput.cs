@@ -94,12 +94,12 @@ namespace AF
             }
         }
 
-        public Vector3 GetDodgeDirection()
+        public Vector3 GetDodgeDirection(bool isLockedOn)
         {
             float h = joystick.Horizontal + Input.GetAxis("Horizontal");
             float v = joystick.Vertical + Input.GetAxis("Vertical");
 
-            Vector3 camForward = mainCam.transform.forward;
+            Vector3 camForward = mainCam.transform.forward * (isLockedOn ? -1f : 1f);
             Vector3 camRight = mainCam.transform.right;
 
             camForward.y = 0;
@@ -111,7 +111,9 @@ namespace AF
             Vector3 dodgeDir = (camForward * v + camRight * h).normalized;
 
             if (dodgeDir.magnitude < 0.1f)
+            {
                 dodgeDir = characterManager.transform.forward;
+            }
 
             return dodgeDir;
         }

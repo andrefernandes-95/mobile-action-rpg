@@ -49,16 +49,11 @@ namespace AF
 
             characterManager.isBusy = true;
             characterManager.agent.ResetPath();
-            SetCurrentAbility(attackAbility);
+            SetCurrentAbility(attackAbility, true);
         }
 
         public void OnSpecialAbility()
         {
-            if (characterManager.isBusy)
-            {
-                return;
-            }
-
             if (specialAbility == null)
             {
                 return;
@@ -67,10 +62,10 @@ namespace AF
             characterManager.isBusy = true;
             characterManager.agent.ResetPath();
 
-            SetCurrentAbility(specialAbility);
+            SetCurrentAbility(specialAbility, false);
         }
 
-        public void SetCurrentAbility(Ability next)
+        public void SetCurrentAbility(Ability next, bool updateCooldown)
         {
             if (currentAbility != null)
             {
@@ -80,7 +75,7 @@ namespace AF
             currentAbility = next;
             currentAbility?.OnStart(characterManager);
 
-            if (currentAbility != null)
+            if (updateCooldown && currentAbility != null)
             {
                 abilityCooldownEndTime = Time.time + currentAbility.cooldown;
             }

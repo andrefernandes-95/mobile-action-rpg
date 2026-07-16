@@ -9,8 +9,8 @@ namespace AF
     {
         [SerializeField] CharacterManager characterManager;
 
-        public void OpenHitbox() => characterManager.hitbox.OpenHitbox();
-        public void CloseHitbox() => characterManager.hitbox.CloseHitbox();
+        public void Hit() => characterManager.hitbox.OpenHitbox();
+        public void HitEnd() => characterManager.hitbox.CloseHitbox();
 
     }
 }
