@@ -10,7 +10,7 @@ namespace AF
     public class ThirdPersonCamera : MonoBehaviour
     {
         [Header("Target")]
-        [SerializeField] Transform target;
+        [SerializeField] CharacterManager target;
         [SerializeField] float targetHeight = 1.5f;
 
         [Header("Framing (fixo)")]
@@ -37,7 +37,7 @@ namespace AF
         {
             if (target != null)
             {
-                yaw = target.eulerAngles.y;
+                yaw = target.transform.eulerAngles.y;
             }
             else
             {
@@ -55,17 +55,18 @@ namespace AF
             UpdateYaw();
 
             Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
-            Vector3 pivot = target.position + Vector3.up * targetHeight;
+            Vector3 pivot = target.transform.position + Vector3.up * targetHeight;
 
             float wantedDistance = distance;
 
             Vector3 desiredPos = pivot - rotation * Vector3.forward * wantedDistance;
             desiredPos = ResolveWallOcclusion(desiredPos);
+            float finalFollowSmooth = followSmooth * (target.lockOn.isLockedOn ? 2 : 1f);
 
             transform.position = Vector3.Lerp(
                 transform.position,
                 desiredPos,
-                followSmooth * Time.deltaTime
+                finalFollowSmooth * Time.deltaTime
             );
 
             transform.rotation = Quaternion.LookRotation(pivot - transform.position, Vector3.up);
@@ -73,7 +74,7 @@ namespace AF
 
         Vector3 ResolveWallOcclusion(Vector3 desiredPos)
         {
-            Vector3 castOrigin = target.position + Vector3.up * targetHeight;
+            Vector3 castOrigin = target.transform.position + Vector3.up * targetHeight;
             Vector3 direction = desiredPos - castOrigin;
             float maxDistance = direction.magnitude;
 
@@ -103,8 +104,10 @@ namespace AF
 
         void UpdateYaw()
         {
-            float targetYaw = target.eulerAngles.y;
-            yaw = Mathf.LerpAngle(yaw, targetYaw, yawFollowSpeed * Time.deltaTime);
+            float targetYaw = target.transform.eulerAngles.y;
+
+            float finalYawFollowSpeed = yawFollowSpeed * (target.lockOn.isLockedOn ? 2 : 1f);
+            yaw = Mathf.LerpAngle(yaw, targetYaw, finalYawFollowSpeed * Time.deltaTime);
         }
     }
 }

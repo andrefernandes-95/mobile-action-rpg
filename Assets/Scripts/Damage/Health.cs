@@ -8,12 +8,28 @@ namespace AF
         [Header("Health")]
         [SerializeField] int maxHealth = 100;
 
-        public int Current { get; private set; }
+        [SerializeField]
+        int current;
+
+        public int Current
+        {
+            get => current;
+            private set
+            {
+                if (current == value)
+                    return;
+
+                current = value;
+                OnChanged?.Invoke();
+            }
+        }
+
         public int Max => maxHealth;
         public bool IsDead => Current <= 0;
 
         public event Action<DamageResult> OnDamaged;
         public event Action OnDied;
+        public event Action OnChanged;
 
         void Awake()
         {

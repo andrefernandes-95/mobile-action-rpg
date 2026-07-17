@@ -42,6 +42,7 @@ namespace AF
             }
 
             PruneThreats();
+
             if (isLockedOn && !IsValidTarget(lockOnTarget))
             {
                 ClearLockOn();

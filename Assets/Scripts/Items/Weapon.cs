@@ -18,6 +18,13 @@ namespace AF
         [Header("Range")]
         public float engageRadius = 3f;
 
+        [Header("Transform")]
+        public Vector3 position;
+        public Vector3 rotation;
+
+        [Header("Animations")]
+        public AnimatorOverrideController overrideController;
+
         public void Equip(EquipmentManager equipmentManager)
         {
             equipmentManager.EquipWeapon(this);

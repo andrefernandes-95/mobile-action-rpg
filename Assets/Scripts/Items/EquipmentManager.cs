@@ -13,6 +13,14 @@ namespace AF
 
         [Header("Components")]
         [SerializeField] InventoryManager inventoryManager;
+        [SerializeField] Animator animator;
+
+        RuntimeAnimatorController defaultOverrideController;
+
+        void Start()
+        {
+            defaultOverrideController = animator.runtimeAnimatorController;
+        }
 
         public void EquipWeapon(Weapon weapon)
         {
@@ -22,6 +30,12 @@ namespace AF
 
                 this.weaponInstance = weaponInstance;
                 worldWeapon = Instantiate(weapon.prefab, primaryHand.transform).GetComponent<Hitbox>();
+                worldWeapon.transform.SetLocalPositionAndRotation(weapon.position, Quaternion.Euler(weapon.rotation));
+
+                if (weapon.overrideController != null)
+                {
+                    animator.runtimeAnimatorController = weapon.overrideController;
+                }
             }
         }
 
@@ -33,6 +47,11 @@ namespace AF
             }
 
             this.weaponInstance = null;
+
+            if (defaultOverrideController != null)
+            {
+                animator.runtimeAnimatorController = defaultOverrideController;
+            }
         }
 
         public void OpenHitbox()

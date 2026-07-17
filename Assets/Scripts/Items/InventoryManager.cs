@@ -11,13 +11,20 @@ namespace AF
 
         [Header("Default Equipment")]
         [SerializeField] Weapon defaultWeapon;
+        [SerializeField] Weapon[] randomDefaultWeapons;
 
         [Header("Components")]
         [SerializeField] EquipmentManager equipmentManager;
 
         void Awake()
         {
-            if (defaultWeapon != null)
+            if (randomDefaultWeapons.Length > 0)
+            {
+                Weapon selected = randomDefaultWeapons[UnityEngine.Random.Range(0, randomDefaultWeapons.Length)];
+                AddItem(selected);
+                selected.Equip(equipmentManager);
+            }
+            else if (defaultWeapon != null)
             {
                 AddItem(defaultWeapon);
                 defaultWeapon.Equip(equipmentManager);

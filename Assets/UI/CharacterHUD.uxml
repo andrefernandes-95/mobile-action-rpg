@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <ui:VisualElement name="Container" style="flex-grow: 1; justify-content: center; align-items: center;">
+        <ui:VisualElement name="Health" style="flex-grow: 0; height: 5px; background-color: rgb(255, 255, 255); border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px; border-left-width: 1px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0); width: 35px; justify-content: center;">
+            <ui:VisualElement name="Fill" style="flex-grow: 0; background-color: rgb(241, 0, 75); width: 75%; position: absolute; top: 0; left: 0; height: 100%;"/>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

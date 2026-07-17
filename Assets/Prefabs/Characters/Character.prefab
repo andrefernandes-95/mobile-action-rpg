@@ -30,6 +30,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7795680233040311521}
+  - {fileID: 2999736221150867641}
   m_Father: {fileID: 3903456157624417881}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2244791197823422599
@@ -183,6 +184,89 @@ TrailRenderer:
   m_Autodestruct: 0
   m_Emitting: 0
   m_ApplyActiveColorSpace: 1
+--- !u!1 &2263843388582373809
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2999736221150867641}
+  - component: {fileID: 6953155794890421188}
+  - component: {fileID: 1263422629452348486}
+  - component: {fileID: 6350872213639492482}
+  m_Layer: 0
+  m_Name: Health Document
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2999736221150867641
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2263843388582373809}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 2, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6073590042296272327}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6953155794890421188
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2263843388582373809}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
+  m_PanelSettings: {fileID: 11400000, guid: 5bd3c75326c63b6408fc6ad89e41f569, type: 2}
+  m_ParentUI: {fileID: 0}
+  sourceAsset: {fileID: 9197481963319205126, guid: 972186591e224d44fa77ced99e06df4b, type: 3}
+  m_SortingOrder: 0
+  m_Position: 0
+  m_WorldSpaceSizeMode: 1
+  m_WorldSpaceWidth: 160
+  m_WorldSpaceHeight: 120
+  m_PivotReferenceSize: 0
+  m_Pivot: 0
+  m_WorldSpaceCollider: {fileID: 0}
+--- !u!114 &1263422629452348486
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2263843388582373809}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bcc76fab80098744a9f627958855822d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AF.HealthDocument
+  uIDocument: {fileID: 6953155794890421188}
+  health: {fileID: 5366300287412475226}
+--- !u!114 &6350872213639492482
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2263843388582373809}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e05f42632a20434ba12894862c3d5b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AF.Billboard
 --- !u!1 &3673545139705214888
 GameObject:
   m_ObjectHideFlags: 0
@@ -570,6 +654,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AF.Health
   maxHealth: 100
+  current: 0
 --- !u!114 &2883923683652965498
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -613,6 +698,7 @@ MonoBehaviour:
   primaryHand: {fileID: 7976284226481735392}
   secondaryHand: {fileID: 3270557984731058594}
   inventoryManager: {fileID: 2746758125811668220}
+  animator: {fileID: 5619519043771692139}
 --- !u!114 &2746758125811668220
 MonoBehaviour:
   m_ObjectHideFlags: 0

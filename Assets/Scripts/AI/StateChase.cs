@@ -10,7 +10,8 @@ namespace AF
         public override void Enter(StateMachine controller)
         {
             var player = controller.character.GetPlayer();
-            if (player != null)
+
+            if (player != null && !controller.character.health.IsDead)
             {
                 player.lockOn.RegisterChasingEnemy(controller.character);
             }
