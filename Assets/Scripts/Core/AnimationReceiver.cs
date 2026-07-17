@@ -8,9 +8,10 @@ namespace AF
     public class AnimationReceiver : MonoBehaviour
     {
         [SerializeField] CharacterManager characterManager;
+        [SerializeField] EquipmentManager equipmentManager;
 
-        public void Hit() => characterManager.hitbox.OpenHitbox();
-        public void HitEnd() => characterManager.hitbox.CloseHitbox();
+        public void Hit() => equipmentManager.OpenHitbox();
+        public void HitEnd() => equipmentManager.CloseHitbox();
 
     }
 }

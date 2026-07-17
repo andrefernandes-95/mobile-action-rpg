@@ -2,19 +2,21 @@ using UnityEngine;
 
 namespace AF
 {
-    [CreateAssetMenu(menuName = "AF/Data/Ability/Melee Attack")]
-    public class MeleeAttack : Ability
+    public class WeaponAbility : Ability
     {
-        [Header("Animation")]
-        public AnimationName[] animations;
+        DamageType damageType;
+        int amount;
 
-        [Header("Damage")]
-        public DamageType damageType;
-        public int amount;
-
-        [Header("VFX")]
-        [SerializeField] GameObject swingEffect;
-        [SerializeField] GameObject hitImpact;
+        public WeaponAbility(
+            DamageType damageType,
+            int amount,
+            float engageRadius
+        )
+        {
+            this.damageType = damageType;
+            this.amount = amount;
+            this.engageRadius = engageRadius;
+        }
 
         public override void OnStart(CharacterManager characterManager)
         {
@@ -22,7 +24,7 @@ namespace AF
             characterManager.combatManager.onHitboxOpen.AddListener(OnHitboxOpen);
             characterManager.combatManager.onHitboxClose.AddListener(OnHitboxClose);
 
-            characterManager.animator.Play(animations[Random.Range(0, animations.Length)].name);
+            characterManager.animator.Play(AnimHashes.Attack);
         }
 
         public override void OnEnd(CharacterManager characterManager)
@@ -34,10 +36,6 @@ namespace AF
 
         void OnHitboxOpen(Hitbox hitbox)
         {
-            if (swingEffect != null)
-            {
-                Instantiate(swingEffect, hitbox.swingSpawnRef.transform.position, Quaternion.identity);
-            }
         }
 
         void OnHitboxClose(Hitbox hitbox)
@@ -47,15 +45,23 @@ namespace AF
 
         void OnEnemyHit(Vector3 hitPosition)
         {
-            if (hitImpact != null)
+            VFXPoolTag tag = VFXPoolTag.SLASH;
+
+            if (damageType == DamageType.Blunt)
             {
-                Instantiate(hitImpact, hitPosition, Quaternion.identity);
+                tag = VFXPoolTag.BLUNT;
             }
+            else if (damageType == DamageType.Pierce)
+            {
+                tag = VFXPoolTag.PIERCE;
+            }
+
+            VFXPool.Instance.Play(tag, hitPosition, Quaternion.identity);
         }
 
         public override bool TryBuildDamagePacket(CharacterManager source, Vector3 hitPoint, out DamagePacket packet)
         {
-            if (damageType == null || amount <= 0)
+            if (amount <= 0)
             {
                 packet = default;
                 return false;

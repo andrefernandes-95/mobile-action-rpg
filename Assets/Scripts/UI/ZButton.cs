@@ -29,7 +29,7 @@ namespace AF
 
         void UpdateIcon(CharacterManager newCharacter)
         {
-            image.sprite = newCharacter.combatManager.AttackAbility?.icon;
+            // image.sprite = newCharacter.combatManager.AttackAbility?.icon;
         }
     }
 }

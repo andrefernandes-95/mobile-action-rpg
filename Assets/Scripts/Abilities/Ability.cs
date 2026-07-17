@@ -2,17 +2,11 @@ namespace AF
 {
     using UnityEngine;
 
-    public class Ability : ScriptableObject
+    public class Ability
     {
-        [Header("Info")]
-        public new string name;
-        [TextArea] public string description;
-        public Sprite icon;
-
         [Header("Cooldown")]
         public float cooldown;
         public float engageRadius = 2.5f;
-
 
         public virtual void OnStart(CharacterManager characterManager)
         {
@@ -31,6 +25,5 @@ namespace AF
             packet = default;
             return false;
         }
-
     }
 }

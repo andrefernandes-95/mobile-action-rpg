@@ -15,7 +15,6 @@ namespace AF
 
         [Header("Character Components")]
         public Health health;
-        public Hitbox hitbox;
         public CharacterDamageReceiver characterDamageReceiver;
         public Dodge dodge;
         public Perception perception;

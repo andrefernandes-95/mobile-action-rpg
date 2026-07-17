@@ -6,15 +6,12 @@ namespace AF
     public class CombatManager : MonoBehaviour
     {
         [Header("Abilities")]
-        [SerializeField] Ability attackAbility;
         [SerializeField] Ability specialAbility;
-
-
-        public Ability AttackAbility => attackAbility;
         public Ability SpecialAbility => specialAbility;
 
         [Header("Components")]
         [SerializeField] CharacterManager characterManager;
+        [SerializeField] EquipmentManager equipmentManager;
 
         [Header("Debug")]
         [SerializeField] Ability currentAbility;
@@ -42,12 +39,18 @@ namespace AF
                 return;
             }
 
-            if (attackAbility == null)
+            if (equipmentManager == null || equipmentManager.weaponInstance == null)
             {
                 return;
             }
 
-            SetCurrentAbility(attackAbility, true);
+            WeaponAbility weaponAbility = equipmentManager.weaponInstance.ability;
+            if (weaponAbility == null)
+            {
+                return;
+            }
+
+            SetCurrentAbility(weaponAbility, true);
         }
 
         public void OnSpecialAbility()
@@ -87,19 +90,27 @@ namespace AF
             return currentAbility.TryBuildDamagePacket(characterManager, hitPoint, out packet);
         }
 
-        public void EquipAttackAbility(Ability ability)
-        {
-            attackAbility = ability;
-        }
-
         public float GetEngageRadius()
         {
-            if (AttackAbility != null)
+            if (TryGetCurrentWeaponAbility(out WeaponAbility weaponAbility))
             {
-                return AttackAbility.engageRadius;
+                return weaponAbility.engageRadius;
             }
 
             return characterManager.agent.stoppingDistance;
+        }
+
+        bool TryGetCurrentWeaponAbility(out WeaponAbility weaponAbility)
+        {
+            weaponAbility = null;
+
+            if (equipmentManager != null && equipmentManager.weaponInstance != null && equipmentManager.weaponInstance.ability != null)
+            {
+                weaponAbility = equipmentManager.weaponInstance.ability;
+                return true;
+            }
+
+            return false;
         }
     }
 }
