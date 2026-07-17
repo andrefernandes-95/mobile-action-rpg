@@ -16,14 +16,13 @@ namespace AF
         public float lockOnMaxDistance = 12f;
 
         [SerializeField] CharacterManager characterManager;
-        float lockOnUpdateRate = 0.1f; // every 0.1 seconds
-        float lockOnTimer = 0f;
 
         public void RegisterChasingEnemy(CharacterManager enemy)
         {
             if (!chasingEnemies.Contains(enemy))
             {
                 chasingEnemies.Add(enemy);
+                SetLockOn(enemy.transform);
             }
         }
 
@@ -37,20 +36,21 @@ namespace AF
 
         void Update()
         {
-            if (characterManager.IsPlayer())
+            if (!characterManager.IsPlayer())
             {
-                lockOnTimer -= Time.deltaTime;
-                if (lockOnTimer <= 0f)
-                {
-                    UpdateLockOn();
-                    lockOnTimer = lockOnUpdateRate;
-                }
+                return;
+            }
+
+            PruneThreats();
+            if (isLockedOn && !IsValidTarget(lockOnTarget))
+            {
+                ClearLockOn();
             }
         }
 
-        void UpdateLockOn()
+        void PruneThreats()
         {
-            // Remove dead or far enemies
+            float maxSqr = lockOnMaxDistance * lockOnMaxDistance;
             for (int i = chasingEnemies.Count - 1; i >= 0; i--)
             {
                 var e = chasingEnemies[i];
@@ -59,40 +59,31 @@ namespace AF
                     chasingEnemies.RemoveAt(i);
                     continue;
                 }
-
-                float sqrDist = (e.transform.position - transform.position).sqrMagnitude;
-                if (sqrDist > lockOnMaxDistance * lockOnMaxDistance)
+                float sqr = (e.transform.position - transform.position).sqrMagnitude;
+                if (sqr > maxSqr)
                 {
                     chasingEnemies.RemoveAt(i);
                 }
             }
-
-            if (chasingEnemies.Count == 0)
-            {
-                ClearLockOn();
-                return;
-            }
-
-            // Find closest enemy using squared distance
-            CharacterManager closest = null;
-            float closestSqrDist = float.MaxValue;
-
-            for (int i = 0; i < chasingEnemies.Count; i++)
-            {
-                var e = chasingEnemies[i];
-                float sqrDist = (e.transform.position - transform.position).sqrMagnitude;
-                if (sqrDist < closestSqrDist)
-                {
-                    closestSqrDist = sqrDist;
-                    closest = e;
-                }
-            }
-
-            if (closest != null)
-            {
-                SetLockOn(closest.transform);
-            }
         }
+
+        bool IsValidTarget(Transform t)
+        {
+            if (t == null)
+            {
+                return false;
+            }
+
+            var cm = t.GetComponent<CharacterManager>();
+            if (cm == null || cm.health.IsDead)
+            {
+                return false;
+            }
+
+            float sqr = (t.position - transform.position).sqrMagnitude;
+            return sqr <= lockOnMaxDistance * lockOnMaxDistance;
+        }
+
 
         void SetLockOn(Transform target)
         {

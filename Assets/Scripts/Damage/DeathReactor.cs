@@ -1,4 +1,6 @@
+using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace AF
 {
@@ -35,7 +37,18 @@ namespace AF
             characterManager.agent.enabled = false;
             characterManager.isBusy = true;
 
+            if (characterManager.IsPlayer())
+            {
+                StartCoroutine(ReloadGame());
+            }
+
             // Lock On
+        }
+
+        IEnumerator ReloadGame()
+        {
+            yield return new WaitForSeconds(2f);
+            SceneManager.LoadScene("SampleScene");
         }
     }
 }

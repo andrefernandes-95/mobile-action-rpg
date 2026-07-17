@@ -19,7 +19,10 @@ namespace AF
         public override void Tick(StateMachine controller)
         {
             var player = controller.character.GetPlayer();
-            if (player == null) return;
+            if (player == null)
+            {
+                return;
+            }
 
             float dist = Vector3.Distance(
                 controller.transform.position,

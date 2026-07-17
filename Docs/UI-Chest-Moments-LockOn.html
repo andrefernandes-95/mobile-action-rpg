@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>As Profundezas — UI · Chest · Moments · Lock-On</title>
+  <style>
+    :root {
+      --bg:#0f1117; --surface:#1a1d27; --surface2:#242836; --text:#e6e9f0;
+      --muted:#9aa3b5; --accent:#6c9eff; --accent2:#7ee787; --warn:#f0b429;
+      --danger:#ff8ba7; --border:#343a4d; --code:#12151c;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;padding:2rem 1rem 4rem}
+    .wrap{max-width:980px;margin:0 auto}
+    header{margin-bottom:2rem;padding-bottom:1.25rem;border-bottom:1px solid var(--border)}
+    h1{font-size:1.85rem;margin-bottom:.4rem}
+    .sub{color:var(--muted);font-size:1rem}
+    h2{font-size:1.25rem;color:var(--accent);margin:2.2rem 0 .7rem;padding-top:.3rem}
+    h3{font-size:1rem;color:var(--accent2);margin:1.3rem 0 .4rem}
+    p,li{margin-bottom:.55rem;color:var(--muted)}
+    ul,ol{padding-left:1.25rem;margin-bottom:.9rem}
+    a{color:var(--accent)}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;margin:1rem 0}
+    .card.warn{border-color:#6b5420;background:#1c1810}
+    .card.fix{border-color:#5a2436;background:#1c1014}
+    .label{display:inline-block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:.15rem .45rem;border-radius:4px;margin-bottom:.5rem}
+    .label.warn{background:#4a3810;color:var(--warn)}
+    .label.fix{background:#4a1f2e;color:var(--danger)}
+    .label.ok{background:#1a3d2b;color:var(--accent2)}
+    .toc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;margin:1.2rem 0}
+    .toc a{text-decoration:none}.toc a:hover{text-decoration:underline}
+    .path{font-family:Consolas,monospace;font-size:.75rem;color:var(--accent2);margin:1rem 0 -.35rem}
+    .path::before{content:"📄 "}
+    pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem;overflow-x:auto;font-family:Consolas,monospace;font-size:.8rem;line-height:1.5;margin:.5rem 0 1.1rem;color:#d6deeb}
+    code{font-family:Consolas,monospace;font-size:.88em;background:var(--surface2);padding:.05em .3em;border-radius:3px}
+    pre code{background:none;padding:0;font-size:1em}
+    .flow{font-family:Consolas,monospace;font-size:.78rem;background:var(--code);border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem;white-space:pre;overflow-x:auto;color:var(--muted);margin:1rem 0}
+    footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--border);color:var(--muted);font-size:.85rem}
+    .uss{border-left:3px solid var(--warn)}
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>UI · Chest · Moments · Lock-On</h1>
+  <p class="sub">Documento de código para o teu projeto actual (<code>AF</code>). Liga a <code>CombatManager</code>, <code>Health</code>, <code>LockOn</code>, <code>InventoryManager</code>. Moments inspirados no Cacildes Adventure 2. Sem Event Bus global.</p>
+</header>
+
+<nav class="toc">
+  <strong>Índice</strong>
+  <ol>
+    <li><a href="#s0">Mapa + decisões</a></li>
+    <li><a href="#s1">Patches — CombatManager (cooldown exposto) + CombatMode</a></li>
+    <li><a href="#s2">Chest</a></li>
+    <li><a href="#s3">World UI — HP (uGUI) só em combate</a></li>
+    <li><a href="#s4">World UI Toolkit — stamina BotW (= cooldown da arma)</a></li>
+    <li><a href="#s5">Menu Final Fantasy (UI Toolkit)</a></li>
+    <li><a href="#s6">Dialogue box + opções</a></li>
+    <li><a href="#s7">Moments / cutscenes (estilo Cacildes)</a></li>
+    <li><a href="#s8">Lock-On mobile — tap no inimigo</a></li>
+    <li><a href="#s9">Wiring Unity</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================ -->
+<h2 id="s0">0. Mapa + decisões</h2>
+
+<div class="card">
+  <span class="label ok">Como encaixa no que já tens</span>
+  <ul style="margin-bottom:0">
+    <li><strong>HP world</strong> — World Space Canvas clássico (uGUI). Aparece só quando <code>CombatMode.IsInCombat</code> (lock-on activo ou inimigos a chase).</li>
+    <li><strong>Stamina BotW</strong> — UI Toolkit em world space. A barra = progresso do cooldown da arma (<code>CombatManager.CooldownNormalized</code>), não um recurso separado.</li>
+    <li><strong>Menu FF</strong> — Screen Space Overlay UI Toolkit. Pause o jogo, páginas: Itens / Equipamento / Skills / Opções.</li>
+    <li><strong>Dialogue</strong> — UI Toolkit. Linha + typewriter + botões de escolha. Usado por <code>EV_Dialogue</code> dentro de Moments.</li>
+    <li><strong>Moment</strong> — igual ao Cacildes: GO pai com <code>Moment</code>, filhos com <code>EventBase</code>, <code>Trigger()</code> corre coroutines em sequência. Sem Timeline, sem Event Bus (só UnityEvents locais).</li>
+    <li><strong>Lock-On</strong> — deixa de escolher o mais próximo automaticamente. Tap no ecrã → raycast → se bater num inimigo, esse é o alvo. Tap no vazio / fora de alcance → clear.</li>
+  </ul>
+</div>
+
+<div class="flow">Pastas sugeridas
+Assets/Scripts/Interactables/Chest.cs
+Assets/Scripts/UI/CombatMode.cs
+Assets/Scripts/UI/WorldHealthBar.cs
+Assets/Scripts/UI/WeaponStaminaBar.cs          (+ UXML/USS)
+Assets/Scripts/UI/GameMenuController.cs       (+ UXML/USS)
+Assets/Scripts/UI/DialogueUI.cs               (+ UXML/USS)
+Assets/Scripts/Moments/Moment.cs
+Assets/Scripts/Moments/EventBase.cs
+Assets/Scripts/Moments/EV_*.cs
+Assets/Scripts/Camera/LockOn.cs               (rewrite)
+Assets/Scripts/Camera/TapLockOnInput.cs</div>
+
+<!-- ============================================================ -->
+<h2 id="s1">1. Patches — CombatManager + CombatMode</h2>
+
+<p>O teu <code>CombatManager</code> já guarda <code>abilityCooldownEndTime</code> mas não o expõe. A stamina BotW precisa disto.</p>
+
+<div class="path">Assets/Scripts/Combat/CombatManager.cs — acrescenta</div>
+<pre><code>public float CooldownRemaining =&gt;
+    Mathf.Max(0f, abilityCooldownEndTime - Time.time);
+
+public float CooldownDuration
+{
+    get
+    {
+        if (TryGetCurrentWeaponAbility(out WeaponAbility w) &amp;&amp; w.cooldown &gt; 0f)
+            return w.cooldown;
+        return 0f;
+    }
+}
+
+/// &lt;summary&gt;1 = pronto a atacar; 0 = acabou de atacar.&lt;/summary&gt;
+public float CooldownNormalized
+{
+    get
+    {
+        float dur = CooldownDuration;
+        if (dur &lt;= 0f) return 1f;
+        return 1f - Mathf.Clamp01(CooldownRemaining / dur);
+    }
+}
+
+public bool IsOnCooldown =&gt; Time.time &lt; abilityCooldownEndTime;</code></pre>
+
+<div class="path">Assets/Scripts/UI/CombatMode.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    /// &lt;summary&gt;
+    /// Fonte única: estamos em combate? As world bars de HP usam isto.
+    /// &lt;/summary&gt;
+    public class CombatMode : MonoBehaviour
+    {
+        [SerializeField] CharacterManager characterManager;
+        [SerializeField] float exitDelay = 2f;
+
+        float leaveAt = -1f;
+        bool inCombat;
+
+        public bool IsInCombat =&gt; inCombat;
+
+        void Update()
+        {
+            LockOn lockOn = characterManager != null ? characterManager.lockOn : null;
+            bool threat = lockOn != null
+                &amp;&amp; (lockOn.isLockedOn || lockOn.chasingEnemies.Count &gt; 0);
+
+            if (threat)
+            {
+                inCombat = true;
+                leaveAt = -1f;
+            }
+            else if (inCombat)
+            {
+                if (leaveAt &lt; 0f) leaveAt = Time.time + exitDelay;
+                if (Time.time &gt;= leaveAt) inCombat = false;
+            }
+        }
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s2">2. Chest</h2>
+
+<div class="path">Assets/Scripts/Interactables/Chest.cs</div>
+<pre><code>using UnityEngine;
+using UnityEngine.Events;
+
+namespace AF
+{
+    public class Chest : MonoBehaviour
+    {
+        [Header("Loot")]
+        [SerializeField] Item[] contents;
+        [SerializeField] bool openOnce = true;
+
+        [Header("Presentation")]
+        [SerializeField] Animator animator;          // opcional — trigger "Open"
+        [SerializeField] string openTrigger = "Open";
+        [SerializeField] GameObject closedVisual;
+        [SerializeField] GameObject openVisual;
+
+        [Header("Events")]
+        public UnityEvent onOpened;
+
+        bool opened;
+
+        public bool IsOpened =&gt; opened;
+
+        /// &lt;summary&gt;Chamado por um trigger / botão de interact / Moment.&lt;/summary&gt;
+        public void Open(InventoryManager inventory)
+        {
+            if (opened &amp;&amp; openOnce) return;
+            if (inventory == null) return;
+
+            opened = true;
+
+            if (contents != null)
+            {
+                for (int i = 0; i &lt; contents.Length; i++)
+                {
+                    if (contents[i] != null)
+                        inventory.AddItem(contents[i]);
+                }
+            }
+
+            if (animator != null &amp;&amp; !string.IsNullOrEmpty(openTrigger))
+                animator.SetTrigger(openTrigger);
+
+            if (closedVisual != null) closedVisual.SetActive(false);
+            if (openVisual != null) openVisual.SetActive(true);
+
+            onOpened?.Invoke();
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Interactables/ChestInteractTrigger.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    /// &lt;summary&gt;
+    /// Zona de interact. O jogador entra → mostra prompt.
+    /// Botão UI / tecla E chama TryOpen().
+    /// &lt;/summary&gt;
+    public class ChestInteractTrigger : MonoBehaviour
+    {
+        [SerializeField] Chest chest;
+        [SerializeField] string prompt = "Abrir baú";
+
+        InventoryManager inventoryInRange;
+        public bool CanOpen =&gt; inventoryInRange != null &amp;&amp; chest != null &amp;&amp; !chest.IsOpened;
+        public string Prompt =&gt; prompt;
+
+        void OnTriggerEnter(Collider other)
+        {
+            if (other.TryGetComponent(out InventoryManager inv))
+                inventoryInRange = inv;
+            // se InventoryManager está no CharacterManager:
+            else if (other.TryGetComponent(out CharacterManager cm))
+                inventoryInRange = cm.GetComponent&lt;InventoryManager&gt;();
+        }
+
+        void OnTriggerExit(Collider other)
+        {
+            if (inventoryInRange != null &amp;&amp;
+                (other.GetComponent&lt;InventoryManager&gt;() == inventoryInRange
+                 || other.GetComponent&lt;CharacterManager&gt;()?.GetComponent&lt;InventoryManager&gt;() == inventoryInRange))
+            {
+                inventoryInRange = null;
+            }
+        }
+
+        public void TryOpen()
+        {
+            if (!CanOpen) return;
+            chest.Open(inventoryInRange);
+        }
+
+        void Update()
+        {
+            // fallback teclado no editor
+            if (CanOpen &amp;&amp; Input.GetKeyDown(KeyCode.E))
+                TryOpen();
+        }
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s3">3. World UI — HP (só em combate)</h2>
+
+<div class="card">
+  <span class="label ok">Setup na cena</span>
+  <p style="margin-bottom:0">Child do personagem: Canvas (World Space) + Image fill de HP. Escala tipica <code>0.01</code>. O script billboard + liga a <code>Health</code> + <code>CombatMode</code>.</p>
+</div>
+
+<div class="path">Assets/Scripts/UI/WorldHealthBar.cs</div>
+<pre><code>using UnityEngine;
+using UnityEngine.UI;
+
+namespace AF
+{
+    public class WorldHealthBar : MonoBehaviour
+    {
+        [SerializeField] Health health;
+        [SerializeField] CombatMode combatMode;   // no jogador; em inimigos podes deixar null e estar sempre on
+        [SerializeField] Image fill;
+        [SerializeField] CanvasGroup canvasGroup;
+        [SerializeField] bool onlyInCombat = true;
+        [SerializeField] bool billboard = true;
+
+        Camera cam;
+
+        void OnEnable()
+        {
+            if (health != null) health.OnDamaged += HandleDamaged;
+        }
+
+        void OnDisable()
+        {
+            if (health != null) health.OnDamaged -= HandleDamaged;
+        }
+
+        void Start()
+        {
+            cam = Camera.main;
+            Refresh(immediate: true);
+        }
+
+        void LateUpdate()
+        {
+            bool show = !onlyInCombat
+                || combatMode == null
+                || combatMode.IsInCombat;
+
+            if (health != null &amp;&amp; health.IsDead) show = false;
+
+            if (canvasGroup != null)
+                canvasGroup.alpha = show ? 1f : 0f;
+
+            if (billboard &amp;&amp; cam != null &amp;&amp; show)
+                transform.rotation = Quaternion.LookRotation(transform.position - cam.transform.position);
+        }
+
+        void HandleDamaged(DamageResult _) =&gt; Refresh(false);
+
+        void Refresh(bool immediate)
+        {
+            if (health == null || fill == null) return;
+            float t = health.Max &gt; 0 ? (float)health.Current / health.Max : 0f;
+            fill.fillAmount = t;
+        }
+    }
+}</code></pre>
+
+<div class="card warn">
+  <span class="label warn">Inimigos</span>
+  <p style="margin-bottom:0">Reutiliza o mesmo script no inimigo com <code>onlyInCombat = false</code> (ou um <code>CombatMode</code> local que fica true enquanto <code>StateCombat</code>). O billboard mantém a barra legível com a terceira pessoa.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s4">4. Stamina BotW — cooldown da arma (UI Toolkit world)</h2>
+
+<div class="card">
+  <span class="label ok">Conceito</span>
+  <p>Não é stamina clássica (correr/escalar). É uma <strong>barra circular/arco</strong> estilo BotW que enche enquanto a arma está em cooldown e fica cheia = podes atacar outra vez. Fonte: <code>CombatManager.CooldownNormalized</code>.</p>
+</div>
+
+<div class="path">Assets/UI/WeaponStamina.uxml</div>
+<pre class="uss"><code>&lt;ui:UXML xmlns:ui="UnityEngine.UIElements"&gt;
+  &lt;ui:VisualElement name="root" class="stamina-root"&gt;
+    &lt;ui:VisualElement name="ring-bg" class="ring bg" /&gt;
+    &lt;ui:VisualElement name="ring-fill" class="ring fill" /&gt;
+    &lt;ui:Label name="ready" text="" class="ready-label" /&gt;
+  &lt;/ui:VisualElement&gt;
+&lt;/ui:UXML&gt;</code></pre>
+
+<div class="path">Assets/UI/WeaponStamina.uss</div>
+<pre class="uss"><code>.stamina-root {
+    width: 80px;
+    height: 80px;
+    align-items: center;
+    justify-content: center;
+}
+
+.ring {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    border-radius: 40px;
+    border-width: 6px;
+    border-color: rgba(255, 255, 255, 0.15);
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.ring.fill {
+    /* o fill real é feito via Radial progress no C# com style / custom mesh;
+       fallback simples: escala do alpha */
+    border-color: rgb(255, 220, 90);
+}
+
+.ready-label {
+    color: rgb(255, 240, 180);
+    font-size: 10px;
+    -unity-text-align: middle-center;
+}</code></pre>
+
+<div class="path">Assets/Scripts/UI/WeaponStaminaBar.cs</div>
+<pre><code>using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace AF
+{
+    /// &lt;summary&gt;
+    /// World-space UI Toolkit. Coloca UIDocument num child do player
+    /// (acima da cabeça / perto da arma). Panel Settings → Render Mode = World Space
+    /// (Unity 6 / UI Toolkit world). Em versões sem world UITK, usa um
+    /// World Space Canvas + raw Image circular — a lógica CooldownNormalized é igual.
+    /// &lt;/summary&gt;
+    public class WeaponStaminaBar : MonoBehaviour
+    {
+        [SerializeField] UIDocument document;
+        [SerializeField] CombatManager combatManager;
+        [SerializeField] CombatMode combatMode;
+        [SerializeField] bool hideOutOfCombat = true;
+        [SerializeField] bool billboard = true;
+
+        VisualElement root;
+        VisualElement fill;
+        Label ready;
+        Camera cam;
+
+        void OnEnable()
+        {
+            if (document == null) document = GetComponent&lt;UIDocument&gt;();
+            var ve = document.rootVisualElement;
+            root = ve.Q("root");
+            fill = ve.Q("ring-fill");
+            ready = ve.Q&lt;Label&gt;("ready");
+            cam = Camera.main;
+        }
+
+        void LateUpdate()
+        {
+            if (combatManager == null || root == null) return;
+
+            bool show = !hideOutOfCombat
+                || combatMode == null
+                || combatMode.IsInCombat;
+
+            root.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+            if (!show) return;
+
+            float n = combatManager.CooldownNormalized; // 0..1
+            // Feedback visual simples: opacidade + escala do anel
+            fill.style.opacity = n;
+            float s = Mathf.Lerp(0.75f, 1f, n);
+            fill.style.scale = new Scale(new Vector3(s, s, 1f));
+
+            bool readyNow = n &gt;= 0.999f;
+            if (ready != null)
+                ready.text = readyNow ? "" : "";
+
+            // Cor: amarelo a encher → branco quando pronto (estilo BotW)
+            Color c = readyNow
+                ? new Color(1f, 1f, 1f, 0.9f)
+                : new Color(1f, 0.86f, 0.35f, 0.95f);
+            fill.style.borderTopColor = c;
+            fill.style.borderRightColor = c;
+            fill.style.borderBottomColor = c;
+            fill.style.borderLeftColor = c;
+
+            if (billboard &amp;&amp; cam != null)
+                transform.rotation = Quaternion.LookRotation(
+                    transform.position - cam.transform.position);
+        }
+    }
+}</code></pre>
+
+<div class="card warn">
+  <span class="label warn">Progresso circular de verdade</span>
+  <p style="margin-bottom:0">UI Toolkit não tem RadialFill nativo. Opções: (1) Image uGUI com fill Method = Radial 360 no World Canvas — o mais fácil e o mais “BotW”; (2) shader / custom painter UITK. Se quiseres o look exacto, usa uGUI Radial para a stamina e UITK só para o menu/diálogo. Abaixo o fallback Radial em 10 linhas.</p>
+</div>
+
+<div class="path">Assets/Scripts/UI/WeaponStaminaBarUGUI.cs — fallback Radial (recomendado)</div>
+<pre><code>using UnityEngine;
+using UnityEngine.UI;
+
+namespace AF
+{
+    public class WeaponStaminaBarUGUI : MonoBehaviour
+    {
+        [SerializeField] CombatManager combatManager;
+        [SerializeField] CombatMode combatMode;
+        [SerializeField] Image radial;          // Image Type = Filled, Method = Radial 360
+        [SerializeField] CanvasGroup group;
+        [SerializeField] bool hideOutOfCombat = true;
+        [SerializeField] bool billboard = true;
+
+        Camera cam;
+
+        void Start() =&gt; cam = Camera.main;
+
+        void LateUpdate()
+        {
+            bool show = !hideOutOfCombat || combatMode == null || combatMode.IsInCombat;
+            if (group != null) group.alpha = show ? 1f : 0f;
+            if (!show || combatManager == null || radial == null) return;
+
+            radial.fillAmount = combatManager.CooldownNormalized;
+
+            if (billboard &amp;&amp; cam != null)
+                transform.rotation = Quaternion.LookRotation(
+                    transform.position - cam.transform.position);
+        }
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s5">5. Menu Final Fantasy (UI Toolkit)</h2>
+
+<div class="card">
+  <span class="label ok">Look &amp; feel</span>
+  <p style="margin-bottom:0">Painel azul translúcido, bordas claras, fonte pixel/serif, lista à esquerda (Itens / Equipamento / Skills / Opções), conteúdo à direita. Abre com botão UI / tecla. <code>Time.timeScale = 0</code> enquanto aberto. Bloqueia input de movimento.</p>
+</div>
+
+<div class="path">Assets/UI/GameMenu.uxml</div>
+<pre class="uss"><code>&lt;ui:UXML xmlns:ui="UnityEngine.UIElements"&gt;
+  &lt;ui:VisualElement name="backdrop" class="backdrop"&gt;
+    &lt;ui:VisualElement name="window" class="ff-window"&gt;
+      &lt;ui:Label text="MENU" class="ff-title" /&gt;
+      &lt;ui:VisualElement class="ff-body"&gt;
+        &lt;ui:ListView name="tabs" class="ff-tabs" /&gt;
+        &lt;ui:VisualElement name="content" class="ff-content"&gt;
+          &lt;ui:Label name="content-title" class="ff-section-title" text="Itens" /&gt;
+          &lt;ui:ListView name="list" class="ff-list" /&gt;
+          &lt;ui:Label name="detail" class="ff-detail" text="" /&gt;
+        &lt;/ui:VisualElement&gt;
+      &lt;/ui:VisualElement&gt;
+      &lt;ui:Label text="Fechar" name="hint" class="ff-hint" /&gt;
+    &lt;/ui:VisualElement&gt;
+  &lt;/ui:VisualElement&gt;
+&lt;/ui:UXML&gt;</code></pre>
+
+<div class="path">Assets/UI/GameMenu.uss</div>
+<pre class="uss"><code>.backdrop {
+    flex-grow: 1;
+    background-color: rgba(0, 0, 20, 0.55);
+    align-items: center;
+    justify-content: center;
+}
+
+.ff-window {
+    width: 720px;
+    height: 420px;
+    background-color: rgba(20, 40, 120, 0.92);
+    border-width: 3px;
+    border-color: rgb(180, 200, 255);
+    border-radius: 4px;
+    padding: 16px;
+}
+
+.ff-title {
+    color: rgb(255, 255, 200);
+    font-size: 22px;
+    -unity-font-style: bold;
+    margin-bottom: 8px;
+}
+
+.ff-body { flex-direction: row; flex-grow: 1; }
+
+.ff-tabs {
+    width: 180px;
+    margin-right: 12px;
+    background-color: rgba(10, 20, 60, 0.8);
+    border-width: 2px;
+    border-color: rgb(140, 160, 220);
+}
+
+.ff-content {
+    flex-grow: 1;
+    background-color: rgba(10, 20, 60, 0.8);
+    border-width: 2px;
+    border-color: rgb(140, 160, 220);
+    padding: 10px;
+}
+
+.ff-section-title { color: rgb(255, 230, 150); font-size: 16px; margin-bottom: 6px; }
+.ff-list { flex-grow: 1; }
+.ff-detail { color: rgb(200, 210, 255); font-size: 13px; margin-top: 8px; white-space: normal; }
+.ff-hint { color: rgb(180, 190, 230); font-size: 12px; margin-top: 8px; -unity-text-align: middle-right; }</code></pre>
+
+<div class="path">Assets/Scripts/UI/GameMenuController.cs</div>
+<pre><code>using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace AF
+{
+    public class GameMenuController : MonoBehaviour
+    {
+        [SerializeField] UIDocument document;
+        [SerializeField] InventoryManager inventory;
+        [SerializeField] EquipmentManager equipment;
+        [SerializeField] KeyCode toggleKey = KeyCode.Escape;
+
+        static readonly string[] Tabs = { "Itens", "Equipamento", "Skills", "Opções" };
+
+        VisualElement backdrop;
+        ListView tabs;
+        ListView list;
+        Label contentTitle;
+        Label detail;
+        bool open;
+        int tabIndex;
+
+        void OnEnable()
+        {
+            var root = document.rootVisualElement;
+            backdrop = root.Q("backdrop");
+            tabs = root.Q&lt;ListView&gt;("tabs");
+            list = root.Q&lt;ListView&gt;("list");
+            contentTitle = root.Q&lt;Label&gt;("content-title");
+            detail = root.Q&lt;Label&gt;("detail");
+
+            tabs.itemsSource = new List&lt;string&gt;(Tabs);
+            tabs.makeItem = () =&gt; new Label();
+            tabs.bindItem = (e, i) =&gt; ((Label)e).text = Tabs[i];
+            tabs.selectionChanged += _ =&gt;
+            {
+                if (tabs.selectedIndex &gt;= 0) SelectTab(tabs.selectedIndex);
+            };
+
+            list.makeItem = () =&gt; new Label();
+            list.bindItem = (e, i) =&gt;
+            {
+                var src = list.itemsSource as List&lt;string&gt;;
+                ((Label)e).text = src != null &amp;&amp; i &lt; src.Count ? src[i] : "";
+            };
+            list.selectionChanged += _ =&gt; ShowDetail();
+
+            SetOpen(false);
+        }
+
+        void Update()
+        {
+            if (Input.GetKeyDown(toggleKey))
+                SetOpen(!open);
+        }
+
+        public void SetOpen(bool value)
+        {
+            open = value;
+            if (backdrop != null)
+                backdrop.style.display = open ? DisplayStyle.Flex : DisplayStyle.None;
+
+            Time.timeScale = open ? 0f : 1f;
+
+            if (open)
+            {
+                tabs.SetSelection(0);
+                SelectTab(0);
+            }
+        }
+
+        void SelectTab(int index)
+        {
+            tabIndex = index;
+            contentTitle.text = Tabs[index];
+            detail.text = "";
+
+            var rows = new List&lt;string&gt;();
+
+            switch (index)
+            {
+                case 0: // Itens
+                    rows.Add("(vazio por agora — liga consumíveis depois)");
+                    break;
+                case 1: // Equipamento
+                    if (inventory != null)
+                    {
+                        for (int i = 0; i &lt; inventory.ownedWeapons.Count; i++)
+                        {
+                            var w = inventory.ownedWeapons[i];
+                            bool eq = equipment != null
+                                &amp;&amp; equipment.weaponInstance != null
+                                &amp;&amp; equipment.weaponInstance == w;
+                            rows.Add((eq ? "E " : "  ") + w.itemData.displayName);
+                        }
+                    }
+                    if (rows.Count == 0) rows.Add("(sem armas)");
+                    break;
+                case 2: // Skills
+                    rows.Add("Ataque automático");
+                    rows.Add("Especial");
+                    break;
+                case 3: // Opções
+                    rows.Add("Áudio");
+                    rows.Add("Controlos");
+                    rows.Add("Voltar ao hub");
+                    break;
+            }
+
+            list.itemsSource = rows;
+            list.Rebuild();
+            list.ClearSelection();
+        }
+
+        void ShowDetail()
+        {
+            if (list.selectedIndex &lt; 0) return;
+            var src = list.itemsSource as List&lt;string&gt;;
+            if (src == null) return;
+
+            string name = src[list.selectedIndex];
+            detail.text = name;
+
+            // Equipar arma se tab equipamento
+            if (tabIndex == 1 &amp;&amp; inventory != null &amp;&amp; equipment != null)
+            {
+                int weaponIndex = list.selectedIndex;
+                if (weaponIndex &gt;= 0 &amp;&amp; weaponIndex &lt; inventory.ownedWeapons.Count)
+                {
+                    Weapon weapon = inventory.ownedWeapons[weaponIndex].itemData;
+                    equipment.EquipWeapon(weapon);
+                    SelectTab(1); // refresh "E " marker
+                }
+            }
+        }
+    }
+}</code></pre>
+
+<div class="card warn">
+  <span class="label warn">Campo displayName</span>
+  <p style="margin-bottom:0">Se o teu <code>Item</code> / <code>Weapon</code> ainda não tiver <code>displayName</code>, usa <code>name</code> do ScriptableObject ou acrescenta o campo. Ajusta a linha do menu.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s6">6. Dialogue box + opções</h2>
+
+<div class="path">Assets/UI/Dialogue.uxml</div>
+<pre class="uss"><code>&lt;ui:UXML xmlns:ui="UnityEngine.UIElements"&gt;
+  &lt;ui:VisualElement name="root" class="dlg-root"&gt;
+    &lt;ui:VisualElement name="box" class="dlg-box"&gt;
+      &lt;ui:Label name="speaker" class="dlg-speaker" text="" /&gt;
+      &lt;ui:Label name="body" class="dlg-body" text="" /&gt;
+      &lt;ui:VisualElement name="choices" class="dlg-choices" /&gt;
+      &lt;ui:Label name="continue" class="dlg-continue" text="▼" /&gt;
+    &lt;/ui:VisualElement&gt;
+  &lt;/ui:VisualElement&gt;
+&lt;/ui:UXML&gt;</code></pre>
+
+<div class="path">Assets/UI/Dialogue.uss</div>
+<pre class="uss"><code>.dlg-root {
+    flex-grow: 1;
+    justify-content: flex-end;
+    padding: 24px;
+    display: none;
+}
+
+.dlg-box {
+    min-height: 140px;
+    background-color: rgba(15, 25, 70, 0.94);
+    border-width: 3px;
+    border-color: rgb(200, 210, 255);
+    border-radius: 4px;
+    padding: 14px 18px;
+}
+
+.dlg-speaker { color: rgb(255, 220, 120); font-size: 16px; -unity-font-style: bold; margin-bottom: 6px; }
+.dlg-body { color: rgb(240, 240, 255); font-size: 15px; white-space: normal; flex-grow: 1; }
+.dlg-choices { flex-direction: column; margin-top: 10px; }
+.dlg-choice {
+    margin-top: 4px;
+    padding: 8px 12px;
+    background-color: rgba(40, 60, 140, 0.9);
+    border-width: 2px;
+    border-color: rgb(160, 180, 240);
+    color: rgb(255, 255, 255);
+    font-size: 14px;
+}
+.dlg-choice:hover { background-color: rgba(70, 100, 180, 0.95); }
+.dlg-continue { color: rgb(200, 210, 255); -unity-text-align: middle-right; margin-top: 4px; }</code></pre>
+
+<div class="path">Assets/Scripts/UI/DialogueUI.cs</div>
+<pre><code>using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace AF
+{
+    [Serializable]
+    public class DialogueChoice
+    {
+        public string text;
+        public UnityEngine.Events.UnityEvent onChosen;
+    }
+
+    public class DialogueUI : MonoBehaviour
+    {
+        [SerializeField] UIDocument document;
+        [SerializeField] float charsPerSecond = 40f;
+
+        VisualElement root;
+        Label speaker;
+        Label body;
+        VisualElement choicesRoot;
+        Label continueHint;
+
+        bool skipping;
+        bool waitingAdvance;
+        int chosenIndex = -1;
+
+        public static DialogueUI Instance { get; private set; }
+
+        void Awake()
+        {
+            Instance = this;
+            var ve = document.rootVisualElement;
+            root = ve.Q("root");
+            speaker = ve.Q&lt;Label&gt;("speaker");
+            body = ve.Q&lt;Label&gt;("body");
+            choicesRoot = ve.Q("choices");
+            continueHint = ve.Q&lt;Label&gt;("continue");
+            Hide();
+        }
+
+        void Update()
+        {
+            // tap / click / E / Space = advance / skip typewriter
+            bool pressed = Input.GetMouseButtonDown(0)
+                || Input.GetKeyDown(KeyCode.E)
+                || Input.GetKeyDown(KeyCode.Space)
+                || (Input.touchCount &gt; 0 &amp;&amp; Input.GetTouch(0).phase == TouchPhase.Began);
+
+            if (!pressed) return;
+            if (root.style.display == DisplayStyle.None) return;
+
+            if (!waitingAdvance)
+                skipping = true;
+            else
+                waitingAdvance = false;
+        }
+
+        public IEnumerator PlayLine(string speakerName, string message, IList&lt;DialogueChoice&gt; choices = null)
+        {
+            root.style.display = DisplayStyle.Flex;
+            speaker.text = speakerName ?? "";
+            choicesRoot.Clear();
+            continueHint.style.display = DisplayStyle.None;
+            skipping = false;
+            waitingAdvance = false;
+            chosenIndex = -1;
+
+            // typewriter
+            body.text = "";
+            float delay = 1f / Mathf.Max(1f, charsPerSecond);
+            for (int i = 0; i &lt; message.Length; i++)
+            {
+                if (skipping)
+                {
+                    body.text = message;
+                    break;
+                }
+                body.text += message[i];
+                yield return new WaitForSecondsRealtime(delay);
+            }
+
+            if (choices != null &amp;&amp; choices.Count &gt; 0)
+            {
+                continueHint.style.display = DisplayStyle.None;
+                for (int i = 0; i &lt; choices.Count; i++)
+                {
+                    int captured = i;
+                    var btn = new Button(() =&gt; chosenIndex = captured) { text = choices[i].text };
+                    btn.AddToClassList("dlg-choice");
+                    choicesRoot.Add(btn);
+                }
+
+                yield return new WaitUntil(() =&gt; chosenIndex &gt;= 0);
+                choices[chosenIndex].onChosen?.Invoke();
+            }
+            else
+            {
+                continueHint.style.display = DisplayStyle.Flex;
+                waitingAdvance = true;
+                // wait one frame so o mesmo tap que skipou o typewriter não avança
+                yield return null;
+                yield return new WaitUntil(() =&gt; !waitingAdvance);
+            }
+
+            Hide();
+        }
+
+        void Hide()
+        {
+            root.style.display = DisplayStyle.None;
+            choicesRoot.Clear();
+        }
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s7">7. Moments / cutscenes (estilo Cacildes)</h2>
+
+<div class="card">
+  <span class="label ok">Modelo mental (Cacildes Adventure 2)</span>
+  <p style="margin-bottom:0">Um <code>Moment</code> no GO pai. Filhos com <code>EventBase</code> (um passo cada). <code>Trigger()</code> corre <code>Dispatch()</code> de cada um em ordem, como coroutines. Diálogo, espera, mover NPC, fade — tudo é um passo. Sem Timeline. Sem Event Bus — só <code>UnityEvent onMoment_Start/End</code> e um flag local <code>MomentRunner.IsRunning</code>.</p>
+</div>
+
+<div class="flow">[Trigger / Chest.onOpened / DialogueGeneric]
+        │
+        ▼
+   Moment.Trigger()
+        │
+        ▼ sequencial
+   EV_DisablePlayer → EV_Dialogue → EV_Wait → EV_EnablePlayer
+        │
+        ▼
+   onMoment_End</div>
+
+<div class="path">Assets/Scripts/Moments/EventBase.cs</div>
+<pre><code>using System.Collections;
+using UnityEngine;
+
+namespace AF
+{
+    public class EventBase : MonoBehaviour
+    {
+        public virtual IEnumerator Dispatch()
+        {
+            yield return null;
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Moments/Moment.cs</div>
+<pre><code>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Events;
+
+namespace AF
+{
+    /// &lt;summary&gt;
+    /// Inspirado no Moment do Cacildes Adventure 2:
+    /// filhos com EventBase, executados em ordem de sibling.
+    /// &lt;/summary&gt;
+    public class Moment : MonoBehaviour
+    {
+        [TextArea] public string comment = "Filhos = EventBase. Chama Trigger().";
+
+        public UnityEvent onMomentStart;
+        public UnityEvent onMomentEnd;
+
+        readonly List&lt;EventBase&gt; events = new();
+        Coroutine running;
+        public bool IsRunning { get; private set; }
+
+        void Collect()
+        {
+            events.Clear();
+            foreach (Transform child in transform)
+            {
+                foreach (var ev in child.GetComponents&lt;EventBase&gt;())
+                    events.Add(ev);
+            }
+        }
+
+        public void Trigger()
+        {
+            if (IsRunning) return;
+            Collect();
+            onMomentStart?.Invoke();
+            MomentRunner.NotifyStart(this);
+            running = StartCoroutine(Run());
+        }
+
+        IEnumerator Run()
+        {
+            IsRunning = true;
+            for (int i = 0; i &lt; events.Count; i++)
+            {
+                if (events[i] != null)
+                    yield return events[i].Dispatch();
+            }
+            Finish();
+        }
+
+        public void Cancel()
+        {
+            if (running != null) StopCoroutine(running);
+            Finish();
+        }
+
+        void Finish()
+        {
+            running = null;
+            IsRunning = false;
+            MomentRunner.NotifyEnd(this);
+            onMomentEnd?.Invoke();
+        }
+
+        void OnDisable()
+        {
+            if (IsRunning) Finish();
+        }
+    }
+
+    /// &lt;summary&gt;Flag global leve — sem Event Bus.&lt;/summary&gt;
+    public static class MomentRunner
+    {
+        public static bool HasMomentOngoing { get; private set; }
+        static Moment current;
+
+        public static void NotifyStart(Moment m)
+        {
+            current = m;
+            HasMomentOngoing = true;
+        }
+
+        public static void NotifyEnd(Moment m)
+        {
+            if (current == m)
+            {
+                current = null;
+                HasMomentOngoing = false;
+            }
+        }
+    }
+}</code></pre>
+
+<h3>Passos úteis</h3>
+
+<div class="path">Assets/Scripts/Moments/EV_Wait.cs</div>
+<pre><code>using System.Collections;
+using UnityEngine;
+
+namespace AF
+{
+    public class EV_Wait : EventBase
+    {
+        public float seconds = 1f;
+
+        public override IEnumerator Dispatch()
+        {
+            yield return new WaitForSeconds(seconds);
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Moments/EV_Dialogue.cs</div>
+<pre><code>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace AF
+{
+    public class EV_Dialogue : EventBase
+    {
+        public string speakerName;
+        [TextArea] public string message;
+        public List&lt;DialogueChoice&gt; choices = new();
+
+        public override IEnumerator Dispatch()
+        {
+            if (DialogueUI.Instance == null)
+            {
+                Debug.LogWarning("DialogueUI em falta na cena.");
+                yield break;
+            }
+
+            yield return DialogueUI.Instance.PlayLine(speakerName, message, choices);
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Moments/EV_ManagePlayerControl.cs</div>
+<pre><code>using System.Collections;
+using UnityEngine;
+
+namespace AF
+{
+    public class EV_ManagePlayerControl : EventBase
+    {
+        public bool enableControl = false;
+        [SerializeField] PlayerInput playerInput;
+
+        public override IEnumerator Dispatch()
+        {
+            if (playerInput != null)
+                playerInput.enabled = enableControl;
+            yield return null;
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Moments/EV_OpenChest.cs</div>
+<pre><code>using System.Collections;
+using UnityEngine;
+
+namespace AF
+{
+    public class EV_OpenChest : EventBase
+    {
+        public Chest chest;
+        public InventoryManager inventory;
+
+        public override IEnumerator Dispatch()
+        {
+            if (chest != null &amp;&amp; inventory != null)
+                chest.Open(inventory);
+            yield return null;
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Moments/EV_MoveTowards.cs</div>
+<pre><code>using System.Collections;
+using UnityEngine;
+
+namespace AF
+{
+    public class EV_MoveTowards : EventBase
+    {
+        public CharacterManager character;
+        public Transform waypoint;
+        public float timeout = 8f;
+
+        public override IEnumerator Dispatch()
+        {
+            if (character == null || waypoint == null) yield break;
+
+            character.agent.SetDestination(waypoint.position);
+            float t = 0f;
+            while (t &lt; timeout)
+            {
+                if (!character.agent.pathPending
+                    &amp;&amp; character.agent.remainingDistance &lt;= character.agent.stoppingDistance)
+                    yield break;
+
+                t += Time.deltaTime;
+                yield return null;
+            }
+        }
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s8">8. Lock-On mobile — tap no inimigo</h2>
+
+<div class="card fix">
+  <span class="label fix">O que muda</span>
+  <p style="margin-bottom:0">Hoje o <code>LockOn</code> escolhe automaticamente o inimigo mais próximo da lista <code>chasingEnemies</code>. Passa a: <strong>tap no ecrã → raycast → se for inimigo, lock</strong>. A lista de chase continua a servir para limpar mortos/longe e para o <code>CombatMode</code>, mas <strong>não escolhe o alvo sozinha</strong>.</p>
+</div>
+
+<div class="path">Assets/Scripts/Camera/LockOn.cs — versão nova</div>
+<pre><code>using System.Collections.Generic;
+using UnityEngine;
+
+namespace AF
+{
+    public class LockOn : MonoBehaviour
+    {
+        [Header("Lock On")]
+        public Transform lockOnTarget;
+        public bool isLockedOn;
+        public float lockOnRotationSpeed = 15f;
+        public float lockOnMaxDistance = 12f;
+
+        [Header("Threat Tracking")]
+        public List&lt;CharacterManager&gt; chasingEnemies = new();
+
+        [SerializeField] CharacterManager characterManager;
+
+        public void RegisterChasingEnemy(CharacterManager enemy)
+        {
+            if (enemy != null &amp;&amp; !chasingEnemies.Contains(enemy))
+                chasingEnemies.Add(enemy);
+        }
+
+        public void UnregisterChasingEnemy(CharacterManager enemy)
+        {
+            chasingEnemies.Remove(enemy);
+            if (lockOnTarget != null &amp;&amp; enemy != null
+                &amp;&amp; lockOnTarget == enemy.transform)
+                ClearLockOn();
+        }
+
+        void Update()
+        {
+            if (!characterManager.IsPlayer()) return;
+            PruneThreats();
+
+            // Se o alvo actual morreu / saiu de alcance → clear
+            if (isLockedOn &amp;&amp; !IsValidTarget(lockOnTarget))
+                ClearLockOn();
+        }
+
+        void PruneThreats()
+        {
+            float maxSqr = lockOnMaxDistance * lockOnMaxDistance;
+            for (int i = chasingEnemies.Count - 1; i &gt;= 0; i--)
+            {
+                var e = chasingEnemies[i];
+                if (e == null || e.health.IsDead)
+                {
+                    chasingEnemies.RemoveAt(i);
+                    continue;
+                }
+
+                float sqr = (e.transform.position - transform.position).sqrMagnitude;
+                if (sqr &gt; maxSqr) chasingEnemies.RemoveAt(i);
+            }
+        }
+
+        public bool TryLockOn(CharacterManager enemy)
+        {
+            if (enemy == null || enemy.health.IsDead) return false;
+
+            float sqr = (enemy.transform.position - transform.position).sqrMagnitude;
+            if (sqr &gt; lockOnMaxDistance * lockOnMaxDistance) return false;
+
+            RegisterChasingEnemy(enemy);
+            SetLockOn(enemy.transform);
+            return true;
+        }
+
+        public void SetLockOn(Transform target)
+        {
+            lockOnTarget = target;
+            isLockedOn = target != null;
+        }
+
+        public void ClearLockOn()
+        {
+            lockOnTarget = null;
+            isLockedOn = false;
+        }
+
+        bool IsValidTarget(Transform t)
+        {
+            if (t == null) return false;
+            var cm = t.GetComponent&lt;CharacterManager&gt;();
+            if (cm == null || cm.health.IsDead) return false;
+            float sqr = (t.position - transform.position).sqrMagnitude;
+            return sqr &lt;= lockOnMaxDistance * lockOnMaxDistance;
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Camera/TapLockOnInput.cs</div>
+<pre><code>using UnityEngine;
+using UnityEngine.EventSystems;
+
+namespace AF
+{
+    /// &lt;summary&gt;
+    /// Mobile: tap no inimigo = lock. Tap no chão / nada = clear.
+    /// Ignora taps sobre UI (botões, joystick).
+    /// &lt;/summary&gt;
+    public class TapLockOnInput : MonoBehaviour
+    {
+        [SerializeField] LockOn lockOn;
+        [SerializeField] Camera cam;
+        [SerializeField] LayerMask enemyLayer;     // layer dos inimigos / DamageReceiver
+        [SerializeField] LayerMask groundMask;     // opcional
+        [SerializeField] float maxRayDistance = 40f;
+        [SerializeField] float tapMoveThreshold = 20f; // px — distingue tap de drag do look/joystick
+
+        Vector2 pressPos;
+        int fingerId = -1;
+
+        void Start()
+        {
+            if (cam == null) cam = Camera.main;
+        }
+
+        void Update()
+        {
+            if (lockOn == null || MomentRunner.HasMomentOngoing) return;
+            if (Time.timeScale &lt;= 0f) return; // menu aberto
+
+#if UNITY_EDITOR
+            HandleMouse();
+#endif
+            HandleTouches();
+        }
+
+        void HandleTouches()
+        {
+            for (int i = 0; i &lt; Input.touchCount; i++)
+            {
+                Touch t = Input.GetTouch(i);
+
+                if (t.phase == TouchPhase.Began)
+                {
+                    if (IsOverUI(t.fingerId)) continue;
+                    fingerId = t.fingerId;
+                    pressPos = t.position;
+                }
+                else if (t.fingerId == fingerId
+                         &amp;&amp; (t.phase == TouchPhase.Ended || t.phase == TouchPhase.Canceled))
+                {
+                    float moved = (t.position - pressPos).magnitude;
+                    if (moved &lt;= tapMoveThreshold)
+                        ProcessTap(t.position);
+                    fingerId = -1;
+                }
+            }
+        }
+
+#if UNITY_EDITOR
+        void HandleMouse()
+        {
+            if (Input.touchCount &gt; 0) return;
+
+            if (Input.GetMouseButtonDown(0))
+            {
+                if (IsOverUI(-1)) return;
+                pressPos = Input.mousePosition;
+            }
+
+            if (Input.GetMouseButtonUp(0))
+            {
+                float moved = ((Vector2)Input.mousePosition - pressPos).magnitude;
+                if (moved &lt;= tapMoveThreshold)
+                    ProcessTap(Input.mousePosition);
+            }
+        }
+#endif
+
+        void ProcessTap(Vector2 screenPos)
+        {
+            Ray ray = cam.ScreenPointToRay(screenPos);
+
+            if (Physics.Raycast(ray, out RaycastHit hit, maxRayDistance, enemyLayer,
+                    QueryTriggerInteraction.Ignore))
+            {
+                CharacterManager enemy = hit.collider.GetComponentInParent&lt;CharacterManager&gt;();
+                if (enemy != null &amp;&amp; !enemy.IsPlayer())
+                {
+                    // Tap no mesmo alvo = toggle off
+                    if (lockOn.isLockedOn &amp;&amp; lockOn.lockOnTarget == enemy.transform)
+                        lockOn.ClearLockOn();
+                    else
+                        lockOn.TryLockOn(enemy);
+                    return;
+                }
+            }
+
+            // Tap no vazio → clear
+            lockOn.ClearLockOn();
+        }
+
+        static bool IsOverUI(int id)
+        {
+            if (EventSystem.current == null) return false;
+            return id &gt;= 0
+                ? EventSystem.current.IsPointerOverGameObject(id)
+                : EventSystem.current.IsPointerOverGameObject();
+        }
+    }
+}</code></pre>
+
+<div class="card">
+  <span class="label ok">Layer tip</span>
+  <p style="margin-bottom:0">Mete os inimigos numa layer <code>Enemy</code> e selecciona-a em <code>enemyLayer</code>. O raycast não precisa de bater no mesh exacto — um capsule collider no root chega. O joystick / botões UI são ignorados via <code>EventSystem.IsPointerOverGameObject</code>.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s9">9. Wiring Unity</h2>
+
+<ol>
+  <li><strong>Patches</strong> — acrescenta <code>CooldownNormalized</code> etc. ao <code>CombatManager</code>. Cria <code>CombatMode</code> no player.</li>
+  <li><strong>HP</strong> — child World Canvas + Image Filled + <code>WorldHealthBar</code>. <code>onlyInCombat = true</code>, liga <code>CombatMode</code>.</li>
+  <li><strong>Stamina</strong> — World Canvas com Image Radial 360 (<code>WeaponStaminaBarUGUI</code>) — caminho mais rápido para o look BotW. Liga <code>CombatManager</code>.</li>
+  <li><strong>Menu FF</strong> — UIDocument Screen Space + UXML/USS + <code>GameMenuController</code>. Botão UI chama <code>SetOpen(true)</code>.</li>
+  <li><strong>Dialogue</strong> — UIDocument + <code>DialogueUI</code> (um na cena).</li>
+  <li><strong>Chest</strong> — prefab com collider trigger + <code>Chest</code> + <code>ChestInteractTrigger</code>. Conteúdo = array de <code>Item</code> SOs.</li>
+  <li><strong>Moment</strong> — GO “IntroCutscene” com <code>Moment</code>; filhos <code>EV_ManagePlayerControl</code>, <code>EV_Dialogue</code>, <code>EV_Wait</code>… Botão Raise no editor (opcional) ou trigger na cena.</li>
+  <li><strong>Lock-On</strong> — substitui o script; adiciona <code>TapLockOnInput</code> no player; configura <code>enemyLayer</code>.</li>
+</ol>
+
+<div class="flow">Ordem de teste sugerida
+1. Tap num inimigo → lock (marker / rotação do player)
+2. AutoAttack dispara só com lock + alcance
+3. Ataca → anel de stamina esvazia e enche com cooldown
+4. HP world aparece em combate, desaparece 2s depois
+5. Menu Esc → timeScale 0, equipar arma
+6. Chest → AddItem na InventoryManager
+7. Moment.Trigger() → diálogo com 2 opções → retoma controlo</div>
+
+<footer>
+  Documento vivo. Próximas secções possíveis: marker visual no alvo do lock-on, save do inventário, Ink stories (como no Cacildes), ou radial fill custom UITK.
+</footer>
+
+</div>
+</body>
+</html>
