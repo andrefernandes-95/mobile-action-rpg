@@ -47,8 +47,6 @@ namespace AF
                 return;
             }
 
-            characterManager.isBusy = true;
-            characterManager.agent.ResetPath();
             SetCurrentAbility(attackAbility, true);
         }
 
@@ -58,9 +56,6 @@ namespace AF
             {
                 return;
             }
-
-            characterManager.isBusy = true;
-            characterManager.agent.ResetPath();
 
             SetCurrentAbility(specialAbility, false);
         }
@@ -95,6 +90,16 @@ namespace AF
         public void EquipAttackAbility(Ability ability)
         {
             attackAbility = ability;
+        }
+
+        public float GetEngageRadius()
+        {
+            if (AttackAbility != null)
+            {
+                return AttackAbility.engageRadius;
+            }
+
+            return characterManager.agent.stoppingDistance;
         }
     }
 }

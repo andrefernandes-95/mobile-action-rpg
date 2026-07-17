@@ -13,8 +13,6 @@ namespace AF
 
         public override void Enter(StateMachine controller)
         {
-            controller.CombatRuntime.LastAttackTime = -attackCooldown;
-            controller.character.Stop();
         }
 
         public override void Tick(StateMachine controller)
@@ -75,7 +73,6 @@ namespace AF
 
         public override void Exit(StateMachine controller)
         {
-            controller.character.Stop();
         }
     }
 }

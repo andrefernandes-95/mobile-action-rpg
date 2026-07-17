@@ -11,6 +11,7 @@ namespace AF
 
         [Header("Cooldown")]
         public float cooldown;
+        public float engageRadius = 2.5f;
 
 
         public virtual void OnStart(CharacterManager characterManager)

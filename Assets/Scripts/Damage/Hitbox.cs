@@ -14,21 +14,35 @@ namespace AF
 
         public Transform swingSpawnRef;
 
+        [SerializeField] TrailRenderer trailRenderer;
+
         void Awake()
         {
             hitboxOwner = GetComponentInParent<CharacterManager>();
+            if (trailRenderer)
+            {
+                trailRenderer.emitting = false;
+            }
         }
 
         public void OpenHitbox()
         {
             targetsHit.Clear();
             isActive = true;
+            if (trailRenderer)
+            {
+                trailRenderer.emitting = true;
+            }
             hitboxOwner.combatManager.onHitboxOpen?.Invoke(this);
         }
 
         public void CloseHitbox()
         {
             isActive = false;
+            if (trailRenderer)
+            {
+                trailRenderer.emitting = false;
+            }
             hitboxOwner.combatManager.onHitboxClose?.Invoke(this);
         }
 

@@ -5,7 +5,6 @@ namespace AF
     public class AutoAttackManager : MonoBehaviour
     {
         [SerializeField] CharacterManager characterManager;
-        [SerializeField] float engageRange = 2.5f;
         [SerializeField] float attackInterval = 1.0f;
 
         float attackTimer;
@@ -65,7 +64,9 @@ namespace AF
             }
 
             float sqr = (lockOn.lockOnTarget.position - transform.position).sqrMagnitude;
-            return sqr <= engageRange * engageRange;
+
+            float engageRadius = characterManager.combatManager.GetEngageRadius();
+            return sqr <= engageRadius * engageRadius;
         }
     }
 }
