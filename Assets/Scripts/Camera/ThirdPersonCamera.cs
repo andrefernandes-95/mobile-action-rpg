@@ -25,6 +25,12 @@ namespace AF
         [Header("Position smoothing")]
         [SerializeField] float followSmooth = 15f;
 
+        [Header("Collision")]
+        [SerializeField] LayerMask wallLayer;
+        [SerializeField] float sphereRadius = 0.3f;
+        [SerializeField] float wallBuffer = 0.15f;
+        [SerializeField] float minDistanceFromTarget = 1.5f;
+
         float yaw;
 
         void Start()
@@ -54,6 +60,7 @@ namespace AF
             float wantedDistance = distance;
 
             Vector3 desiredPos = pivot - rotation * Vector3.forward * wantedDistance;
+            desiredPos = ResolveWallOcclusion(desiredPos);
 
             transform.position = Vector3.Lerp(
                 transform.position,
@@ -62,6 +69,36 @@ namespace AF
             );
 
             transform.rotation = Quaternion.LookRotation(pivot - transform.position, Vector3.up);
+        }
+
+        Vector3 ResolveWallOcclusion(Vector3 desiredPos)
+        {
+            Vector3 castOrigin = target.position + Vector3.up * targetHeight;
+            Vector3 direction = desiredPos - castOrigin;
+            float maxDistance = direction.magnitude;
+
+
+            direction /= maxDistance;
+
+            if (Physics.SphereCast(
+                castOrigin,
+                sphereRadius,
+                direction,
+                out RaycastHit hit,
+                maxDistance,
+                wallLayer,
+                QueryTriggerInteraction.Ignore
+            ))
+            {
+                float pullDistance = Mathf.Max(
+                    hit.distance - wallBuffer,
+                    minDistanceFromTarget
+                );
+
+                return castOrigin + direction * pullDistance;
+            }
+
+            return desiredPos;
         }
 
         void UpdateYaw()

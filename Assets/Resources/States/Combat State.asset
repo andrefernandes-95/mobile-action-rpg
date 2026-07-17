@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5be0c3f160b12ba48bce7defa4f7d2ce, type: 3}
   m_Name: Combat State
   m_EditorClassIdentifier: 
-  attackCooldown: 1.2
-  disengageMultiplier: 1.3
+  attackCooldown: 3
+  disengageMultiplier: 2

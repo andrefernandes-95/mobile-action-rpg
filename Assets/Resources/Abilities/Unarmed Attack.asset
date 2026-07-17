@@ -16,10 +16,10 @@ MonoBehaviour:
   description: 
   icon: {fileID: 21300000, guid: 970286c87a203f44b907114ac87aecb6, type: 3}
   cooldown: 0.5
-  engageRadius: 3
+  engageRadius: 1.5
   animations:
   - {fileID: 11400000, guid: 84922c7cdcf294058aa1c35297e8a4ff, type: 2}
   damageType: {fileID: 11400000, guid: 0811253aa31249044ad516f33d064fec, type: 2}
   amount: 5
-  swingEffect: {fileID: 177517938830365864, guid: 9c53368378126452cb8e704cd9b73d26, type: 3}
+  swingEffect: {fileID: 0}
   hitImpact: {fileID: 5586783540032275536, guid: 42c6c910ac33044feb117ff27772c9a2, type: 3}

@@ -12,5 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 147ed2390749ee6469b10d2aa8933411, type: 3}
   m_Name: Chase State
   m_EditorClassIdentifier: 
-  attackRange: 1.5
-  disengageMultiplier: 1.3
+  disengageMultiplier: 3
