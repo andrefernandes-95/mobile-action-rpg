@@ -17,13 +17,15 @@ namespace AF
         [SerializeField] float distance = 5f;
         [SerializeField] float pitch = 25f;
 
+
         [Header("Yaw follow")]
-        [Tooltip("Quao depressa a camara acompanha a viragem do personagem.")]
-        [SerializeField] float yawFollowSpeed = 8f;
-        [Tooltip("So acompanha o yaw enquanto o personagem se mexe (evita rodar em idle).")]
+        [SerializeField] float yawFollowSpeedMin = 2.5f;
+        [SerializeField] float yawFollowSpeedMax = 10f;
+        [SerializeField] float lockOnYawMultiplier = 2f;
 
         [Header("Position smoothing")]
-        [SerializeField] float followSmooth = 15f;
+        [SerializeField] float followSmoothMin = 8f;
+        [SerializeField] float followSmoothMax = 16f;
 
         [Header("Collision")]
         [SerializeField] LayerMask wallLayer;
@@ -52,7 +54,9 @@ namespace AF
                 return;
             }
 
-            UpdateYaw();
+            float moveAmount = target.MoveAmount; // 0..1
+
+            UpdateYaw(moveAmount);
 
             Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
             Vector3 pivot = target.transform.position + Vector3.up * targetHeight;
@@ -61,12 +65,18 @@ namespace AF
 
             Vector3 desiredPos = pivot - rotation * Vector3.forward * wantedDistance;
             desiredPos = ResolveWallOcclusion(desiredPos);
-            float finalFollowSmooth = followSmooth * (target.lockOn.isLockedOn ? 2 : 1f);
+
+            float follow = Mathf.Lerp(followSmoothMin, followSmoothMax, moveAmount);
+
+            if (target.lockOn != null && target.lockOn.isLockedOn)
+            {
+                follow *= lockOnYawMultiplier;
+            }
 
             transform.position = Vector3.Lerp(
                 transform.position,
                 desiredPos,
-                finalFollowSmooth * Time.deltaTime
+                follow * Time.deltaTime
             );
 
             transform.rotation = Quaternion.LookRotation(pivot - transform.position, Vector3.up);
@@ -102,12 +112,19 @@ namespace AF
             return desiredPos;
         }
 
-        void UpdateYaw()
+
+        void UpdateYaw(float moveAmount)
         {
             float targetYaw = target.transform.eulerAngles.y;
 
-            float finalYawFollowSpeed = yawFollowSpeed * (target.lockOn.isLockedOn ? 2 : 1f);
-            yaw = Mathf.LerpAngle(yaw, targetYaw, finalYawFollowSpeed * Time.deltaTime);
+            float yawSpeed = Mathf.Lerp(yawFollowSpeedMin, yawFollowSpeedMax, moveAmount);
+
+            if (target.lockOn != null && target.lockOn.isLockedOn)
+            {
+                yawSpeed *= lockOnYawMultiplier;
+            }
+
+            yaw = Mathf.LerpAngle(yaw, targetYaw, yawSpeed * Time.deltaTime);
         }
     }
 }

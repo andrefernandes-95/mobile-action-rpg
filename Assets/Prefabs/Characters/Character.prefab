@@ -695,8 +695,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4d380f68f2ba6a648b92f7c595f7a52e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AF.EquipmentManager
-  primaryHand: {fileID: 7976284226481735392}
-  secondaryHand: {fileID: 3270557984731058594}
+  primaryHand: {fileID: 3270557984731058594}
+  secondaryHand: {fileID: 7976284226481735392}
   inventoryManager: {fileID: 2746758125811668220}
   animator: {fileID: 5619519043771692139}
 --- !u!114 &2746758125811668220
@@ -712,6 +712,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AF.InventoryManager
   defaultWeapon: {fileID: 11400000, guid: 406b292ef56df47408ced7d70d744939, type: 2}
+  randomDefaultWeapons: []
   equipmentManager: {fileID: 6051265088138471669}
 --- !u!1 &6515205292472850048
 GameObject:

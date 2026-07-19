@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>As Profundezas — Movimento Analógico (refactor)</title>
+  <style>
+    :root {
+      --bg:#0f1117; --surface:#1a1d27; --surface2:#242836; --text:#e6e9f0;
+      --muted:#9aa3b5; --accent:#6c9eff; --accent2:#7ee787; --warn:#f0b429;
+      --danger:#ff8ba7; --border:#343a4d; --code:#12151c;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;padding:2rem 1rem 4rem}
+    .wrap{max-width:980px;margin:0 auto}
+    header{margin-bottom:2rem;padding-bottom:1.25rem;border-bottom:1px solid var(--border)}
+    h1{font-size:1.85rem;margin-bottom:.4rem}
+    .sub{color:var(--muted);font-size:1rem}
+    h2{font-size:1.25rem;color:var(--accent);margin:2.2rem 0 .7rem;padding-top:.3rem}
+    h3{font-size:1rem;color:var(--accent2);margin:1.3rem 0 .4rem}
+    p,li{margin-bottom:.55rem;color:var(--muted)}
+    ul,ol{padding-left:1.25rem;margin-bottom:.9rem}
+    a{color:var(--accent)}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;margin:1rem 0}
+    .card.warn{border-color:#6b5420;background:#1c1810}
+    .card.fix{border-color:#5a2436;background:#1c1014}
+    .label{display:inline-block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:.15rem .45rem;border-radius:4px;margin-bottom:.5rem}
+    .label.warn{background:#4a3810;color:var(--warn)}
+    .label.fix{background:#4a1f2e;color:var(--danger)}
+    .label.ok{background:#1a3d2b;color:var(--accent2)}
+    .toc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;margin:1.2rem 0}
+    .toc a{text-decoration:none}.toc a:hover{text-decoration:underline}
+    .path{font-family:Consolas,monospace;font-size:.75rem;color:var(--accent2);margin:1rem 0 -.35rem}
+    .path::before{content:"📄 "}
+    pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem;overflow-x:auto;font-family:Consolas,monospace;font-size:.8rem;line-height:1.5;margin:.5rem 0 1.1rem;color:#d6deeb}
+    code{font-family:Consolas,monospace;font-size:.88em;background:var(--surface2);padding:.05em .3em;border-radius:3px}
+    pre code{background:none;padding:0;font-size:1em}
+    .flow{font-family:Consolas,monospace;font-size:.78rem;background:var(--code);border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem;white-space:pre;overflow-x:auto;color:var(--muted);margin:1rem 0}
+    .before{border-left:3px solid var(--danger)}
+    .after{border-left:3px solid var(--accent2)}
+    footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--border);color:var(--muted);font-size:.85rem}
+    table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.9rem}
+    th,td{border:1px solid var(--border);padding:.5rem .7rem;text-align:left;color:var(--muted)}
+    th{color:var(--text);background:var(--surface)}
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Movimento analógico — refactor</h1>
+  <p class="sub">Joystick pressure → velocidade do player + blend de Speed + velocidade de yaw da câmara. Código concreto para o teu <code>PlayerInput</code>, <code>CharacterManager</code> e <code>ThirdPersonCamera</code>.</p>
+</header>
+
+<nav class="toc">
+  <strong>Índice</strong>
+  <ol>
+    <li><a href="#s0">O problema (porque é on/off)</a></li>
+    <li><a href="#s1">Modelo alvo</a></li>
+    <li><a href="#s2">PlayerInput — preservar magnitude</a></li>
+    <li><a href="#s3">CharacterManager — velocidade + Speed blend</a></li>
+    <li><a href="#s4">ThirdPersonCamera — yaw proporcional</a></li>
+    <li><a href="#s5">Animator / Blend Tree</a></li>
+    <li><a href="#s6">Tuning + wiring</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================ -->
+<h2 id="s0">0. O problema</h2>
+
+<div class="card fix">
+  <span class="label fix">O joystick já é analógico — o teu código é que não</span>
+  <p>O Joystick Pack devolve <code>Horizontal</code>/<code>Vertical</code> em <code>[-1..1]</code>. Quanto mais empurras, maior a magnitude. Mas no <code>PlayerInput</code> fazes isto:</p>
+</div>
+
+<pre class="before"><code>Vector3 moveDir = camForward * v + camRight * h;
+
+if (moveDir.magnitude &gt; 0.1f)
+    characterManager.Move(moveDir.normalized); // ← mata a pressão
+else
+    characterManager.Stop();</code></pre>
+
+<ul>
+  <li><code>.normalized</code> força magnitude = 1 → sempre a mesma velocidade.</li>
+  <li><code>Move</code> só faz <code>SetDestination</code> → o <code>NavMeshAgent</code> corre sempre a <code>agent.speed</code> (full).</li>
+  <li><code>animator.SetFloat("Speed", agent.desiredVelocity.magnitude)</code> → ou ~0 ou ~speed. Sem meio-termo no blend tree.</li>
+  <li>A câmara usa <code>yawFollowSpeed</code> constante → vira sempre ao mesmo ritmo.</li>
+</ul>
+
+<p><strong>Sim, dá para ter meio-termo.</strong> A pressão do stick (0..1) escala: velocidade do agent, parâmetro Speed da animação, e yaw follow da câmara.</p>
+
+<!-- ============================================================ -->
+<h2 id="s1">1. Modelo alvo</h2>
+
+<div class="flow">Joystick.Direction (x,y)
+        │ magnitude = clamp01(length)   ← pressão 0..1
+        │ direction = normalized
+        ▼
+PlayerInput
+        │ Move(dir, moveAmount)
+        │ MoveAmount público (para a camara)
+        ▼
+CharacterManager
+        │ agent.speed = walkSpeed + (runSpeed-walkSpeed)*amount
+        │ SetDestination(...)
+        │ animator Speed = amount   (0 idle · 0.5 walk · 1 run)
+        ▼
+ThirdPersonCamera
+        │ yawFollow = lerp(min, max, MoveAmount)
+        │ posição segue como já faz</div>
+
+<table>
+  <tr><th>Pressão stick</th><th>agent.speed</th><th>Anim Speed</th><th>Camera yaw</th></tr>
+  <tr><td>0 (solto)</td><td>—</td><td>0</td><td>mínimo / parado</td></tr>
+  <tr><td>0.3 (leve)</td><td>~walk</td><td>~0.3</td><td>lento</td></tr>
+  <tr><td>0.7</td><td>entre walk/run</td><td>~0.7</td><td>médio</td></tr>
+  <tr><td>1.0 (fundo)</td><td>run</td><td>1.0</td><td>rápido</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="s2">2. PlayerInput — preservar magnitude</h2>
+
+<div class="path">Assets/Scripts/Core/PlayerInput.cs</div>
+<pre class="after"><code>namespace AF
+{
+    using UnityEngine;
+    using UnityEngine.Events;
+
+    public class PlayerInput : MonoBehaviour
+    {
+        Camera mainCam;
+        public Joystick joystick;
+        public CharacterManager startingCharacterManager;
+
+        [Header("Current Character")]
+        public CharacterManager characterManager;
+
+        [Header("Analog")]
+        [Tooltip("Abaixo disto = parado (deadzone).")]
+        [SerializeField] float moveDeadzone = 0.12f;
+        [Tooltip("Curva da pressão. 1 = linear. &gt;1 = precisa empurrar mais para correr.")]
+        [SerializeField] float inputExponent = 1.35f;
+
+        [HideInInspector] public UnityEvent&lt;CharacterManager&gt; onSetCurrentCharacter;
+
+        /// &lt;summary&gt;0..1 — pressão actual do stick. A câmara lê isto.&lt;/summary&gt;
+        public float MoveAmount { get; private set; }
+
+        /// &lt;summary&gt;Direção horizontal normalizada (pode ser zero).&lt;/summary&gt;
+        public Vector3 MoveDirection { get; private set; }
+
+        void OnEnable()
+        {
+            mainCam = Camera.main;
+            SetCharacter(startingCharacterManager);
+        }
+
+        void SetCharacter(CharacterManager character)
+        {
+            if (characterManager != null)
+                characterManager.GiveControlToAI();
+
+            characterManager = character;
+            characterManager.GiveControlToPlayer();
+            onSetCurrentCharacter?.Invoke(characterManager);
+        }
+
+        void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                OnSpecialAbility();
+                return;
+            }
+
+            HandleMovement();
+        }
+
+        void HandleMovement()
+        {
+            MoveAmount = 0f;
+            MoveDirection = Vector3.zero;
+
+            if (mainCam == null || characterManager == null)
+                return;
+
+            float h = 0f;
+            float v = 0f;
+
+            if (joystick != null)
+            {
+                h += joystick.Horizontal;
+                v += joystick.Vertical;
+            }
+
+            // Teclado no editor (também "analógico" via GetAxis, mas tipicamente -1/0/1)
+            h += Input.GetAxis("Horizontal");
+            v += Input.GetAxis("Vertical");
+
+            Vector3 camForward = mainCam.transform.forward;
+            Vector3 camRight = mainCam.transform.right;
+            camForward.y = 0f;
+            camRight.y = 0f;
+            camForward.Normalize();
+            camRight.Normalize();
+
+            Vector3 raw = camForward * v + camRight * h;
+            float magnitude = Mathf.Clamp01(raw.magnitude);
+
+            if (magnitude &lt; moveDeadzone)
+            {
+                characterManager.Stop();
+                return;
+            }
+
+            // Remapeia deadzone→1 para 0→1 (evita salto ao sair da deadzone)
+            float remapped = Mathf.InverseLerp(moveDeadzone, 1f, magnitude);
+            float amount = Mathf.Pow(remapped, inputExponent);
+
+            Vector3 dir = raw / magnitude; // normalized sem re-calcular
+
+            MoveAmount = amount;
+            MoveDirection = dir;
+
+            characterManager.Move(dir, amount);
+        }
+
+        public void OnAttack()
+        {
+            characterManager?.combatManager.Attack();
+        }
+
+        public void OnSpecialAbility()
+        {
+            characterManager?.combatManager.OnSpecialAbility();
+        }
+
+        public Vector3 GetDodgeDirection(bool isLockedOn)
+        {
+            float h = (joystick != null ? joystick.Horizontal : 0f) + Input.GetAxis("Horizontal");
+            float v = (joystick != null ? joystick.Vertical : 0f) + Input.GetAxis("Vertical");
+
+            Vector3 camForward = mainCam.transform.forward * (isLockedOn ? -1f : 1f);
+            Vector3 camRight = mainCam.transform.right;
+            camForward.y = 0f;
+            camRight.y = 0f;
+            camForward.Normalize();
+            camRight.Normalize();
+
+            Vector3 dodgeDir = (camForward * v + camRight * h);
+            if (dodgeDir.sqrMagnitude &lt; 0.01f)
+                return characterManager.transform.forward;
+
+            return dodgeDir.normalized;
+        }
+    }
+}</code></pre>
+
+<div class="card">
+  <span class="label ok">O que mudou</span>
+  <ul style="margin-bottom:0">
+    <li>Já <strong>não</strong> se chama <code>Move(dir.normalized)</code> — passa-se <code>amount</code>.</li>
+    <li><code>MoveAmount</code> fica público para a câmara.</li>
+    <li><code>inputExponent</code> &gt; 1 dá mais controlo na zona baixa (toques leves = walk).</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s3">3. CharacterManager — velocidade + Speed blend</h2>
+
+<div class="path">Assets/Scripts/Core/CharacterManager.cs — secções relevantes</div>
+<pre class="after"><code>namespace AF
+{
+    using UnityEngine;
+    using UnityEngine.AI;
+
+    public class CharacterManager : MonoBehaviour
+    {
+        [Header("Name")]
+        public new string name = "";
+
+        [Header("Components")]
+        public Animator animator;
+        public NavMeshAgent agent;
+
+        [Header("Character Components")]
+        public Health health;
+        public CharacterDamageReceiver characterDamageReceiver;
+        public Dodge dodge;
+        public Perception perception;
+        public LockOn lockOn;
+        public CombatManager combatManager;
+
+        [Header("Locomotion")]
+        public float rotationSpeed = 10f;
+        [Tooltip("Velocidade com stick leve (walk).")]
+        public float walkSpeed = 1.8f;
+        [Tooltip("Velocidade com stick a fundo (run).")]
+        public float runSpeed = 5.5f;
+        [Tooltip("Damp do parâmetro Speed no Animator.")]
+        public float animSpeedDamp = 0.12f;
+
+        public bool isBusy = false;
+
+        [Header("Patrol")]
+        public Transform[] patrolPoints;
+
+        float stoppingDistance;
+        float baseAgentSpeed;
+
+        /// &lt;summary&gt;0..1 — último input de movimento do player. Câmara / UI podem ler.&lt;/summary&gt;
+        public float MoveAmount { get; private set; }
+
+        static readonly int SpeedHash = Animator.StringToHash("Speed");
+
+        void Awake()
+        {
+            stoppingDistance = agent.stoppingDistance;
+            baseAgentSpeed = agent.speed;
+            // Se não configurares walk/run no inspector, deriva do agent.speed actual
+            if (runSpeed &lt;= 0f) runSpeed = baseAgentSpeed &gt; 0f ? baseAgentSpeed : 5.5f;
+            if (walkSpeed &lt;= 0f) walkSpeed = runSpeed * 0.35f;
+        }
+
+        void Start()
+        {
+            agent.updateRotation = false;
+        }
+
+        public void OnIdle()
+        {
+            isBusy = false;
+        }
+
+        void Update()
+        {
+            UpdateRotation();
+            UpdateAnimation();
+        }
+
+        /// &lt;summary&gt;
+        /// direction = normalizado. moveAmount = 0..1 (pressão do stick).
+        /// &lt;/summary&gt;
+        public void Move(Vector3 direction, float moveAmount = 1f)
+        {
+            if (isBusy) return;
+            if (!agent.enabled || !agent.isOnNavMesh) return;
+
+            MoveAmount = Mathf.Clamp01(moveAmount);
+
+            agent.speed = Mathf.Lerp(walkSpeed, runSpeed, MoveAmount);
+
+            // Destino curto à frente — o agent anda à velocidade que acabámos de setar
+            float lookAhead = Mathf.Max(0.35f, agent.speed * 0.35f);
+            Vector3 targetPos = transform.position + direction.normalized * lookAhead;
+            agent.SetDestination(targetPos);
+        }
+
+        /// &lt;summary&gt;Compat: AI antiga que chama Move(dir) sem amount → full speed.&lt;/summary&gt;
+        public void Move(Vector3 direction)
+        {
+            Move(direction, 1f);
+        }
+
+        public void Stop()
+        {
+            MoveAmount = 0f;
+
+            if (agent.enabled &amp;&amp; agent.isOnNavMesh)
+            {
+                agent.ResetPath();
+                agent.velocity = Vector3.zero;
+            }
+        }
+
+        void UpdateRotation()
+        {
+            if (health.IsDead) return;
+
+            if (lockOn != null &amp;&amp; lockOn.isLockedOn &amp;&amp; lockOn.lockOnTarget != null)
+            {
+                Vector3 dir = lockOn.lockOnTarget.position - agent.nextPosition;
+                dir.y = 0f;
+                if (dir.sqrMagnitude &lt; 0.0001f) return;
+
+                Quaternion targetRot = Quaternion.LookRotation(dir.normalized);
+                float t = Mathf.Clamp01(lockOn.lockOnRotationSpeed * Time.deltaTime);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, t);
+                return;
+            }
+
+            Vector3 moveDir = agent.desiredVelocity;
+            if (moveDir.sqrMagnitude &lt; 0.01f) return;
+
+            Quaternion moveRot = Quaternion.LookRotation(moveDir.normalized);
+
+            // Rodar mais depressa quando o stick está a fundo
+            float rot = rotationSpeed * Mathf.Lerp(0.55f, 1.25f, MoveAmount);
+            transform.rotation = Quaternion.Slerp(transform.rotation, moveRot, rot * Time.deltaTime);
+        }
+
+        void UpdateAnimation()
+        {
+            // Preferimos o input (estável) ao desiredVelocity (oscila com o NavMesh)
+            float speedParam = MoveAmount;
+
+            // Fallback para AI / quando MoveAmount não é setado por input
+            if (!IsPlayer())
+            {
+                float max = Mathf.Max(0.01f, runSpeed);
+                speedParam = Mathf.Clamp01(agent.desiredVelocity.magnitude / max);
+            }
+
+            animator.SetFloat(SpeedHash, speedParam, animSpeedDamp, Time.deltaTime);
+        }
+
+        public bool IsPlayer() =&gt; GameContext.Player == this;
+        public CharacterManager GetPlayer() =&gt; GameContext.Player;
+
+        public void GiveControlToAI()
+        {
+            agent.stoppingDistance = stoppingDistance;
+            agent.speed = baseAgentSpeed &gt; 0f ? baseAgentSpeed : runSpeed;
+            MoveAmount = 0f;
+        }
+
+        public void GiveControlToPlayer()
+        {
+            agent.stoppingDistance = 0f;
+            GameContext.SetPlayer(this);
+        }
+    }
+}</code></pre>
+
+<div class="card warn">
+  <span class="label warn">Porque não usar desiredVelocity.magnitude no player</span>
+  <p style="margin-bottom:0">O NavMesh “empurra” a velocity e ela oscila (path corners, acceleration). Para blend walk/run o <strong>input</strong> (<code>MoveAmount</code>) é mais estável e responde no frame em que empurras o stick — a animação não atrasa atrás do agent.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s4">4. ThirdPersonCamera — yaw proporcional</h2>
+
+<div class="path">Assets/Scripts/Camera/ThirdPersonCamera.cs</div>
+<pre class="after"><code>namespace AF
+{
+    using UnityEngine;
+
+    /// &lt;summary&gt;
+    /// Pitch/distância fixos. Yaw acompanha o personagem —
+    /// mais depressa quando o stick está a fundo, mais lento com pressão leve.
+    /// &lt;/summary&gt;
+    public class ThirdPersonCamera : MonoBehaviour
+    {
+        [Header("Target")]
+        [SerializeField] CharacterManager target;
+        [SerializeField] float targetHeight = 1.5f;
+
+        [Header("Framing (fixo)")]
+        [SerializeField] float distance = 5f;
+        [SerializeField] float pitch = 25f;
+
+        [Header("Yaw follow (analógico)")]
+        [Tooltip("Yaw follow com stick leve / parado.")]
+        [SerializeField] float yawFollowSpeedMin = 2.5f;
+        [Tooltip("Yaw follow com stick a fundo.")]
+        [SerializeField] float yawFollowSpeedMax = 10f;
+        [Tooltip("Multiplicador extra com lock-on.")]
+        [SerializeField] float lockOnYawMultiplier = 2f;
+
+        [Header("Position smoothing")]
+        [SerializeField] float followSmoothMin = 8f;
+        [SerializeField] float followSmoothMax = 16f;
+
+        [Header("Collision")]
+        [SerializeField] LayerMask wallLayer;
+        [SerializeField] float sphereRadius = 0.3f;
+        [SerializeField] float wallBuffer = 0.15f;
+        [SerializeField] float minDistanceFromTarget = 1.5f;
+
+        float yaw;
+
+        void Start()
+        {
+            yaw = target != null
+                ? target.transform.eulerAngles.y
+                : transform.eulerAngles.y;
+        }
+
+        void LateUpdate()
+        {
+            if (target == null) return;
+
+            float moveAmount = target.MoveAmount; // 0..1
+
+            UpdateYaw(moveAmount);
+
+            Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
+            Vector3 pivot = target.transform.position + Vector3.up * targetHeight;
+
+            Vector3 desiredPos = pivot - rotation * Vector3.forward * distance;
+            desiredPos = ResolveWallOcclusion(desiredPos);
+
+            float follow = Mathf.Lerp(followSmoothMin, followSmoothMax, moveAmount);
+            if (target.lockOn != null &amp;&amp; target.lockOn.isLockedOn)
+                follow *= lockOnYawMultiplier;
+
+            transform.position = Vector3.Lerp(
+                transform.position,
+                desiredPos,
+                follow * Time.deltaTime
+            );
+
+            transform.rotation = Quaternion.LookRotation(
+                pivot - transform.position, Vector3.up);
+        }
+
+        void UpdateYaw(float moveAmount)
+        {
+            float targetYaw = target.transform.eulerAngles.y;
+
+            float yawSpeed = Mathf.Lerp(yawFollowSpeedMin, yawFollowSpeedMax, moveAmount);
+
+            if (target.lockOn != null &amp;&amp; target.lockOn.isLockedOn)
+                yawSpeed *= lockOnYawMultiplier;
+
+            // Mesmo parado, um follow mínimo evita a câmara ficar desalinhada para sempre
+            // depois de um dodge / hit. Se quiseres câmara 100% congelada em idle,
+            // early-return quando moveAmount &lt; epsilon.
+            yaw = Mathf.LerpAngle(yaw, targetYaw, yawSpeed * Time.deltaTime);
+        }
+
+        Vector3 ResolveWallOcclusion(Vector3 desiredPos)
+        {
+            Vector3 castOrigin = target.transform.position + Vector3.up * targetHeight;
+            Vector3 direction = desiredPos - castOrigin;
+            float maxDistance = direction.magnitude;
+            if (maxDistance &lt; 0.001f) return desiredPos;
+
+            direction /= maxDistance;
+
+            if (Physics.SphereCast(
+                castOrigin,
+                sphereRadius,
+                direction,
+                out RaycastHit hit,
+                maxDistance,
+                wallLayer,
+                QueryTriggerInteraction.Ignore))
+            {
+                float pullDistance = Mathf.Max(
+                    hit.distance - wallBuffer,
+                    minDistanceFromTarget
+                );
+                return castOrigin + direction * pullDistance;
+            }
+
+            return desiredPos;
+        }
+    }
+}</code></pre>
+
+<div class="card">
+  <span class="label ok">Feel</span>
+  <p style="margin-bottom:0">Stick leve → personagem anda devagar e a câmara “atrasa” um pouco (mais cinematográfico / controlável). Stick a fundo → corre e a câmara cola-se ao yaw. Em lock-on, o multiplicador mantém o tracking apertado.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s5">5. Animator / Blend Tree</h2>
+
+<p>Para o meio-termo aparecer visualmente, o Blend Tree de locomoção tem de estar em <strong>0..1</strong> (não em m/s brutos).</p>
+
+<ol>
+  <li>Parâmetro <code>Speed</code> (float).</li>
+  <li>Blend Tree 1D:
+    <ul>
+      <li><code>0.0</code> → Idle</li>
+      <li><code>0.4</code> → Walk</li>
+      <li><code>1.0</code> → Run</li>
+    </ul>
+  </li>
+  <li>Thresholds aproximados: Idle 0 · Walk 0.35–0.5 · Run 1.</li>
+</ol>
+
+<div class="card warn">
+  <span class="label warn">Se o teu tree ainda usa m/s</span>
+  <p style="margin-bottom:0">Antes tinhas <code>desiredVelocity.magnitude</code> (~0–5). Agora mandamos <strong>0..1</strong>. Ou reajustas os thresholds do Blend Tree para 0 / 0.4 / 1, ou no código fazes <code>speedParam * runSpeed</code> e manténs o tree antigo. Recomendo reajustar o tree — fica independente do valor de <code>runSpeed</code>.</p>
+</div>
+
+<pre><code>// Opção B — manter thresholds em m/s no Animator:
+float speedParam = Mathf.Lerp(walkSpeed, runSpeed, MoveAmount);
+animator.SetFloat(SpeedHash, speedParam, animSpeedDamp, Time.deltaTime);
+// Tree: Idle@0, Walk@walkSpeed, Run@runSpeed</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s6">6. Tuning + wiring</h2>
+
+<table>
+  <tr><th>Campo</th><th>Sugestão inicial</th><th>Efeito</th></tr>
+  <tr><td><code>moveDeadzone</code></td><td>0.12</td><td>Ignora toques acidentais</td></tr>
+  <tr><td><code>inputExponent</code></td><td>1.35</td><td>&gt;1 = mais walk, menos run acidental</td></tr>
+  <tr><td><code>walkSpeed</code></td><td>1.8</td><td>Stick leve</td></tr>
+  <tr><td><code>runSpeed</code></td><td>5.5</td><td>Stick a fundo (≈ agent.speed actual)</td></tr>
+  <tr><td><code>animSpeedDamp</code></td><td>0.12</td><td>Suavidade do blend</td></tr>
+  <tr><td><code>yawFollowSpeedMin</code></td><td>2.5</td><td>Câmara lenta em walk</td></tr>
+  <tr><td><code>yawFollowSpeedMax</code></td><td>10</td><td>Câmara rápida em run</td></tr>
+  <tr><td><code>followSmoothMin/Max</code></td><td>8 / 16</td><td>Lag de posição da câmara</td></tr>
+</table>
+
+<ol>
+  <li>Substitui os 3 scripts (ou faz paste das secções).</li>
+  <li>No player: define <code>walkSpeed</code> / <code>runSpeed</code> no Inspector.</li>
+  <li>Na câmara: troca o antigo <code>yawFollowSpeed</code> único pelos min/max.</li>
+  <li>Ajusta o Blend Tree para 0..1 (ou usa Opção B).</li>
+  <li>Testa: stick a 30% → walk lento + câmara mansa; a 100% → run + câmara colada.</li>
+</ol>
+
+<div class="flow">Checklist de feel
+□ Deadzone não “salta” para walk (remapeamento InverseLerp)
+□ Walk e Run distinguem-se no Animator
+□ Câmara não teleporta no yaw ao soltar o stick
+□ AI continua a chamar Move(dir) → full speed (overload)
+□ Lock-on: rotação do corpo para o alvo intacta; yaw cam mais rápido</div>
+
+<footer>
+  Documento de refactor. Se quiseres no passo seguinte, aplico isto directamente nos 3 ficheiros do projeto.
+</footer>
+
+</div>
+</body>
+</html>

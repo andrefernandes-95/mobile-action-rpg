@@ -1,0 +1,12 @@
+# ninja log v5
+143	1117	8060068012987957	FramePacing/CMakeFiles/swappywrapper.dir/UnitySwappyWrapper.cpp.o	ea5b346389d93094
+1121	1771	8060068019294398	C:/Users/andre/Desktop/Dungeoncrawler 0.1/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/6j635p72/obj/arm64-v8a/libswappywrapper.so	2eb5c5a4a85d7742
+86	3934	8060068041100805	GameActivity/CMakeFiles/game.dir/UGAInputKeyEvent.cpp.o	bd6ac619f8efe144
+51	4019	8060068041867292	GameActivity/CMakeFiles/game.dir/UGAEntry.cpp.o	16c738d3e696f706
+2	4060	8060068042301381	GameActivity/CMakeFiles/game.dir/UGAConfiguration.cpp.o	19e18c18982c11cb
+122	4092	8060068042710717	GameActivity/CMakeFiles/game.dir/UGAInputMotionEvent.cpp.o	1da6edf8737bacdc
+36	4167	8060068043412326	GameActivity/CMakeFiles/game.dir/UGADebug.cpp.o	3965762bfd29848
+104	4617	8060068047980398	GameActivity/CMakeFiles/game.dir/UGASoftKeyboard.cpp.o	64e1d87bd5fbae40
+67	4621	8060068048011492	GameActivity/CMakeFiles/game.dir/UGAInput.cpp.o	f56b17afb7aeebf3
+20	4800	8060068049744242	GameActivity/CMakeFiles/game.dir/UGAApplication.cpp.o	690b6195815abd69
+4800	5009	8060068051865380	C:/Users/andre/Desktop/Dungeoncrawler 0.1/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/6j635p72/obj/arm64-v8a/libgame.so	1e909efcb4997b23

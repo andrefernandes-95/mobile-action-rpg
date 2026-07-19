@@ -20,7 +20,7 @@ RenderSettings:
   m_FogDensity: 0.009
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.39262193, g: 0.3981828, b: 0.4811321, a: 1}
+  m_AmbientSkyColor: {r: 0.5293254, g: 0.5366195, b: 0.6132076, a: 1}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -2314,7 +2314,6 @@ GameObject:
   - component: {fileID: 330585544}
   - component: {fileID: 330585547}
   - component: {fileID: 330585549}
-  - component: {fileID: 330585550}
   - component: {fileID: 330585551}
   m_Layer: 0
   m_Name: Main Camera
@@ -2421,7 +2420,7 @@ MonoBehaviour:
   m_VolumeTrigger: {fileID: 0}
   m_VolumeFrameworkUpdateModeOption: 2
   m_RenderPostProcessing: 1
-  m_Antialiasing: 1
+  m_Antialiasing: 0
   m_AntialiasingQuality: 2
   m_StopNaN: 0
   m_Dithering: 0
@@ -2455,24 +2454,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   fovPunchAmount: 2
   punchDuration: 0.12
---- !u!114 &330585550
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 330585543}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cc7f167e578dcd94999f8593126c237f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  player: {fileID: 1975928862}
-  occluderLayer:
-    serializedVersion: 2
-    m_Bits: 321
-  fadeMaterial: {fileID: 0}
-  fadeAlpha: 0.25
 --- !u!114 &330585551
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2490,13 +2471,13 @@ MonoBehaviour:
   distance: 5
   pitch: 25
   yawFollowSpeed: 3
-  followSmooth: 3
+  followSmooth: 15
   wallLayer:
     serializedVersion: 2
     m_Bits: 1
   sphereRadius: 0.3
   wallBuffer: 0.15
-  minDistanceFromTarget: 1.5
+  minDistanceFromTarget: 1
 --- !u!1001 &334440057
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -13421,7 +13402,7 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: 3771c939bea1f9d41be1b65601a59e44, type: 2}
     - target: {fileID: 2746758125811668220, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
       propertyPath: randomDefaultWeapons.Array.size
-      value: 2
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2746758125811668220, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
       propertyPath: 'randomDefaultWeapons.Array.data[0]'
@@ -13494,11 +13475,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89eff5c9288b1544583fd6de65288a75, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!4 &1975928862 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 3903456157624417881, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
-  m_PrefabInstance: {fileID: 1975928860}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1981510060
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -15,6 +15,13 @@ namespace AF
 
         [HideInInspector] public UnityEvent<CharacterManager> onSetCurrentCharacter;
 
+        [Header("Analog")]
+        [SerializeField] float moveDeadzone = 0.12f;
+        [SerializeField] float inputExponent = 1.35f;
+
+        public float MoveAmount { get; private set; }
+        public Vector3 MoveDirection { get; private set; }
+
         void OnEnable()
         {
             mainCam = Camera.main;
@@ -48,13 +55,25 @@ namespace AF
 
         void HandleMovement()
         {
+            MoveAmount = 0f;
+            MoveDirection = Vector3.zero;
+
             if (mainCam == null || characterManager == null)
             {
                 return;
             }
 
-            float h = joystick.Horizontal + Input.GetAxis("Horizontal");
-            float v = joystick.Vertical + Input.GetAxis("Vertical");
+            float h = 0f;
+            float v = 0f;
+
+            if (joystick != null)
+            {
+                h += joystick.Horizontal;
+                v += joystick.Vertical;
+            }
+
+            h += Input.GetAxis("Horizontal");
+            v += Input.GetAxis("Vertical");
 
             // Camera-relative movement
             Vector3 camForward = mainCam.transform.forward;
@@ -66,16 +85,23 @@ namespace AF
             camForward.Normalize();
             camRight.Normalize();
 
-            Vector3 moveDir = camForward * v + camRight * h;
+            Vector3 raw = camForward * v + camRight * h;
+            float magnitude = Mathf.Clamp01(raw.magnitude);
 
-            if (moveDir.magnitude > 0.1f)
-            {
-                characterManager.Move(moveDir.normalized);
-            }
-            else
+            if (magnitude < moveDeadzone)
             {
                 characterManager.Stop();
+
             }
+
+            float remapped = Mathf.InverseLerp(moveDeadzone, 1f, magnitude);
+            float amount = Mathf.Pow(remapped, inputExponent);
+
+            Vector3 dir = raw / magnitude;
+            MoveAmount = amount;
+            MoveDirection = dir;
+
+            characterManager.Move(dir, amount);
         }
 
         public void OnAttack()

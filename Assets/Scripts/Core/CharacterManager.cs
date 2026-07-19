@@ -23,19 +23,33 @@ namespace AF
 
         [Header("Locomotion")]
         public float rotationSpeed = 10f;
+        public float walkSpeed = 1.8f;
+        public float runSpeed = 5.5f;
+        public float animSpeedDamp = 0.12f;
 
         public bool isBusy = false;
 
         [Header("Patrol")]
         public Transform[] patrolPoints;
 
-
         float stoppingDistance;
+        float baseAgentSpeed;
 
+        public float MoveAmount { get; private set; }
 
         void Awake()
         {
             stoppingDistance = agent.stoppingDistance;
+            baseAgentSpeed = agent.speed;
+
+            if (runSpeed <= 0f)
+            {
+                runSpeed = baseAgentSpeed > 0f ? baseAgentSpeed : 5.5f;
+            }
+            if (walkSpeed <= 0f)
+            {
+                walkSpeed = runSpeed * 0.35f;
+            }
         }
 
         // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -56,56 +70,75 @@ namespace AF
             UpdateAnimation();
         }
 
-        public void Move(Vector3 direction)
+        public void Move(Vector3 direction, float moveAmount = 1f)
         {
-            if (isBusy) return;
+            if (isBusy)
+            {
+                return;
+            }
 
-            Vector3 targetPos = transform.position + direction;
+            if (!agent.enabled || !agent.isOnNavMesh)
+            {
+                return;
+            }
+
+            MoveAmount = Mathf.Clamp01(moveAmount);
+            agent.speed = Mathf.Lerp(walkSpeed, runSpeed, MoveAmount);
+
+            float lookAhead = Mathf.Max(0.35f, agent.speed * 0.35f);
+
+            Vector3 targetPos = transform.position + direction.normalized * lookAhead;
             agent.SetDestination(targetPos);
         }
 
         public void Stop()
         {
+            MoveAmount = 0f;
+
             if (agent.enabled && agent.isOnNavMesh)
             {
                 agent.ResetPath();
+                agent.velocity = Vector3.zero;
             }
         }
 
         void UpdateRotation()
         {
-            if (health.IsDead)
-            {
-                return;
-            }
+            if (health.IsDead) return;
 
             if (lockOn != null && lockOn.isLockedOn && lockOn.lockOnTarget != null)
             {
-                // Direction to target
                 Vector3 dir = lockOn.lockOnTarget.position - agent.nextPosition;
                 dir.y = 0f;
+                if (dir.sqrMagnitude < 0.0001f) return;
 
-                // Compute target rotation
                 Quaternion targetRot = Quaternion.LookRotation(dir.normalized);
-
-                // Blend rotation smoothly
                 float t = Mathf.Clamp01(lockOn.lockOnRotationSpeed * Time.deltaTime);
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, t);
-
                 return;
             }
 
-            // Movement-based rotation fallback
             Vector3 moveDir = agent.desiredVelocity;
             if (moveDir.sqrMagnitude < 0.01f) return;
 
             Quaternion moveRot = Quaternion.LookRotation(moveDir.normalized);
-            transform.rotation = Quaternion.Slerp(transform.rotation, moveRot, rotationSpeed * Time.deltaTime);
+
+            // Rodar mais depressa quando o stick está a fundo
+            float rot = rotationSpeed * Mathf.Lerp(0.55f, 1.25f, MoveAmount);
+            transform.rotation = Quaternion.Slerp(transform.rotation, moveRot, rot * Time.deltaTime);
         }
 
         void UpdateAnimation()
         {
-            animator.SetFloat("Speed", agent.desiredVelocity.magnitude, 0.1f, Time.deltaTime);
+            float speedParam = MoveAmount;
+
+            if (!IsPlayer())
+            {
+                float max = Mathf.Max(0.01f, runSpeed);
+                speedParam = Mathf.Clamp01(agent.desiredVelocity.magnitude / max);
+            }
+
+            animator.SetFloat(AnimHashes.Speed, speedParam, animSpeedDamp, Time.deltaTime);
         }
 
         public bool IsPlayer()

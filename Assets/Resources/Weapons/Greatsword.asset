@@ -21,6 +21,6 @@ MonoBehaviour:
   damageType: 0
   amount: 75
   engageRadius: 6
-  position: {x: -0.112, y: -0.048, z: 0.092}
-  rotation: {x: 359.35593, y: 97.63987, z: 96.71404}
+  position: {x: 0.0818, y: 0.039, z: 0.0258}
+  rotation: {x: 351.37885, y: 259.29996, z: 96.34227}
   overrideController: {fileID: 22100000, guid: e07d2bf09cac4624dba068fe94fe2151, type: 2}
