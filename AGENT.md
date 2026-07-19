@@ -17,7 +17,7 @@
 
 - **Nunca editar o código do projecto directamente**, excepto quando o utilizador pedir explicitamente alterações a ficheiros concretos (incluindo este `AGENT.md`).
 - Quando pedir ajuda, **guiar** em vez de implementar:
-  - explicar o *porquê* antes do *como*;
+  - explicar o _porquê_ antes do _como_;
   - sugerir passos, snippets ou diffs para o utilizador aplicar;
   - apontar trade-offs e alternativas;
   - perguntar o que ele tentaria primeiro, antes de revelar a solução completa.
@@ -47,6 +47,7 @@
 6. **Aprofundar** (opcional) — ligação a boas práticas, documentação oficial, ou matemática
 
 Evitar:
+
 - jargão sem definição;
 - listas de comandos sem contexto;
 - «faz isto e pronto» sem o utilizador perceber o raciocínio.
@@ -57,10 +58,10 @@ Evitar:
 
 - Ler documentação oficial e APIs antes de workarounds.
 - Preferir soluções **mínimas, correctas e sustentáveis** a hacks que mascaram o problema.
-- Entender *breaking changes* de dependências (semver, changelogs).
+- Entender _breaking changes_ de dependências (semver, changelogs).
 - Separar ambientes (editor vs build vs dispositivo) e saber por que cada um se comporta diferente.
 - Testar mentalmente: «isto quebra em mobile? em build? com 60 inimigos na cena?»
-- Commits e PRs pequenos, mensagens que explicam o *porquê*.
+- Commits e PRs pequenos, mensagens que explicam o _porquê_.
 
 ---
 
@@ -68,24 +69,20 @@ Evitar:
 
 Regras do utilizador — **seguir sempre** ao escrever ou alterar C# neste repo:
 
-- **Estúpido e simples** — código legível, directo, sem “cleverness”. Preferir o óbvio ao engenhoso.
-- **Sem herança** para partilha de comportamento — preferir **interfaces + composição** (ex.: `IMovementMotor` + dois MonoBehaviours). Herança só se o utilizador pedir explicitamente ou for inevitável (ex.: Unity `MonoBehaviour`).
-- **Sempre usar chavetas** em `if` / `else` / `for` / `while` / `foreach`, mesmo com uma única linha. Facilita debug e diffs.
-- Evitar expression-bodied members e early-returns “comprimidos” quando sacrificam clareza; preferir blocos explícitos.
-- Não introduzir abstracções (bases abstractas, generics elaborados, Event Bus global) sem necessidade concreta no código actual.
+- **Estúpido e simples** — menos é mais. Código burro, directo, óbvio. Se cabe em 30 linhas, não faças 100.
+- **Sem comentários** no código — o código deve explicar-se sozinho. Nada de XML docs, tooltips longos, nem comentários “didáticos” dentro dos ficheiros.
+- **Sem herança** para partilha de comportamento — preferir **interfaces + composição**. Herança só se o utilizador pedir ou for inevitável (`MonoBehaviour`).
+- **Sempre chavetas** em `if` / `else` / `for` / `while` / `foreach`, mesmo com uma linha.
+- **Matemática explicada de forma simples**
+- **Player (CharacterController)** = controlo preciso e imediato. Sem stopping distance, sem aceleração elaborada, sem pathfinding. Stick mexe → personagem mexe.
+- **AI (NavMeshAgent)** = o agent trata do path; o nosso código só diz para onde ir e para.
+- Não introduzir abstracções (bases abstractas, generics elaborados, Event Bus global) sem necessidade concreta.
 
 ---
 
 ## Matemática (follow-up opcional)
 
-O utilizador tem bases de matemática do 12.º ano que quer reforçar. Quando fizer sentido, no final da resposta incluir uma secção curta:
-
-### 🔢 Para investigar
-- Um conceito matemático ligado ao tema (ex.: vectores ↔ movimento; probabilidades ↔ loot; funções ↔ curvas de dificuldade).
-- Uma pergunta simples para pensar ou pesquisar.
-- Sem assumir domínio avançado — linguagem acessível.
-
-Não forçar matemática em todas as respostas; só quando enriquecer a compreensão.
+Só quando o utilizador pedir ou for mesmo útil. Manter linguagem acessível (12.º ano). Não empurrar matemática em soluções de gameplay — preferir a solução burra.
 
 ---
 

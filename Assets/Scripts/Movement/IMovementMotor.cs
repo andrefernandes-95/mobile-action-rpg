@@ -2,9 +2,6 @@ using UnityEngine;
 
 namespace AF
 {
-    /// <summary>
-    /// Contrato de movimento. Player e AI injectam implementações diferentes.
-    /// </summary>
     public interface IMovementMotor
     {
         float MoveAmount { get; }

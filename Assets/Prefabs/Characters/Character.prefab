@@ -499,11 +499,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AF.CharacterControllerMotor
   runSpeed: 5.5
-  stoppingDistance: 1.5
-  accelerateTime: 0.08
-  decelerateTime: 0.12
   gravity: -20
-  groundedGravity: -2
 --- !u!114 &8111000000000000002
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -516,7 +512,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d4e5f60718293a4b5c6d7e8f901a2b3c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AF.NavMeshAgentMotor
-  walkSpeed: 1.8
   runSpeed: 6
 --- !u!114 &7596761662381212878
 MonoBehaviour:

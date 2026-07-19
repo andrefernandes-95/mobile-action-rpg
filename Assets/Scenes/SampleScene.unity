@@ -13470,8 +13470,20 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 0}
     - target: {fileID: 8111000000000000001, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
+      propertyPath: runSpeed
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 8111000000000000001, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
       propertyPath: m_Enabled
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8111000000000000001, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
+      propertyPath: accelerateTime
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8111000000000000001, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
+      propertyPath: decelerateTime
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8111000000000000002, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
       propertyPath: m_Enabled

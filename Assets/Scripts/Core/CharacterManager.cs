@@ -178,7 +178,7 @@ namespace AF
                 speedParam = Mathf.Clamp01(motor.PlanarVelocity.magnitude / max);
             }
 
-            animator.SetFloat(AnimHashes.Speed, speedParam, animSpeedDamp, Time.deltaTime);
+            animator.SetFloat(AnimHashes.Vertical, speedParam, animSpeedDamp, Time.deltaTime);
         }
 
         public bool IsPlayer()
