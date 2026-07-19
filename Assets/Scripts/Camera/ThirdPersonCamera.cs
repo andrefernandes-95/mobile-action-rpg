@@ -4,7 +4,7 @@ namespace AF
 
     /// <summary>
     /// Third-person camera mobile: pitch/distância fixos.
-    /// Colisão: SphereCast a partir de fora do player, ignora o próprio alvo, distância suavizada.
+    /// Colisão: RaycastAll do pivot até à câmara, ignora o player, pull-in imediato.
     /// </summary>
     public class ThirdPersonCamera : MonoBehaviour
     {
@@ -21,21 +21,22 @@ namespace AF
         [SerializeField] float yawSmoothTimeMax = 0.18f;
 
         [Header("Position smoothing")]
-        [SerializeField] float followSmoothTimeMin = 0.2f;
-        [SerializeField] float followSmoothTimeMax = 0.1f;
+        [Tooltip("Suavização só quando NÃO há parede. Com parede a posição aplica-se logo.")]
+        [SerializeField] float followSmoothTime = 0.12f;
 
         [Header("Collision")]
         [SerializeField] LayerMask wallLayer = ~0;
-        [SerializeField] float sphereRadius = 0.25f;
-        [SerializeField] float wallBuffer = 0.2f;
-        [SerializeField] float minDistanceFromTarget = 1.2f;
-        [SerializeField] float collisionSmoothTime = 0.08f;
+        [SerializeField] float wallBuffer = 0.15f;
+        [SerializeField] float minDistanceFromTarget = 0.8f;
+        [Tooltip("Tempo para a câmara VOLTAR a afastar-se (entrar na parede é imediato).")]
+        [SerializeField] float zoomOutSmoothTime = 0.2f;
+
+        readonly RaycastHit[] hitBuffer = new RaycastHit[16];
 
         float yaw;
         float yawVelocity;
         float smoothedMoveAmount;
         float moveAmountVelocity;
-        Vector3 positionVelocity;
         float currentDistance;
         float distanceVelocity;
 
@@ -69,30 +70,48 @@ namespace AF
             );
 
             float cameraBlend = smoothedMoveAmount * smoothedMoveAmount;
-
             UpdateYaw(cameraBlend);
 
             Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
             Vector3 pivot = target.transform.position + Vector3.up * targetHeight;
-            Vector3 back = rotation * Vector3.forward;
 
-            float targetDistance = ResolveCameraDistance(pivot, -back);
-            currentDistance = Mathf.SmoothDamp(
-                currentDistance,
-                targetDistance,
-                ref distanceVelocity,
-                collisionSmoothTime
-            );
+            // Direção do pivot → câmara desejada
+            Vector3 toCamera = -(rotation * Vector3.forward);
+            float occludedDistance = ResolveCameraDistance(pivot, toCamera);
 
-            Vector3 desiredPos = pivot - back * currentDistance;
+            bool blocked = occludedDistance < distance - 0.01f;
 
-            float followTime = Mathf.Lerp(followSmoothTimeMin, followSmoothTimeMax, cameraBlend);
-            transform.position = Vector3.SmoothDamp(
-                transform.position,
-                desiredPos,
-                ref positionVelocity,
-                Mathf.Max(0.01f, followTime)
-            );
+            if (blocked)
+            {
+                // Entrar (puxar para o player) = imediato — senão ficas atrás da parede
+                currentDistance = occludedDistance;
+                distanceVelocity = 0f;
+            }
+            else
+            {
+                // Sair = suave
+                currentDistance = Mathf.SmoothDamp(
+                    currentDistance,
+                    occludedDistance,
+                    ref distanceVelocity,
+                    zoomOutSmoothTime
+                );
+            }
+
+            Vector3 desiredPos = pivot + toCamera * currentDistance;
+
+            if (blocked)
+            {
+                transform.position = desiredPos;
+            }
+            else
+            {
+                transform.position = Vector3.Lerp(
+                    transform.position,
+                    desiredPos,
+                    1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(0.01f, followSmoothTime))
+                );
+            }
 
             Vector3 look = pivot - transform.position;
             if (look.sqrMagnitude > 0.0001f)
@@ -114,39 +133,57 @@ namespace AF
             );
         }
 
-        float ResolveCameraDistance(Vector3 pivot, Vector3 castDir)
+        float ResolveCameraDistance(Vector3 pivot, Vector3 toCamera)
         {
             float preferred = distance;
-
-            // Começa FORA do collider do player — senão o cast "bate" nele e desiste
-            float skin = sphereRadius + 0.05f;
-            Vector3 origin = pivot + castDir * skin;
-            float castLength = Mathf.Max(0f, preferred - skin);
-
-            if (castLength <= 0.001f)
+            if (toCamera.sqrMagnitude < 0.0001f)
             {
-                return minDistanceFromTarget;
+                return preferred;
             }
 
-            if (!Physics.SphereCast(
-                origin,
-                sphereRadius,
-                castDir,
-                out RaycastHit hit,
-                castLength,
+            toCamera.Normalize();
+
+            // Raycast (não SphereCast): MeshColliders não-convexos das dungeons
+            // não respondem bem a SphereCast.
+            int hitCount = Physics.RaycastNonAlloc(
+                pivot,
+                toCamera,
+                hitBuffer,
+                preferred,
                 wallLayer,
-                QueryTriggerInteraction.Ignore))
+                QueryTriggerInteraction.Ignore
+            );
+
+            float nearest = preferred;
+            bool found = false;
+
+            for (int i = 0; i < hitCount; i++)
+            {
+                RaycastHit hit = hitBuffer[i];
+
+                if (hit.collider == null)
+                {
+                    continue;
+                }
+
+                if (IsHitOnTarget(hit))
+                {
+                    continue;
+                }
+
+                if (hit.distance < nearest)
+                {
+                    nearest = hit.distance;
+                    found = true;
+                }
+            }
+
+            if (!found)
             {
                 return preferred;
             }
 
-            // Ignora hits no próprio player (ou filhos)
-            if (IsHitOnTarget(hit))
-            {
-                return preferred;
-            }
-
-            float pulled = hit.distance + skin - wallBuffer;
+            float pulled = nearest - wallBuffer;
             return Mathf.Clamp(pulled, minDistanceFromTarget, preferred);
         }
 
