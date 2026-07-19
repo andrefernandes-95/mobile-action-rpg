@@ -3,9 +3,8 @@ namespace AF
     using UnityEngine;
 
     /// <summary>
-    /// Third-person camera para mobile: pitch e distancia fixos.
-    /// O yaw acompanha a rotacao horizontal do personagem (driven pelo joystick).
-    /// Sem free-look por toque/rato.
+    /// Third-person camera mobile: pitch/distância fixos.
+    /// Colisão: SphereCast a partir de fora do player, ignora o próprio alvo, distância suavizada.
     /// </summary>
     public class ThirdPersonCamera : MonoBehaviour
     {
@@ -17,26 +16,33 @@ namespace AF
         [SerializeField] float distance = 5f;
         [SerializeField] float pitch = 25f;
 
-
         [Header("Yaw follow")]
-        [SerializeField] float yawFollowSpeedMin = 2.5f;
-        [SerializeField] float yawFollowSpeedMax = 10f;
-        [SerializeField] float lockOnYawMultiplier = 2f;
+        [SerializeField] float yawSmoothTimeMin = 0.45f;
+        [SerializeField] float yawSmoothTimeMax = 0.18f;
 
         [Header("Position smoothing")]
-        [SerializeField] float followSmoothMin = 8f;
-        [SerializeField] float followSmoothMax = 16f;
+        [SerializeField] float followSmoothTimeMin = 0.2f;
+        [SerializeField] float followSmoothTimeMax = 0.1f;
 
         [Header("Collision")]
-        [SerializeField] LayerMask wallLayer;
-        [SerializeField] float sphereRadius = 0.3f;
-        [SerializeField] float wallBuffer = 0.15f;
-        [SerializeField] float minDistanceFromTarget = 1.5f;
+        [SerializeField] LayerMask wallLayer = ~0;
+        [SerializeField] float sphereRadius = 0.25f;
+        [SerializeField] float wallBuffer = 0.2f;
+        [SerializeField] float minDistanceFromTarget = 1.2f;
+        [SerializeField] float collisionSmoothTime = 0.08f;
 
         float yaw;
+        float yawVelocity;
+        float smoothedMoveAmount;
+        float moveAmountVelocity;
+        Vector3 positionVelocity;
+        float currentDistance;
+        float distanceVelocity;
 
         void Start()
         {
+            currentDistance = distance;
+
             if (target != null)
             {
                 yaw = target.transform.eulerAngles.y;
@@ -54,77 +60,116 @@ namespace AF
                 return;
             }
 
-            float moveAmount = target.MoveAmount; // 0..1
+            float rawMove = Mathf.Clamp01(target.MoveAmount);
+            smoothedMoveAmount = Mathf.SmoothDamp(
+                smoothedMoveAmount,
+                rawMove,
+                ref moveAmountVelocity,
+                0.15f
+            );
 
-            UpdateYaw(moveAmount);
+            float cameraBlend = smoothedMoveAmount * smoothedMoveAmount;
+
+            UpdateYaw(cameraBlend);
 
             Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
             Vector3 pivot = target.transform.position + Vector3.up * targetHeight;
+            Vector3 back = rotation * Vector3.forward;
 
-            float wantedDistance = distance;
-
-            Vector3 desiredPos = pivot - rotation * Vector3.forward * wantedDistance;
-            desiredPos = ResolveWallOcclusion(desiredPos);
-
-            float follow = Mathf.Lerp(followSmoothMin, followSmoothMax, moveAmount);
-
-            if (target.lockOn != null && target.lockOn.isLockedOn)
-            {
-                follow *= lockOnYawMultiplier;
-            }
-
-            transform.position = Vector3.Lerp(
-                transform.position,
-                desiredPos,
-                follow * Time.deltaTime
+            float targetDistance = ResolveCameraDistance(pivot, -back);
+            currentDistance = Mathf.SmoothDamp(
+                currentDistance,
+                targetDistance,
+                ref distanceVelocity,
+                collisionSmoothTime
             );
 
-            transform.rotation = Quaternion.LookRotation(pivot - transform.position, Vector3.up);
-        }
+            Vector3 desiredPos = pivot - back * currentDistance;
 
-        Vector3 ResolveWallOcclusion(Vector3 desiredPos)
-        {
-            Vector3 castOrigin = target.transform.position + Vector3.up * targetHeight;
-            Vector3 direction = desiredPos - castOrigin;
-            float maxDistance = direction.magnitude;
+            float followTime = Mathf.Lerp(followSmoothTimeMin, followSmoothTimeMax, cameraBlend);
+            transform.position = Vector3.SmoothDamp(
+                transform.position,
+                desiredPos,
+                ref positionVelocity,
+                Mathf.Max(0.01f, followTime)
+            );
 
-
-            direction /= maxDistance;
-
-            if (Physics.SphereCast(
-                castOrigin,
-                sphereRadius,
-                direction,
-                out RaycastHit hit,
-                maxDistance,
-                wallLayer,
-                QueryTriggerInteraction.Ignore
-            ))
+            Vector3 look = pivot - transform.position;
+            if (look.sqrMagnitude > 0.0001f)
             {
-                float pullDistance = Mathf.Max(
-                    hit.distance - wallBuffer,
-                    minDistanceFromTarget
-                );
-
-                return castOrigin + direction * pullDistance;
+                transform.rotation = Quaternion.LookRotation(look, Vector3.up);
             }
-
-            return desiredPos;
         }
 
-
-        void UpdateYaw(float moveAmount)
+        void UpdateYaw(float cameraBlend)
         {
             float targetYaw = target.transform.eulerAngles.y;
+            float smoothTime = Mathf.Lerp(yawSmoothTimeMin, yawSmoothTimeMax, cameraBlend);
 
-            float yawSpeed = Mathf.Lerp(yawFollowSpeedMin, yawFollowSpeedMax, moveAmount);
+            yaw = Mathf.SmoothDampAngle(
+                yaw,
+                targetYaw,
+                ref yawVelocity,
+                Mathf.Max(0.01f, smoothTime)
+            );
+        }
 
-            if (target.lockOn != null && target.lockOn.isLockedOn)
+        float ResolveCameraDistance(Vector3 pivot, Vector3 castDir)
+        {
+            float preferred = distance;
+
+            // Começa FORA do collider do player — senão o cast "bate" nele e desiste
+            float skin = sphereRadius + 0.05f;
+            Vector3 origin = pivot + castDir * skin;
+            float castLength = Mathf.Max(0f, preferred - skin);
+
+            if (castLength <= 0.001f)
             {
-                yawSpeed *= lockOnYawMultiplier;
+                return minDistanceFromTarget;
             }
 
-            yaw = Mathf.LerpAngle(yaw, targetYaw, yawSpeed * Time.deltaTime);
+            if (!Physics.SphereCast(
+                origin,
+                sphereRadius,
+                castDir,
+                out RaycastHit hit,
+                castLength,
+                wallLayer,
+                QueryTriggerInteraction.Ignore))
+            {
+                return preferred;
+            }
+
+            // Ignora hits no próprio player (ou filhos)
+            if (IsHitOnTarget(hit))
+            {
+                return preferred;
+            }
+
+            float pulled = hit.distance + skin - wallBuffer;
+            return Mathf.Clamp(pulled, minDistanceFromTarget, preferred);
+        }
+
+        bool IsHitOnTarget(RaycastHit hit)
+        {
+            if (hit.collider == null || target == null)
+            {
+                return false;
+            }
+
+            Transform hitRoot = hit.collider.transform;
+            if (hitRoot == target.transform || hitRoot.IsChildOf(target.transform))
+            {
+                return true;
+            }
+
+            CharacterManager hitCharacter = hit.collider.GetComponentInParent<CharacterManager>();
+            if (hitCharacter != null && hitCharacter == target)
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }

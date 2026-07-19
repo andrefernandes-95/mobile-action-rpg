@@ -30,11 +30,10 @@ namespace AF
                 player.transform.position
             );
 
-            // Disengage
             if (
-                dist > controller.character.perception.sightRange * disengageMultiplier // If far away
-                || controller.character.health.IsDead // Or Dead
-                || player.health.IsDead // Or Player Is Dead
+                dist > controller.character.perception.sightRange * disengageMultiplier
+                || controller.character.health.IsDead
+                || player.health.IsDead
             )
             {
                 controller.SwitchState(
@@ -43,27 +42,28 @@ namespace AF
                         : controller.idleState
                 );
 
-                // If exiting state to patrol or idle, unregister lock on
-                if (player != null)
-                {
-                    player.lockOn.UnregisterChasingEnemy(controller.character);
-                }
+                player.lockOn.UnregisterChasingEnemy(controller.character);
                 return;
             }
 
-            // Enter combat
-            if (dist <= controller.character.agent.stoppingDistance)
+            float stop = 1.5f;
+            if (controller.character.Motor != null)
+            {
+                stop = controller.character.Motor.StoppingDistance;
+            }
+
+            if (dist <= stop)
             {
                 controller.SwitchState(controller.combatState);
                 return;
             }
 
-            // Chase
-            controller.character.agent.SetDestination(player.transform.position);
+            controller.character.SetDestination(player.transform.position);
         }
+
         public override void Exit(StateMachine controller)
         {
-            controller.character.agent.ResetPath();
+            controller.character.Stop();
         }
     }
 }

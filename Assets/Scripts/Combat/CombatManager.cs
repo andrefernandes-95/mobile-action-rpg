@@ -50,6 +50,7 @@ namespace AF
                 return;
             }
 
+            characterManager.Stop();
             SetCurrentAbility(weaponAbility, true);
         }
 
@@ -97,7 +98,12 @@ namespace AF
                 return weaponAbility.engageRadius;
             }
 
-            return characterManager.agent.stoppingDistance;
+            if (characterManager.Motor != null)
+            {
+                return characterManager.Motor.StoppingDistance;
+            }
+
+            return 1.5f;
         }
 
         bool TryGetCurrentWeaponAbility(out WeaponAbility weaponAbility)

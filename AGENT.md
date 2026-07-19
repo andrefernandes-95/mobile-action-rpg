@@ -64,6 +64,18 @@ Evitar:
 
 ---
 
+## Estilo de código (quando editares o projecto)
+
+Regras do utilizador — **seguir sempre** ao escrever ou alterar C# neste repo:
+
+- **Estúpido e simples** — código legível, directo, sem “cleverness”. Preferir o óbvio ao engenhoso.
+- **Sem herança** para partilha de comportamento — preferir **interfaces + composição** (ex.: `IMovementMotor` + dois MonoBehaviours). Herança só se o utilizador pedir explicitamente ou for inevitável (ex.: Unity `MonoBehaviour`).
+- **Sempre usar chavetas** em `if` / `else` / `for` / `while` / `foreach`, mesmo com uma única linha. Facilita debug e diffs.
+- Evitar expression-bodied members e early-returns “comprimidos” quando sacrificam clareza; preferir blocos explícitos.
+- Não introduzir abstracções (bases abstractas, generics elaborados, Event Bus global) sem necessidade concreta no código actual.
+
+---
+
 ## Matemática (follow-up opcional)
 
 O utilizador tem bases de matemática do 12.º ano que quer reforçar. Quando fizer sentido, no final da resposta incluir uma secção curta:

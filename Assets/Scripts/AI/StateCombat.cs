@@ -23,7 +23,6 @@ namespace AF
                 return;
             }
 
-            // Target dead, end combat
             if (player.health.IsDead)
             {
                 controller.SwitchState(
@@ -31,24 +30,27 @@ namespace AF
                         ? controller.patrolState
                         : controller.idleState
                 );
-
                 return;
             }
 
             float sqrDist = (controller.transform.position - player.transform.position).sqrMagnitude;
             float sight = controller.character.perception.sightRange;
             float disengageSqr = (sight * disengageMultiplier) * (sight * disengageMultiplier);
-            float stop = controller.character.agent.stoppingDistance;
+
+            float stop = 1.5f;
+            if (controller.character.Motor != null)
+            {
+                stop = controller.character.Motor.StoppingDistance;
+            }
+
             float stopSqr = stop * stop;
 
-            // Too far, return to chase
             if (sqrDist > disengageSqr || sqrDist > stopSqr)
             {
                 controller.SwitchState(controller.chaseState);
                 return;
             }
 
-            // Face target
             Vector3 dir = player.transform.position - controller.transform.position;
             dir.y = 0f;
 
@@ -62,7 +64,6 @@ namespace AF
                 );
             }
 
-            // Attack with cooldown
             if (!controller.character.isBusy &&
                 Time.time >= controller.CombatRuntime.LastAttackTime + attackCooldown)
             {

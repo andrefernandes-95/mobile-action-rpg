@@ -33,16 +33,19 @@ namespace AF
             }
 
             characterManager.animator.Play(AnimHashes.Death);
-            characterManager.agent.ResetPath();
-            characterManager.agent.enabled = false;
+            characterManager.Stop();
+
+            if (characterManager.Motor != null)
+            {
+                characterManager.Motor.SetMotorEnabled(false);
+            }
+
             characterManager.isBusy = true;
 
             if (characterManager.IsPlayer())
             {
                 StartCoroutine(ReloadGame());
             }
-
-            // Lock On
         }
 
         IEnumerator ReloadGame()

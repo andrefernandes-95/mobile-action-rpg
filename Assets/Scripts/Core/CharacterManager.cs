@@ -1,8 +1,6 @@
 namespace AF
 {
-    using System.Collections.Generic;
     using UnityEngine;
-    using UnityEngine.AI;
 
     public class CharacterManager : MonoBehaviour
     {
@@ -11,7 +9,14 @@ namespace AF
 
         [Header("Components")]
         public Animator animator;
-        public NavMeshAgent agent;
+
+        [Header("Movement (DI)")]
+        [SerializeField] CharacterControllerMotor characterControllerMotor;
+        [SerializeField] NavMeshAgentMotor navMeshAgentMotor;
+
+        IMovementMotor motor;
+
+        public IMovementMotor Motor => motor;
 
         [Header("Character Components")]
         public Health health;
@@ -23,8 +28,6 @@ namespace AF
 
         [Header("Locomotion")]
         public float rotationSpeed = 10f;
-        public float walkSpeed = 1.8f;
-        public float runSpeed = 5.5f;
         public float animSpeedDamp = 0.12f;
 
         public bool isBusy = false;
@@ -32,30 +35,44 @@ namespace AF
         [Header("Patrol")]
         public Transform[] patrolPoints;
 
-        float stoppingDistance;
-        float baseAgentSpeed;
-
-        public float MoveAmount { get; private set; }
-
-        void Awake()
+        public float MoveAmount
         {
-            stoppingDistance = agent.stoppingDistance;
-            baseAgentSpeed = agent.speed;
+            get
+            {
+                if (motor != null)
+                {
+                    return motor.MoveAmount;
+                }
 
-            if (runSpeed <= 0f)
-            {
-                runSpeed = baseAgentSpeed > 0f ? baseAgentSpeed : 5.5f;
-            }
-            if (walkSpeed <= 0f)
-            {
-                walkSpeed = runSpeed * 0.35f;
+                return 0f;
             }
         }
 
-        // Start is called once before the first execution of Update after the MonoBehaviour is created
-        void Start()
+        void Awake()
         {
-            agent.updateRotation = false;
+            if (characterControllerMotor == null)
+            {
+                characterControllerMotor = GetComponent<CharacterControllerMotor>();
+            }
+
+            if (navMeshAgentMotor == null)
+            {
+                navMeshAgentMotor = GetComponent<NavMeshAgentMotor>();
+            }
+
+            // Default: AI (NavMesh). Player chama GiveControlToPlayer e troca.
+            if (navMeshAgentMotor != null)
+            {
+                UseNavMeshMotor();
+            }
+            else if (characterControllerMotor != null)
+            {
+                UseCharacterControllerMotor();
+            }
+            else
+            {
+                Debug.LogError($"{name}: falta IMovementMotor (CC ou NavMesh).", this);
+            }
         }
 
         public void OnIdle()
@@ -63,7 +80,6 @@ namespace AF
             isBusy = false;
         }
 
-        // Update is called once per frame
         void Update()
         {
             UpdateRotation();
@@ -72,45 +88,61 @@ namespace AF
 
         public void Move(Vector3 direction, float moveAmount = 1f)
         {
-            if (isBusy)
+            if (isBusy || motor == null)
             {
                 return;
             }
 
-            if (!agent.enabled || !agent.isOnNavMesh)
+            motor.Move(direction, moveAmount);
+        }
+
+        public void SetDestination(Vector3 worldPosition)
+        {
+            if (isBusy || motor == null)
             {
                 return;
             }
 
-            MoveAmount = Mathf.Clamp01(moveAmount);
-            agent.speed = Mathf.Lerp(walkSpeed, runSpeed, MoveAmount);
-
-            float lookAhead = Mathf.Max(0.35f, agent.speed * 0.35f);
-
-            Vector3 targetPos = transform.position + direction.normalized * lookAhead;
-            agent.SetDestination(targetPos);
+            motor.SetDestination(worldPosition);
         }
 
         public void Stop()
         {
-            MoveAmount = 0f;
-
-            if (agent.enabled && agent.isOnNavMesh)
+            if (motor != null)
             {
-                agent.ResetPath();
-                agent.velocity = Vector3.zero;
+                motor.Stop();
+            }
+        }
+
+        public void ApplyDisplacement(Vector3 worldDelta)
+        {
+            if (motor != null)
+            {
+                motor.ApplyDisplacement(worldDelta);
             }
         }
 
         void UpdateRotation()
         {
-            if (health.IsDead) return;
+            if (health != null && health.IsDead)
+            {
+                return;
+            }
+
+            if (motor == null)
+            {
+                return;
+            }
 
             if (lockOn != null && lockOn.isLockedOn && lockOn.lockOnTarget != null)
             {
-                Vector3 dir = lockOn.lockOnTarget.position - agent.nextPosition;
+                Vector3 dir = lockOn.lockOnTarget.position - transform.position;
                 dir.y = 0f;
-                if (dir.sqrMagnitude < 0.0001f) return;
+
+                if (dir.sqrMagnitude < 0.0001f)
+                {
+                    return;
+                }
 
                 Quaternion targetRot = Quaternion.LookRotation(dir.normalized);
                 float t = Mathf.Clamp01(lockOn.lockOnRotationSpeed * Time.deltaTime);
@@ -118,24 +150,32 @@ namespace AF
                 return;
             }
 
-            Vector3 moveDir = agent.desiredVelocity;
-            if (moveDir.sqrMagnitude < 0.01f) return;
+            Vector3 moveDir = motor.PlanarVelocity;
+            // AI: limiar mais alto — velocity pequena perto do destino oscila e faz jitter
+            float minSqr = IsPlayer() ? 0.01f : 0.08f;
+            if (moveDir.sqrMagnitude < minSqr)
+            {
+                return;
+            }
 
             Quaternion moveRot = Quaternion.LookRotation(moveDir.normalized);
-
-            // Rodar mais depressa quando o stick está a fundo
-            float rot = rotationSpeed * Mathf.Lerp(0.55f, 1.25f, MoveAmount);
+            float rot = rotationSpeed * Mathf.Lerp(0.35f, 1f, MoveAmount);
             transform.rotation = Quaternion.Slerp(transform.rotation, moveRot, rot * Time.deltaTime);
         }
 
         void UpdateAnimation()
         {
+            if (animator == null || motor == null)
+            {
+                return;
+            }
+
             float speedParam = MoveAmount;
 
             if (!IsPlayer())
             {
-                float max = Mathf.Max(0.01f, runSpeed);
-                speedParam = Mathf.Clamp01(agent.desiredVelocity.magnitude / max);
+                float max = Mathf.Max(0.01f, motor.RunSpeed);
+                speedParam = Mathf.Clamp01(motor.PlanarVelocity.magnitude / max);
             }
 
             animator.SetFloat(AnimHashes.Speed, speedParam, animSpeedDamp, Time.deltaTime);
@@ -153,13 +193,49 @@ namespace AF
 
         public void GiveControlToAI()
         {
-            agent.stoppingDistance = stoppingDistance;
+            UseNavMeshMotor();
         }
 
         public void GiveControlToPlayer()
         {
-            agent.stoppingDistance = 0;
             GameContext.SetPlayer(this);
+            UseCharacterControllerMotor();
+        }
+
+        void UseCharacterControllerMotor()
+        {
+            if (characterControllerMotor == null)
+            {
+                return;
+            }
+
+            if (navMeshAgentMotor != null)
+            {
+                navMeshAgentMotor.SetMotorEnabled(false);
+                navMeshAgentMotor.enabled = false;
+            }
+
+            characterControllerMotor.enabled = true;
+            characterControllerMotor.SetMotorEnabled(true);
+            motor = characterControllerMotor;
+        }
+
+        void UseNavMeshMotor()
+        {
+            if (navMeshAgentMotor == null)
+            {
+                return;
+            }
+
+            if (characterControllerMotor != null)
+            {
+                characterControllerMotor.SetMotorEnabled(false);
+                characterControllerMotor.enabled = false;
+            }
+
+            navMeshAgentMotor.enabled = true;
+            navMeshAgentMotor.SetMotorEnabled(true);
+            motor = navMeshAgentMotor;
         }
     }
 }

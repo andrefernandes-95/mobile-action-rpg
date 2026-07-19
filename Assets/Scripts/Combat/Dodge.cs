@@ -20,13 +20,13 @@ namespace AF
 
         [Header("Sound")]
         [SerializeField] AudioClip dodgeSfx;
-        AudioSource audioSource => GetComponent<AudioSource>();
 
-        // Private
+        AudioSource audioSource;
         PlayerInput playerInput;
 
         void Awake()
         {
+            audioSource = GetComponent<AudioSource>();
             playerInput = GetComponent<PlayerInput>();
         }
 
@@ -42,13 +42,11 @@ namespace AF
             characterManager.isBusy = true;
             isDodging = true;
 
-            characterManager.agent.ResetPath();
-            characterManager.agent.velocity = Vector3.zero;
-
+            characterManager.Stop();
             characterManager.animator.Play(animationName);
 
             Vector3 direction = transform.forward;
-            bool isLockedOn = characterManager.lockOn.isLockedOn;
+            bool isLockedOn = characterManager.lockOn != null && characterManager.lockOn.isLockedOn;
 
             if (playerInput != null)
             {
@@ -59,7 +57,6 @@ namespace AF
                 direction *= -1f;
             }
 
-
             StartCoroutine(DodgeRoutine(direction));
         }
 
@@ -68,15 +65,23 @@ namespace AF
             float elapsed = 0f;
             Vector3 startPos = transform.position;
             Vector3 targetPos = startPos + dir * dodgeDistance;
-            if (dodgeTrail != null) dodgeTrail.emitting = true;
+
+            if (dodgeTrail != null)
+            {
+                dodgeTrail.emitting = true;
+            }
 
             while (elapsed < dodgeDuration)
             {
-                characterManager.agent.Move((targetPos - startPos) * (Time.deltaTime / dodgeDuration));
+                characterManager.ApplyDisplacement((targetPos - startPos) * (Time.deltaTime / dodgeDuration));
                 elapsed += Time.deltaTime;
                 yield return null;
             }
-            if (dodgeTrail != null) dodgeTrail.emitting = false;
+
+            if (dodgeTrail != null)
+            {
+                dodgeTrail.emitting = false;
+            }
 
             isDodging = false;
             characterManager.isBusy = false;

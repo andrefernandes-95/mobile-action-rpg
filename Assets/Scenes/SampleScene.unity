@@ -2470,14 +2470,17 @@ MonoBehaviour:
   targetHeight: 1.5
   distance: 5
   pitch: 25
-  yawFollowSpeed: 3
-  followSmooth: 15
+  yawSmoothTimeMin: 0.45
+  yawSmoothTimeMax: 0.18
+  followSmoothTimeMin: 0.2
+  followSmoothTimeMax: 0.1
   wallLayer:
     serializedVersion: 2
-    m_Bits: 1
-  sphereRadius: 0.3
-  wallBuffer: 0.15
-  minDistanceFromTarget: 1
+    m_Bits: -1
+  sphereRadius: 0.25
+  wallBuffer: 0.2
+  minDistanceFromTarget: 1.2
+  collisionSmoothTime: 0.08
 --- !u!1001 &334440057
 PrefabInstance:
   m_ObjectHideFlags: 0
