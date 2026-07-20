@@ -3516,7 +3516,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8135886326569738822, guid: 56fae09712773584fb63896d473a98ee, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 360
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8135886326569738822, guid: 56fae09712773584fb63896d473a98ee, type: 3}
       propertyPath: m_AnchoredPosition.y
@@ -8249,6 +8249,7 @@ GameObject:
   - component: {fileID: 1207403352}
   - component: {fileID: 1207403354}
   - component: {fileID: 1207403353}
+  - component: {fileID: 1207403355}
   m_Layer: 0
   m_Name: Core
   m_TagString: Untagged
@@ -8311,6 +8312,28 @@ MonoBehaviour:
   onSetCurrentCharacter:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1207403355
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1207403351}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 371c8c093ab3f8341aad82445eca9017, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AF.PlayerProgress
+  wallet:
+    gold: 0
+  lastCheckpoint:
+    worldPos: {x: 0, y: 0, z: 0}
+    scene: 
+    ShouldRespawn: 0
+  currentBloodstain:
+    drop: 0
+    scene: 
+    worldPos: {x: 0, y: 0, z: 0}
 --- !u!4 &1207967476 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 450008, guid: 9830f561f80768b4f92139c1c15bc835, type: 3}

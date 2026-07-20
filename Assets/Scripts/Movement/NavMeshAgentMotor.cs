@@ -123,6 +123,8 @@ namespace AF
             if (hasDestination)
             {
                 Vector3 delta = worldPosition - lastDestination;
+
+                // Do not call Set Destination again if new position is very close to the last position
                 if (delta.sqrMagnitude < 0.15f && agent.hasPath)
                 {
                     return;

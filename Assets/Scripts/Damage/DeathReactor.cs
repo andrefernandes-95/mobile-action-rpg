@@ -51,7 +51,15 @@ namespace AF
         IEnumerator ReloadGame()
         {
             yield return new WaitForSeconds(2f);
-            SceneManager.LoadScene("SampleScene");
+
+            PlayerProgress.Instance.DropBloodstain(characterManager.transform.position);
+
+            Checkpoint lastCheckpoint = PlayerProgress.Instance.LastCheckpoint;
+            if (lastCheckpoint != null && !string.IsNullOrEmpty(lastCheckpoint.scene))
+            {
+                lastCheckpoint.ShouldRespawn = true;
+                SceneManager.LoadScene(lastCheckpoint.scene);
+            }
         }
     }
 }

@@ -109,6 +109,7 @@ PrefabInstance:
     - {fileID: 568325947147586379, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
     - {fileID: 1938915903511308228, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
     - {fileID: 7021790640550017808, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
+    - {fileID: 3694762054876876332, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
@@ -118,6 +119,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 3673545139705214888, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1224408831051252953}
+    - targetCorrespondingSourceObject: {fileID: 3673545139705214888, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 418547903596118080}
   m_SourcePrefab: {fileID: 100100000, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
 --- !u!1 &3093272199366084540 stripped
 GameObject:
@@ -163,3 +167,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AF.CharacterControllerMotor
   runSpeed: 5.5
   gravity: -20
+--- !u!114 &418547903596118080
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3093272199366084540}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9dca8797d690b3a4189c0bae04edc66a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AF.RespawnReactor
+  characterController: {fileID: 8981748939910873782}
