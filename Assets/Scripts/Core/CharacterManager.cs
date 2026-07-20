@@ -11,8 +11,8 @@ namespace AF
         public Animator animator;
 
         [Header("Movement (DI)")]
-        [SerializeField] CharacterControllerMotor characterControllerMotor;
-        [SerializeField] NavMeshAgentMotor navMeshAgentMotor;
+        CharacterControllerMotor characterControllerMotor;
+        NavMeshAgentMotor navMeshAgentMotor;
 
         IMovementMotor motor;
 
@@ -58,15 +58,20 @@ namespace AF
 
         void Awake()
         {
-            if (characterControllerMotor == null)
-            {
-                characterControllerMotor = GetComponent<CharacterControllerMotor>();
-            }
+            SetupMotor();
+        }
 
-            if (navMeshAgentMotor == null)
-            {
-                navMeshAgentMotor = GetComponent<NavMeshAgentMotor>();
-            }
+
+        void Update()
+        {
+            UpdateRotation();
+            UpdateAnimation();
+        }
+
+        void SetupMotor()
+        {
+            characterControllerMotor = GetComponent<CharacterControllerMotor>();
+            navMeshAgentMotor = GetComponent<NavMeshAgentMotor>();
 
             // Default: AI (NavMesh). Player chama GiveControlToPlayer e troca.
             if (navMeshAgentMotor != null)
@@ -86,12 +91,6 @@ namespace AF
         public void OnIdle()
         {
             isBusy = false;
-        }
-
-        void Update()
-        {
-            UpdateRotation();
-            UpdateAnimation();
         }
 
         public void Move(Vector3 direction, float moveAmount = 1f)

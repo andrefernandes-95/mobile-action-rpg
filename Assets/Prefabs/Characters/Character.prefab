@@ -331,7 +331,7 @@ Animator:
   m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: 98a56ff2c8ee98645a4d3f79fa1506c5, type: 3}
   m_Controller: {fileID: 9100000, guid: 52cb85eba274742498da8f316415ea25, type: 2}
-  m_CullingMode: 1
+  m_CullingMode: 2
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
   m_LinearVelocityBlending: 0
@@ -488,8 +488,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   name: Humanoid
   animator: {fileID: 5619519043771692139}
-  characterControllerMotor: {fileID: 0}
-  navMeshAgentMotor: {fileID: 8111000000000000002}
   health: {fileID: 5366300287412475226}
   characterDamageReceiver: {fileID: 2655909083216702146}
   dodge: {fileID: 3581561514803754065}

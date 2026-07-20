@@ -1,0 +1,1925 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>As Profundezas — Soulslike · Economy · Menu · Dialogue</title>
+  <style>
+    :root {
+      --bg:#0f1117; --surface:#1a1d27; --surface2:#242836; --text:#e6e9f0;
+      --muted:#9aa3b5; --accent:#6c9eff; --accent2:#7ee787; --warn:#f0b429;
+      --danger:#ff8ba7; --border:#343a4d; --code:#12151c;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;padding:2rem 1rem 4rem}
+    .wrap{max-width:980px;margin:0 auto}
+    header{margin-bottom:2rem;padding-bottom:1.25rem;border-bottom:1px solid var(--border)}
+    h1{font-size:1.85rem;margin-bottom:.4rem}
+    .sub{color:var(--muted);font-size:1rem}
+    h2{font-size:1.25rem;color:var(--accent);margin:2.2rem 0 .7rem;padding-top:.3rem}
+    h3{font-size:1rem;color:var(--accent2);margin:1.3rem 0 .4rem}
+    p,li{margin-bottom:.55rem;color:var(--muted)}
+    ul,ol{padding-left:1.25rem;margin-bottom:.9rem}
+    a{color:var(--accent)}
+    strong{color:var(--text)}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;margin:1rem 0}
+    .card.warn{border-color:#6b5420;background:#1c1810}
+    .card.fix{border-color:#5a2436;background:#1c1014}
+    .label{display:inline-block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:.15rem .45rem;border-radius:4px;margin-bottom:.5rem}
+    .label.warn{background:#4a3810;color:var(--warn)}
+    .label.fix{background:#4a1f2e;color:var(--danger)}
+    .label.ok{background:#1a3d2b;color:var(--accent2)}
+    .label.patch{background:#4a3810;color:var(--warn)}
+    .toc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;margin:1.2rem 0}
+    .toc a{text-decoration:none}.toc a:hover{text-decoration:underline}
+    .path{font-family:Consolas,monospace;font-size:.75rem;color:var(--accent2);margin:1rem 0 -.35rem}
+    .path::before{content:"📄 "}
+    .path.patch{color:var(--warn)}
+    .path.patch::before{content:"✏️ PATCH "}
+    pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem;overflow-x:auto;font-family:Consolas,monospace;font-size:.8rem;line-height:1.5;margin:.5rem 0 1.1rem;color:#d6deeb}
+    pre.highlight, pre.patch{
+      background:#3d3210;
+      border-color:#f0b429;
+      box-shadow:inset 0 0 0 1px rgba(240,180,41,.35);
+    }
+    code{font-family:Consolas,monospace;font-size:.88em;background:var(--surface2);padding:.05em .3em;border-radius:3px}
+    pre code{background:none;padding:0;font-size:1em}
+    .flow{font-family:Consolas,monospace;font-size:.78rem;background:var(--code);border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem;white-space:pre;overflow-x:auto;color:var(--muted);margin:1rem 0}
+    footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--border);color:var(--muted);font-size:.85rem}
+    .uss{border-left:3px solid var(--warn)}
+    .legend{display:flex;flex-wrap:wrap;gap:.6rem;margin:.8rem 0}
+    .legend span{font-size:.8rem;color:var(--muted)}
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Soulslike · Economy · Menu · Dialogue</h1>
+  <p class="sub">Documento de código para o projeto <code>AF</code>. Ciclo soulslike (fogueira + bloodstain), ouro, durabilidade de armas, loja/ferreiro, poções, menu mobile estilo FF, diálogos data-driven e cutscenes. <strong>Não aplica patches automaticamente</strong> — copia à mão. Complementa <a href="UI-Chest-Moments-LockOn.html">UI · Chest · Moments · Lock-On</a>.</p>
+</header>
+
+<nav class="toc">
+  <strong>Índice</strong>
+  <ol>
+    <li><a href="#s0">Mapa + decisões</a></li>
+    <li><a href="#s1">Economia — Wallet + GoldReward</a></li>
+    <li><a href="#s2">Progressão — Bonfire · Bloodstain · DeathReactor</a></li>
+    <li><a href="#s3">Durabilidade de armas</a></li>
+    <li><a href="#s4">Loja + Ferreiro</a></li>
+    <li><a href="#s5">Consumíveis / poções</a></li>
+    <li><a href="#s6">Menu principal (gear icon)</a></li>
+    <li><a href="#s7">Diálogos Final Fantasy (data-driven)</a></li>
+    <li><a href="#s8">Cutscenes — SequencePlayer</a></li>
+    <li><a href="#s9">Wiring Unity</a></li>
+  </ol>
+</nav>
+
+<div class="legend">
+  <span class="label ok">NOVO</span><span>ficheiros que ainda não existem</span>
+  <span class="label patch">PATCH</span><span>altera ficheiros existentes — bloco amarelo</span>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s0">0. Mapa + decisões</h2>
+
+<div class="card">
+  <span class="label ok">Modelo de jogo</span>
+  <ul style="margin-bottom:0">
+    <li><strong>Soulslike</strong> — morte → largar todo o ouro como bloodstain (único; o novo apaga o anterior) → respawn no último bonfire (cura + repor poções). Tocar o bloodstain recupera o ouro.</li>
+    <li><strong>Armas consumíveis</strong> — nunca permanentes entre runs. Durabilidade gasta <strong>por golpe acertado</strong>; a 0 a arma parte e sai do inventário.</li>
+    <li><strong>Ferreiro</strong> — reparar e estender uso. Reparar é sempre mais barato que recomprar a mesma arma.</li>
+    <li><strong>Loja</strong> — o ferreiro/comerciante vende armas (e poções). Ouro ganho ao matar inimigos.</li>
+    <li><strong>Menu</strong> — gear icon no ecrã. Tabs: Inventário · Loja · Ferreiro · Opções. Look FF simplificado (UI Toolkit).</li>
+    <li><strong>Diálogos</strong> — estilo Final Fantasy: portrait + caixa; mensagens importantes com fundo escuro / sem fundo, Top / Center / Bottom. Data-driven (ScriptableObjects).</li>
+    <li><strong>Cutscenes</strong> — <code>SequencePlayer</code> com steps assíncronos (substitui Moment+EventBase do doc antigo). Sem Timeline, sem Event Bus global.</li>
+  </ul>
+</div>
+
+<div class="flow">Pastas sugeridas
+Assets/Scripts/Economy/Wallet.cs
+Assets/Scripts/Economy/GoldReward.cs
+Assets/Scripts/Progression/PlayerProgress.cs
+Assets/Scripts/Progression/Bonfire.cs
+Assets/Scripts/Progression/Bloodstain.cs
+Assets/Scripts/Combat/WeaponDurability.cs
+Assets/Scripts/Shop/ShopInventory.cs
+Assets/Scripts/Shop/ShopService.cs
+Assets/Scripts/Shop/BlacksmithService.cs
+Assets/Scripts/Items/Consumable.cs
+Assets/Scripts/UI/GameMenuController.cs       (+ UXML/USS)
+Assets/Scripts/Dialogue/DialogueLine.cs
+Assets/Scripts/Dialogue/DialogueSequence.cs
+Assets/Scripts/Dialogue/DialogueRunner.cs     (+ UXML/USS)
+Assets/Scripts/Cutscene/GameFlow.cs
+Assets/Scripts/Cutscene/ISequenceStep.cs
+Assets/Scripts/Cutscene/SequencePlayer.cs
+Assets/Scripts/Cutscene/Steps/*.cs
+
+PATCH (amarelo) — ficheiros existentes
+Assets/Scripts/Damage/DeathReactor.cs
+Assets/Scripts/Damage/Health.cs
+Assets/Scripts/Items/Weapon.cs
+Assets/Scripts/Items/WeaponInstance.cs
+Assets/Scripts/Items/InventoryManager.cs</div>
+
+<div class="flow">[Matar inimigo]
+        │
+        ▼
+   GoldReward → Wallet.Add
+        │
+        ▼
+[Player morre]
+        │
+        ▼
+   Larga Bloodstain (todo o ouro) → Wallet = 0
+        │
+        ▼
+   Respawn no último Bonfire (cura + poções)
+        │
+        ▼
+   Tocar Bloodstain → recupera ouro</div>
+
+<!-- ============================================================ -->
+<h2 id="s1">1. Economia — Wallet + GoldReward</h2>
+
+<div class="card">
+  <span class="label ok">Conceito</span>
+  <p style="margin-bottom:0"><code>Wallet</code> vive dentro de <code>PlayerProgress</code> (secção 2). Inimigos têm <code>GoldReward</code> que credita ouro em <code>health.OnDied</code>.</p>
+</div>
+
+<div class="path">Assets/Scripts/Economy/Wallet.cs</div>
+<pre><code>using System;
+using UnityEngine;
+
+namespace AF
+{
+    [Serializable]
+    public class Wallet
+    {
+        [SerializeField] int gold;
+
+        public int Gold =&gt; gold;
+
+        public event Action&lt;int&gt; OnGoldChanged;
+
+        public void Add(int amount)
+        {
+            if (amount &lt;= 0) return;
+            gold += amount;
+            OnGoldChanged?.Invoke(gold);
+        }
+
+        public bool TrySpend(int amount)
+        {
+            if (amount &lt; 0 || gold &lt; amount) return false;
+            gold -= amount;
+            OnGoldChanged?.Invoke(gold);
+            return true;
+        }
+
+        /// &lt;summary&gt;Zera e devolve o valor anterior (usado no bloodstain).&lt;/summary&gt;
+        public int DrainAll()
+        {
+            int taken = gold;
+            gold = 0;
+            if (taken &gt; 0) OnGoldChanged?.Invoke(gold);
+            return taken;
+        }
+
+        public void Set(int amount)
+        {
+            gold = Mathf.Max(0, amount);
+            OnGoldChanged?.Invoke(gold);
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Economy/GoldReward.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    /// &lt;summary&gt;
+    /// Coloca no inimigo. Ao morrer, credita ouro ao Wallet do jogador.
+    /// &lt;/summary&gt;
+    public class GoldReward : MonoBehaviour
+    {
+        [SerializeField] Health health;
+        [SerializeField] int goldAmount = 25;
+        [SerializeField] int goldVariance = 5; // ±
+
+        bool paid;
+
+        void OnEnable()
+        {
+            if (health != null) health.OnDied += HandleDied;
+        }
+
+        void OnDisable()
+        {
+            if (health != null) health.OnDied -= HandleDied;
+        }
+
+        void HandleDied()
+        {
+            if (paid) return;
+            paid = true;
+
+            if (PlayerProgress.Instance == null) return;
+
+            int lo = Mathf.Max(0, goldAmount - goldVariance);
+            int hi = goldAmount + goldVariance;
+            int amount = Random.Range(lo, hi + 1);
+            PlayerProgress.Instance.Wallet.Add(amount);
+        }
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s2">2. Progressão — Bonfire · Bloodstain · DeathReactor</h2>
+
+<div class="card">
+  <span class="label ok">Fluxo soulslike</span>
+  <p style="margin-bottom:0"><code>PlayerProgress</code> (DontDestroyOnLoad) guarda Wallet, último bonfire e referência ao bloodstain actual. <code>DeathReactor</code> deixa de fazer <code>LoadScene</code> — passa a largar bloodstain e respawnar.</p>
+</div>
+
+<div class="path">Assets/Scripts/Progression/PlayerProgress.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    public class PlayerProgress : MonoBehaviour
+    {
+        public static PlayerProgress Instance { get; private set; }
+
+        public Wallet Wallet = new();
+
+        [SerializeField] Bonfire lastBonfire;
+        [SerializeField] Bloodstain bloodstainPrefab;
+
+        Bloodstain currentBloodstain;
+
+        public Bonfire LastBonfire =&gt; lastBonfire;
+
+        void Awake()
+        {
+            if (Instance != null &amp;&amp; Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+
+        public void SetBonfire(Bonfire bonfire)
+        {
+            lastBonfire = bonfire;
+        }
+
+        public Bloodstain DropBloodstain(Vector3 worldPos)
+        {
+            int dropped = Wallet.DrainAll();
+            if (dropped &lt;= 0) return null;
+
+            if (currentBloodstain != null)
+                Destroy(currentBloodstain.gameObject);
+
+            if (bloodstainPrefab == null)
+            {
+                Debug.LogWarning("Bloodstain prefab em falta.");
+                return null;
+            }
+
+            currentBloodstain = Instantiate(bloodstainPrefab, worldPos, Quaternion.identity);
+            currentBloodstain.Init(dropped);
+            return currentBloodstain;
+        }
+
+        public void ClearBloodstain(Bloodstain stain)
+        {
+            if (currentBloodstain == stain)
+                currentBloodstain = null;
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Progression/Bonfire.cs</div>
+<pre><code>using UnityEngine;
+using UnityEngine.Events;
+
+namespace AF
+{
+    public class Bonfire : MonoBehaviour
+    {
+        [SerializeField] Transform respawnPoint;
+        [SerializeField] string prompt = "Descansar na fogueira";
+        [SerializeField] int potionRestockAmount = 3;
+
+        public UnityEvent onRested;
+
+        public Vector3 RespawnPosition =&gt;
+            respawnPoint != null ? respawnPoint.position : transform.position;
+
+        public Quaternion RespawnRotation =&gt;
+            respawnPoint != null ? respawnPoint.rotation : transform.rotation;
+
+        /// &lt;summary&gt;Chamado por interact / botão UI.&lt;/summary&gt;
+        public void Rest(CharacterManager player)
+        {
+            if (player == null) return;
+
+            PlayerProgress.Instance?.SetBonfire(this);
+
+            // Cura total
+            if (player.health != null)
+                player.health.SetMax(player.health.Max, refill: true);
+
+            // Repõe poções
+            var inv = player.GetComponent&lt;InventoryManager&gt;();
+            inv?.RestockPotions(potionRestockAmount);
+
+            onRested?.Invoke();
+        }
+
+        // Fallback teclado no editor (zona = trigger no mesmo GO ou child)
+        InventoryManager playerInRange;
+
+        void OnTriggerEnter(Collider other)
+        {
+            if (other.TryGetComponent(out CharacterManager cm) &amp;&amp; cm.IsPlayer())
+                playerInRange = cm.GetComponent&lt;InventoryManager&gt;();
+        }
+
+        void OnTriggerExit(Collider other)
+        {
+            if (other.TryGetComponent(out CharacterManager cm) &amp;&amp; cm.IsPlayer())
+                playerInRange = null;
+        }
+
+        void Update()
+        {
+            if (playerInRange != null &amp;&amp; Input.GetKeyDown(KeyCode.E))
+            {
+                var cm = playerInRange.GetComponent&lt;CharacterManager&gt;();
+                Rest(cm);
+            }
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Progression/Bloodstain.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    public class Bloodstain : MonoBehaviour
+    {
+        [SerializeField] int goldHeld;
+        [SerializeField] float pickupRadius = 1.5f;
+
+        public void Init(int gold)
+        {
+            goldHeld = gold;
+        }
+
+        void Update()
+        {
+            var player = GameContext.Player;
+            if (player == null || goldHeld &lt;= 0) return;
+
+            float sqr = (player.transform.position - transform.position).sqrMagnitude;
+            if (sqr &gt; pickupRadius * pickupRadius) return;
+
+            PlayerProgress.Instance?.Wallet.Add(goldHeld);
+            PlayerProgress.Instance?.ClearBloodstain(this);
+            goldHeld = 0;
+            Destroy(gameObject);
+        }
+    }
+}</code></pre>
+
+<div class="card warn">
+  <span class="label patch">PATCH — ficheiro existente</span>
+  <p style="margin-bottom:0">Substitui o corpo de <code>HandleDeath</code> / remove <code>ReloadGame</code>. Copia à mão — não aplicar automaticamente.</p>
+</div>
+
+<div class="path patch">Assets/Scripts/Damage/DeathReactor.cs — substitui HandleDeath + Remove ReloadGame</div>
+<pre class="highlight"><code>void HandleDeath()
+{
+    if (characterManager == null) return;
+
+    characterManager.animator.Play(AnimHashes.Death);
+    characterManager.Stop();
+
+    if (characterManager.Motor != null)
+        characterManager.Motor.SetMotorEnabled(false);
+
+    characterManager.isBusy = true;
+
+    if (characterManager.IsPlayer())
+        StartCoroutine(SoulslikeRespawn());
+}
+
+IEnumerator SoulslikeRespawn()
+{
+    yield return new WaitForSeconds(2f);
+
+    // 1) Larga bloodstain com todo o ouro
+    PlayerProgress.Instance?.DropBloodstain(characterManager.transform.position);
+
+    // 2) Respawn no último bonfire (ou posição actual se ainda não houve rest)
+    Bonfire bf = PlayerProgress.Instance != null
+        ? PlayerProgress.Instance.LastBonfire
+        : null;
+
+    if (bf != null)
+    {
+        characterManager.transform.SetPositionAndRotation(
+            bf.RespawnPosition, bf.RespawnRotation);
+    }
+
+    // 3) Cura + reactivar
+    if (characterManager.health != null)
+        characterManager.health.SetMax(characterManager.health.Max, refill: true);
+
+    if (characterManager.Motor != null)
+        characterManager.Motor.SetMotorEnabled(true);
+
+    characterManager.isBusy = false;
+    characterManager.animator.Play(AnimHashes.Idle); // ou o hash de idle que tiveres
+}
+
+// REMOVER:
+// IEnumerator ReloadGame() { ... SceneManager.LoadScene("SampleScene"); }
+// using UnityEngine.SceneManagement;  ← se deixar de ser necessário</code></pre>
+
+<div class="card warn">
+  <span class="label warn">AnimHashes.Idle</span>
+  <p style="margin-bottom:0">Se não existir hash de Idle, usa <code>characterManager.OnIdle()</code> ou o estado default do Animator. Ajusta a linha do patch.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s3">3. Durabilidade de armas</h2>
+
+<div class="card">
+  <span class="label ok">Regra</span>
+  <p style="margin-bottom:0">Cada golpe acertado (<code>CombatManager.onEnemyHit</code>, já disparado por <code>Hitbox</code>) consome 1 ponto. A 0 → unequ + remove de <code>ownedWeapons</code>. Reparar no ferreiro é mais barato que recomprar.</p>
+</div>
+
+<div class="card warn">
+  <span class="label patch">PATCH — ficheiro existente</span>
+  <p style="margin-bottom:0">Acrescenta campos de preço e durabilidade ao ScriptableObject <code>Weapon</code>.</p>
+</div>
+
+<div class="path patch">Assets/Scripts/Items/Weapon.cs — acrescenta campos</div>
+<pre class="highlight"><code>// Dentro de class Weapon : Item, IEquippable — acrescenta:
+
+[Header("Economy")]
+public int buyPrice = 100;
+public int repairCostPerPoint = 2;   // reparar deve ser &lt; buyPrice
+public int extendCostPerPoint = 5;   // estender maxDurability da instância
+public int extendAmount = 10;       // pontos ganhos por "estender"
+
+[Header("Durability")]
+public int maxDurability = 40;</code></pre>
+
+<div class="card warn">
+  <span class="label patch">PATCH — ficheiro existente</span>
+  <p style="margin-bottom:0">Runtime state da arma: durabilidade actual + helpers.</p>
+</div>
+
+<div class="path patch">Assets/Scripts/Items/WeaponInstance.cs — substitui / amplia a classe</div>
+<pre class="highlight"><code>namespace AF
+{
+    public class WeaponInstance : ItemInstance
+    {
+        public Weapon weaponData;
+        public WeaponAbility ability;
+
+        public int durability;
+        public int maxDurability; // pode subir via ferreiro (estender)
+
+        public bool IsBroken =&gt; durability &lt;= 0;
+        public float DurabilityNormalized =&gt;
+            maxDurability &gt; 0 ? (float)durability / maxDurability : 0f;
+
+        public WeaponInstance(string id, Weapon weaponData) : base(id, weaponData)
+        {
+            this.weaponData = weaponData;
+            this.ability = new WeaponAbility(
+                weaponData.damageType, weaponData.amount, weaponData.engageRadius);
+
+            maxDurability = weaponData.maxDurability;
+            durability = maxDurability;
+        }
+
+        public void ConsumeDurability(int amount = 1)
+        {
+            if (amount &lt;= 0) return;
+            durability = System.Math.Max(0, durability - amount);
+        }
+
+        public void Repair()
+        {
+            durability = maxDurability;
+        }
+
+        public void Extend(int points)
+        {
+            if (points &lt;= 0) return;
+            maxDurability += points;
+            durability += points; // também enche o extra
+        }
+
+        public int RepairCost =&gt;
+            (maxDurability - durability) * weaponData.repairCostPerPoint;
+
+        public int ExtendCost =&gt;
+            weaponData.extendAmount * weaponData.extendCostPerPoint;
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Combat/WeaponDurability.cs</div>
+<pre><code>using System;
+using UnityEngine;
+
+namespace AF
+{
+    /// &lt;summary&gt;
+    /// No player. Cada onEnemyHit consome 1 durabilidade da arma equipada.
+    /// &lt;/summary&gt;
+    public class WeaponDurability : MonoBehaviour
+    {
+        [SerializeField] CombatManager combatManager;
+        [SerializeField] EquipmentManager equipmentManager;
+        [SerializeField] InventoryManager inventoryManager;
+
+        public event Action&lt;WeaponInstance&gt; OnWeaponBroke;
+
+        void OnEnable()
+        {
+            if (combatManager != null)
+                combatManager.onEnemyHit.AddListener(HandleHit);
+        }
+
+        void OnDisable()
+        {
+            if (combatManager != null)
+                combatManager.onEnemyHit.RemoveListener(HandleHit);
+        }
+
+        void HandleHit(Vector3 _)
+        {
+            WeaponInstance wi = equipmentManager != null
+                ? equipmentManager.weaponInstance
+                : null;
+            if (wi == null) return;
+
+            wi.ConsumeDurability(1);
+            if (!wi.IsBroken) return;
+
+            BreakWeapon(wi);
+        }
+
+        void BreakWeapon(WeaponInstance wi)
+        {
+            equipmentManager.UnequipWeapon();
+            inventoryManager.ownedWeapons.Remove(wi);
+            OnWeaponBroke?.Invoke(wi);
+
+            // Opcional: auto-equipar a primeira arma restante
+            if (inventoryManager.ownedWeapons.Count &gt; 0)
+            {
+                Weapon next = inventoryManager.ownedWeapons[0].weaponData;
+                equipmentManager.EquipWeapon(next);
+            }
+        }
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s4">4. Loja + Ferreiro</h2>
+
+<div class="card">
+  <span class="label ok">Economia de reparação</span>
+  <p style="margin-bottom:0">Exemplo: espada <code>buyPrice = 100</code>, <code>maxDurability = 40</code>, <code>repairCostPerPoint = 2</code> → reparar full = 80 &lt; 100. Estender +10 a 5/ponto = 50 — reforça a arma actual em vez de comprar outra.</p>
+</div>
+
+<div class="path">Assets/Scripts/Shop/ShopInventory.cs</div>
+<pre><code>using System.Collections.Generic;
+using UnityEngine;
+
+namespace AF
+{
+    [CreateAssetMenu(menuName = "AF/Data/Shop Inventory")]
+    public class ShopInventory : ScriptableObject
+    {
+        [Header("Weapons for sale")]
+        public List&lt;Weapon&gt; weapons = new();
+
+        [Header("Consumables for sale")]
+        public List&lt;Consumable&gt; consumables = new();
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Shop/ShopService.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    public class ShopService : MonoBehaviour
+    {
+        [SerializeField] ShopInventory catalog;
+        [SerializeField] InventoryManager inventory;
+
+        public ShopInventory Catalog =&gt; catalog;
+
+        public bool BuyWeapon(Weapon weapon)
+        {
+            if (weapon == null || inventory == null) return false;
+            if (PlayerProgress.Instance == null) return false;
+
+            int price = weapon.buyPrice;
+            if (!PlayerProgress.Instance.Wallet.TrySpend(price)) return false;
+
+            inventory.AddItem(weapon);
+            return true;
+        }
+
+        public bool BuyConsumable(Consumable item, int count = 1)
+        {
+            if (item == null || inventory == null || count &lt;= 0) return false;
+            if (PlayerProgress.Instance == null) return false;
+
+            int total = item.buyPrice * count;
+            if (!PlayerProgress.Instance.Wallet.TrySpend(total)) return false;
+
+            for (int i = 0; i &lt; count; i++)
+                inventory.AddItem(item);
+            return true;
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Shop/BlacksmithService.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    public class BlacksmithService : MonoBehaviour
+    {
+        public bool Repair(WeaponInstance instance)
+        {
+            if (instance == null || instance.durability &gt;= instance.maxDurability)
+                return false;
+            if (PlayerProgress.Instance == null) return false;
+
+            int cost = instance.RepairCost;
+            if (cost &lt;= 0) return false;
+            if (!PlayerProgress.Instance.Wallet.TrySpend(cost)) return false;
+
+            instance.Repair();
+            return true;
+        }
+
+        public bool Extend(WeaponInstance instance)
+        {
+            if (instance == null || instance.weaponData == null) return false;
+            if (PlayerProgress.Instance == null) return false;
+
+            int cost = instance.ExtendCost;
+            if (!PlayerProgress.Instance.Wallet.TrySpend(cost)) return false;
+
+            instance.Extend(instance.weaponData.extendAmount);
+            return true;
+        }
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s5">5. Consumíveis / poções</h2>
+
+<div class="path">Assets/Scripts/Items/Consumable.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    [CreateAssetMenu(menuName = "AF/Data/Consumable")]
+    public class Consumable : Item
+    {
+        [Header("Effect")]
+        public int healAmount = 30;
+
+        [Header("Economy")]
+        public int buyPrice = 20;
+
+        [Header("Bonfire")]
+        public bool restockAtBonfire = true;
+        public int defaultRestockCount = 3;
+    }
+}</code></pre>
+
+<div class="card warn">
+  <span class="label patch">PATCH — ficheiro existente</span>
+  <p style="margin-bottom:0"><code>Health</code> não tem <code>Heal</code> hoje. Acrescenta este método.</p>
+</div>
+
+<div class="path patch">Assets/Scripts/Damage/Health.cs — acrescenta</div>
+<pre class="highlight"><code>public void Heal(int amount)
+{
+    if (IsDead || amount &lt;= 0) return;
+    Current = Mathf.Min(Max, Current + amount);
+}</code></pre>
+
+<div class="card warn">
+  <span class="label patch">PATCH — ficheiro existente</span>
+  <p style="margin-bottom:0">Inventário passa a guardar consumíveis empilháveis + usar / repor poções.</p>
+</div>
+
+<div class="path patch">Assets/Scripts/Items/InventoryManager.cs — amplia</div>
+<pre class="highlight"><code>using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+
+namespace AF
+{
+    [Serializable]
+    public class ConsumableStack
+    {
+        public Consumable item;
+        public int count;
+    }
+
+    public class InventoryManager : MonoBehaviour
+    {
+        public List&lt;WeaponInstance&gt; ownedWeapons = new();
+        public List&lt;ConsumableStack&gt; consumables = new();
+
+        [Header("Default Equipment")]
+        [SerializeField] Weapon defaultWeapon;
+        [SerializeField] Weapon[] randomDefaultWeapons;
+
+        [Header("Default Consumables")]
+        [SerializeField] Consumable defaultPotion;
+        [SerializeField] int defaultPotionCount = 3;
+
+        [Header("Components")]
+        [SerializeField] EquipmentManager equipmentManager;
+        [SerializeField] Health health; // player health para UseConsumable
+
+        void Awake()
+        {
+            if (randomDefaultWeapons.Length &gt; 0)
+            {
+                Weapon selected = randomDefaultWeapons[
+                    UnityEngine.Random.Range(0, randomDefaultWeapons.Length)];
+                AddItem(selected);
+                selected.Equip(equipmentManager);
+            }
+            else if (defaultWeapon != null)
+            {
+                AddItem(defaultWeapon);
+                defaultWeapon.Equip(equipmentManager);
+            }
+
+            if (defaultPotion != null &amp;&amp; defaultPotionCount &gt; 0)
+            {
+                for (int i = 0; i &lt; defaultPotionCount; i++)
+                    AddItem(defaultPotion);
+            }
+        }
+
+        public void AddItem&lt;T&gt;(T item) where T : Item
+        {
+            if (item is Weapon weapon)
+            {
+                string id = Guid.NewGuid().ToString();
+                ownedWeapons.Add(new WeaponInstance(id, weapon));
+                return;
+            }
+
+            if (item is Consumable consumable)
+            {
+                var stack = consumables.FirstOrDefault(s =&gt; s.item == consumable);
+                if (stack != null) stack.count++;
+                else consumables.Add(new ConsumableStack { item = consumable, count = 1 });
+            }
+        }
+
+        public bool UseConsumable(Consumable item)
+        {
+            var stack = consumables.FirstOrDefault(s =&gt; s.item == item);
+            if (stack == null || stack.count &lt;= 0) return false;
+            if (health == null || health.IsDead) return false;
+
+            health.Heal(item.healAmount);
+            stack.count--;
+            if (stack.count &lt;= 0) consumables.Remove(stack);
+            return true;
+        }
+
+        public void RestockPotions(int amount)
+        {
+            // Repõe stacks com restockAtBonfire até amount (ou defaultRestockCount)
+            foreach (var stack in consumables)
+            {
+                if (stack.item != null &amp;&amp; stack.item.restockAtBonfire)
+                {
+                    int target = amount &gt; 0 ? amount : stack.item.defaultRestockCount;
+                    stack.count = Mathf.Max(stack.count, target);
+                }
+            }
+
+            // Se não há nenhuma poção, e tens defaultPotion, cria stack
+            if (defaultPotion != null &amp;&amp; defaultPotion.restockAtBonfire)
+            {
+                var stack = consumables.FirstOrDefault(s =&gt; s.item == defaultPotion);
+                int target = amount &gt; 0 ? amount : defaultPotion.defaultRestockCount;
+                if (stack == null)
+                    consumables.Add(new ConsumableStack { item = defaultPotion, count = target });
+                else
+                    stack.count = Mathf.Max(stack.count, target);
+            }
+        }
+
+        public bool TryGetWeaponInstance(Weapon weapon, out WeaponInstance weaponInstance)
+        {
+            weaponInstance = ownedWeapons.FirstOrDefault(
+                ownedWeapon =&gt; ownedWeapon.itemData.Equals(weapon));
+            return weaponInstance != null;
+        }
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s6">6. Menu principal (gear icon)</h2>
+
+<div class="card">
+  <span class="label ok">Look &amp; feel</span>
+  <p style="margin-bottom:0">Painel azul translúcido estilo FF, mais simples. Gear icon no canto abre o menu. <code>Time.timeScale = 0</code>. Tabs: Inventário · Loja · Ferreiro · Opções. Mostra ouro no header.</p>
+</div>
+
+<div class="path">Assets/UI/GameMenu.uxml</div>
+<pre class="uss"><code>&lt;ui:UXML xmlns:ui="UnityEngine.UIElements"&gt;
+  &lt;ui:VisualElement name="hud-root" class="hud-root"&gt;
+    &lt;ui:Button name="gear-btn" text="⚙" class="gear-btn" /&gt;
+    &lt;ui:Label name="gold-hud" text="0 G" class="gold-hud" /&gt;
+  &lt;/ui:VisualElement&gt;
+
+  &lt;ui:VisualElement name="backdrop" class="backdrop"&gt;
+    &lt;ui:VisualElement name="window" class="ff-window"&gt;
+      &lt;ui:VisualElement class="ff-header"&gt;
+        &lt;ui:Label text="MENU" class="ff-title" /&gt;
+        &lt;ui:Label name="gold-label" text="0 G" class="ff-gold" /&gt;
+      &lt;/ui:VisualElement&gt;
+      &lt;ui:VisualElement class="ff-body"&gt;
+        &lt;ui:ListView name="tabs" class="ff-tabs" /&gt;
+        &lt;ui:VisualElement name="content" class="ff-content"&gt;
+          &lt;ui:Label name="content-title" class="ff-section-title" text="Inventário" /&gt;
+          &lt;ui:ListView name="list" class="ff-list" /&gt;
+          &lt;ui:Label name="detail" class="ff-detail" text="" /&gt;
+          &lt;ui:VisualElement name="actions" class="ff-actions" /&gt;
+        &lt;/ui:VisualElement&gt;
+      &lt;/ui:VisualElement&gt;
+      &lt;ui:Button name="close-btn" text="Fechar" class="ff-close" /&gt;
+    &lt;/ui:VisualElement&gt;
+  &lt;/ui:VisualElement&gt;
+&lt;/ui:UXML&gt;</code></pre>
+
+<div class="path">Assets/UI/GameMenu.uss</div>
+<pre class="uss"><code>.hud-root {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    flex-direction: row;
+    align-items: center;
+}
+
+.gear-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+    background-color: rgba(20, 40, 120, 0.85);
+    border-width: 2px;
+    border-color: rgb(180, 200, 255);
+    color: rgb(255, 255, 220);
+    border-radius: 4px;
+}
+
+.gold-hud {
+    margin-left: 8px;
+    color: rgb(255, 220, 120);
+    font-size: 14px;
+    -unity-font-style: bold;
+}
+
+.backdrop {
+    flex-grow: 1;
+    background-color: rgba(0, 0, 20, 0.55);
+    align-items: center;
+    justify-content: center;
+    display: none;
+}
+
+.ff-window {
+    width: 720px;
+    max-width: 94%;
+    height: 420px;
+    max-height: 80%;
+    background-color: rgba(20, 40, 120, 0.92);
+    border-width: 3px;
+    border-color: rgb(180, 200, 255);
+    border-radius: 4px;
+    padding: 16px;
+}
+
+.ff-header { flex-direction: row; justify-content: space-between; margin-bottom: 8px; }
+.ff-title { color: rgb(255, 255, 200); font-size: 22px; -unity-font-style: bold; }
+.ff-gold { color: rgb(255, 220, 120); font-size: 16px; -unity-font-style: bold; }
+
+.ff-body { flex-direction: row; flex-grow: 1; }
+
+.ff-tabs {
+    width: 160px;
+    margin-right: 12px;
+    background-color: rgba(10, 20, 60, 0.8);
+    border-width: 2px;
+    border-color: rgb(140, 160, 220);
+}
+
+.ff-content {
+    flex-grow: 1;
+    background-color: rgba(10, 20, 60, 0.8);
+    border-width: 2px;
+    border-color: rgb(140, 160, 220);
+    padding: 10px;
+}
+
+.ff-section-title { color: rgb(255, 230, 150); font-size: 16px; margin-bottom: 6px; }
+.ff-list { flex-grow: 1; }
+.ff-detail { color: rgb(200, 210, 255); font-size: 13px; margin-top: 8px; white-space: normal; }
+.ff-actions { flex-direction: row; margin-top: 8px; }
+.ff-action-btn {
+    margin-right: 6px;
+    padding: 8px 12px;
+    background-color: rgba(40, 60, 140, 0.9);
+    border-width: 2px;
+    border-color: rgb(160, 180, 240);
+    color: white;
+}
+.ff-close {
+    margin-top: 8px;
+    align-self: flex-end;
+    background-color: rgba(40, 60, 140, 0.9);
+    border-width: 2px;
+    border-color: rgb(160, 180, 240);
+    color: white;
+    padding: 6px 14px;
+}</code></pre>
+
+<div class="path">Assets/Scripts/UI/GameMenuController.cs</div>
+<pre><code>using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UIElements;
+
+namespace AF
+{
+    public class GameMenuController : MonoBehaviour
+    {
+        [SerializeField] UIDocument document;
+        [SerializeField] InventoryManager inventory;
+        [SerializeField] EquipmentManager equipment;
+        [SerializeField] ShopService shop;
+        [SerializeField] BlacksmithService blacksmith;
+        [SerializeField] KeyCode toggleKey = KeyCode.Escape;
+
+        static readonly string[] Tabs = { "Inventário", "Loja", "Ferreiro", "Opções" };
+
+        VisualElement backdrop;
+        Button gearBtn;
+        Button closeBtn;
+        ListView tabs;
+        ListView list;
+        Label contentTitle;
+        Label detail;
+        Label goldLabel;
+        Label goldHud;
+        VisualElement actions;
+
+        bool open;
+        int tabIndex;
+
+        void OnEnable()
+        {
+            var root = document.rootVisualElement;
+            backdrop = root.Q("backdrop");
+            gearBtn = root.Q&lt;Button&gt;("gear-btn");
+            closeBtn = root.Q&lt;Button&gt;("close-btn");
+            tabs = root.Q&lt;ListView&gt;("tabs");
+            list = root.Q&lt;ListView&gt;("list");
+            contentTitle = root.Q&lt;Label&gt;("content-title");
+            detail = root.Q&lt;Label&gt;("detail");
+            goldLabel = root.Q&lt;Label&gt;("gold-label");
+            goldHud = root.Q&lt;Label&gt;("gold-hud");
+            actions = root.Q("actions");
+
+            gearBtn.clicked += () =&gt; SetOpen(!open);
+            closeBtn.clicked += () =&gt; SetOpen(false);
+
+            tabs.itemsSource = new List&lt;string&gt;(Tabs);
+            tabs.makeItem = () =&gt; new Label();
+            tabs.bindItem = (e, i) =&gt; ((Label)e).text = Tabs[i];
+            tabs.selectionChanged += _ =&gt;
+            {
+                if (tabs.selectedIndex &gt;= 0) SelectTab(tabs.selectedIndex);
+            };
+
+            list.makeItem = () =&gt; new Label();
+            list.bindItem = (e, i) =&gt;
+            {
+                var src = list.itemsSource as List&lt;string&gt;;
+                ((Label)e).text = src != null &amp;&amp; i &lt; src.Count ? src[i] : "";
+            };
+            list.selectionChanged += _ =&gt; OnRowSelected();
+
+            if (PlayerProgress.Instance != null)
+                PlayerProgress.Instance.Wallet.OnGoldChanged += RefreshGold;
+
+            RefreshGold(PlayerProgress.Instance != null
+                ? PlayerProgress.Instance.Wallet.Gold : 0);
+            SetOpen(false);
+        }
+
+        void OnDisable()
+        {
+            if (PlayerProgress.Instance != null)
+                PlayerProgress.Instance.Wallet.OnGoldChanged -= RefreshGold;
+        }
+
+        void Update()
+        {
+            if (Input.GetKeyDown(toggleKey))
+                SetOpen(!open);
+        }
+
+        void RefreshGold(int g)
+        {
+            string t = g + " G";
+            if (goldLabel != null) goldLabel.text = t;
+            if (goldHud != null) goldHud.text = t;
+        }
+
+        public void SetOpen(bool value)
+        {
+            if (GameFlow.IsInCutscene &amp;&amp; value) return;
+
+            open = value;
+            if (backdrop != null)
+                backdrop.style.display = open ? DisplayStyle.Flex : DisplayStyle.None;
+
+            Time.timeScale = open ? 0f : 1f;
+
+            if (open)
+            {
+                tabs.SetSelection(0);
+                SelectTab(0);
+            }
+        }
+
+        void SelectTab(int index)
+        {
+            tabIndex = index;
+            contentTitle.text = Tabs[index];
+            detail.text = "";
+            actions.Clear();
+
+            var rows = new List&lt;string&gt;();
+
+            switch (index)
+            {
+                case 0: // Inventário — poções + armas
+                    if (inventory != null)
+                    {
+                        foreach (var s in inventory.consumables)
+                            rows.Add($"Poção x{s.count}  (+{s.item.healAmount} HP)");
+
+                        for (int i = 0; i &lt; inventory.ownedWeapons.Count; i++)
+                        {
+                            var w = inventory.ownedWeapons[i];
+                            bool eq = equipment != null
+                                &amp;&amp; equipment.weaponInstance == w;
+                            rows.Add($"{(eq ? "E " : "  ")}{w.weaponData.displayName}  "
+                                + $"[{w.durability}/{w.maxDurability}]");
+                        }
+                    }
+                    if (rows.Count == 0) rows.Add("(vazio)");
+                    break;
+
+                case 1: // Loja
+                    if (shop != null &amp;&amp; shop.Catalog != null)
+                    {
+                        foreach (var w in shop.Catalog.weapons)
+                            if (w != null)
+                                rows.Add($"{w.displayName}  — {w.buyPrice} G");
+                        foreach (var c in shop.Catalog.consumables)
+                            if (c != null)
+                                rows.Add($"{c.displayName}  — {c.buyPrice} G");
+                    }
+                    if (rows.Count == 0) rows.Add("(loja vazia)");
+                    break;
+
+                case 2: // Ferreiro
+                    if (inventory != null)
+                    {
+                        foreach (var w in inventory.ownedWeapons)
+                            rows.Add($"{w.weaponData.displayName}  "
+                                + $"[{w.durability}/{w.maxDurability}]  "
+                                + $"reparar {w.RepairCost}G / estender {w.ExtendCost}G");
+                    }
+                    if (rows.Count == 0) rows.Add("(sem armas)");
+                    break;
+
+                case 3: // Opções
+                    rows.Add("Reiniciar");
+                    rows.Add("Sair do jogo");
+                    break;
+            }
+
+            list.itemsSource = rows;
+            list.Rebuild();
+            list.ClearSelection();
+        }
+
+        void OnRowSelected()
+        {
+            if (list.selectedIndex &lt; 0) return;
+            actions.Clear();
+            int i = list.selectedIndex;
+
+            if (tabIndex == 0) // Inventário
+            {
+                int potionCount = inventory != null ? inventory.consumables.Count : 0;
+                if (i &lt; potionCount)
+                {
+                    var stack = inventory.consumables[i];
+                    detail.text = stack.item.description;
+                    var use = new Button(() =&gt;
+                    {
+                        inventory.UseConsumable(stack.item);
+                        SelectTab(0);
+                    }) { text = "Usar" };
+                    use.AddToClassList("ff-action-btn");
+                    actions.Add(use);
+                }
+                else
+                {
+                    int wi = i - potionCount;
+                    if (wi &gt;= 0 &amp;&amp; wi &lt; inventory.ownedWeapons.Count)
+                    {
+                        var w = inventory.ownedWeapons[wi];
+                        detail.text = w.weaponData.description
+                            + $"\nDurabilidade {w.durability}/{w.maxDurability}";
+                        var eq = new Button(() =&gt;
+                        {
+                            equipment.EquipWeapon(w.weaponData);
+                            SelectTab(0);
+                        }) { text = "Equipar" };
+                        eq.AddToClassList("ff-action-btn");
+                        actions.Add(eq);
+                    }
+                }
+            }
+            else if (tabIndex == 1 &amp;&amp; shop != null &amp;&amp; shop.Catalog != null)
+            {
+                int wCount = shop.Catalog.weapons.Count;
+                if (i &lt; wCount)
+                {
+                    var w = shop.Catalog.weapons[i];
+                    detail.text = $"{w.description}\nPreço: {w.buyPrice} G";
+                    var buy = new Button(() =&gt;
+                    {
+                        shop.BuyWeapon(w);
+                        SelectTab(1);
+                    }) { text = "Comprar" };
+                    buy.AddToClassList("ff-action-btn");
+                    actions.Add(buy);
+                }
+                else
+                {
+                    int ci = i - wCount;
+                    if (ci &gt;= 0 &amp;&amp; ci &lt; shop.Catalog.consumables.Count)
+                    {
+                        var c = shop.Catalog.consumables[ci];
+                        detail.text = $"{c.description}\nPreço: {c.buyPrice} G";
+                        var buy = new Button(() =&gt;
+                        {
+                            shop.BuyConsumable(c);
+                            SelectTab(1);
+                        }) { text = "Comprar" };
+                        buy.AddToClassList("ff-action-btn");
+                        actions.Add(buy);
+                    }
+                }
+            }
+            else if (tabIndex == 2 &amp;&amp; blacksmith != null &amp;&amp; inventory != null)
+            {
+                if (i &gt;= inventory.ownedWeapons.Count) return;
+                var w = inventory.ownedWeapons[i];
+                detail.text = $"Reparar: {w.RepairCost} G\n"
+                    + $"Estender +{w.weaponData.extendAmount}: {w.ExtendCost} G";
+
+                var rep = new Button(() =&gt;
+                {
+                    blacksmith.Repair(w);
+                    SelectTab(2);
+                }) { text = "Reparar" };
+                rep.AddToClassList("ff-action-btn");
+                actions.Add(rep);
+
+                var ext = new Button(() =&gt;
+                {
+                    blacksmith.Extend(w);
+                    SelectTab(2);
+                }) { text = "Estender" };
+                ext.AddToClassList("ff-action-btn");
+                actions.Add(ext);
+            }
+            else if (tabIndex == 3)
+            {
+                if (i == 0)
+                {
+                    detail.text = "Reinicia a cena actual.";
+                    var btn = new Button(() =&gt;
+                    {
+                        Time.timeScale = 1f;
+                        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+                    }) { text = "Confirmar" };
+                    btn.AddToClassList("ff-action-btn");
+                    actions.Add(btn);
+                }
+                else if (i == 1)
+                {
+                    detail.text = "Fecha a aplicação.";
+                    var btn = new Button(() =&gt;
+                    {
+                        Application.Quit();
+#if UNITY_EDITOR
+                        UnityEditor.EditorApplication.isPlaying = false;
+#endif
+                    }) { text = "Sair" };
+                    btn.AddToClassList("ff-action-btn");
+                    actions.Add(btn);
+                }
+            }
+        }
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s7">7. Diálogos Final Fantasy (data-driven)</h2>
+
+<div class="card">
+  <span class="label ok">Coordenação visual</span>
+  <p style="margin-bottom:0">Cada linha define <code>DialoguePosition</code> (Top / Center / Bottom), <code>DialogueBackground</code> (Box / Dark / None), portrait e lado. O runner aplica classes USS — um sistema, várias apresentações.</p>
+</div>
+
+<div class="path">Assets/Scripts/Dialogue/DialogueEnums.cs</div>
+<pre><code>namespace AF
+{
+    public enum DialoguePosition { Bottom, Center, Top }
+    public enum DialogueBackground { Box, Dark, None }
+    public enum PortraitSide { Left, Right }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Dialogue/DialogueLine.cs</div>
+<pre><code>using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace AF
+{
+    [Serializable]
+    public class DialogueChoiceData
+    {
+        public string text;
+        public DialogueSequence next; // opcional — ramifica
+    }
+
+    [Serializable]
+    public class DialogueLine
+    {
+        public string speakerName;
+        public Sprite portrait;
+        public PortraitSide portraitSide = PortraitSide.Left;
+        [TextArea(2, 5)] public string message;
+
+        public DialoguePosition position = DialoguePosition.Bottom;
+        public DialogueBackground background = DialogueBackground.Box;
+
+        public List&lt;DialogueChoiceData&gt; choices = new();
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Dialogue/DialogueSequence.cs</div>
+<pre><code>using System.Collections.Generic;
+using UnityEngine;
+
+namespace AF
+{
+    [CreateAssetMenu(menuName = "AF/Dialogue/Sequence")]
+    public class DialogueSequence : ScriptableObject
+    {
+        public List&lt;DialogueLine&gt; lines = new();
+    }
+}</code></pre>
+
+<div class="path">Assets/UI/Dialogue.uxml</div>
+<pre class="uss"><code>&lt;ui:UXML xmlns:ui="UnityEngine.UIElements"&gt;
+  &lt;ui:VisualElement name="root" class="dlg-root"&gt;
+    &lt;ui:VisualElement name="dim" class="dlg-dim" /&gt;
+
+    &lt;ui:VisualElement name="slot-top" class="dlg-slot top"&gt;
+      &lt;ui:VisualElement name="box-top" class="dlg-box" /&gt;
+    &lt;/ui:VisualElement&gt;
+
+    &lt;ui:VisualElement name="slot-center" class="dlg-slot center"&gt;
+      &lt;ui:VisualElement name="box-center" class="dlg-box" /&gt;
+    &lt;/ui:VisualElement&gt;
+
+    &lt;ui:VisualElement name="slot-bottom" class="dlg-slot bottom"&gt;
+      &lt;ui:VisualElement name="box-bottom" class="dlg-box" /&gt;
+    &lt;/ui:VisualElement&gt;
+  &lt;/ui:VisualElement&gt;
+&lt;/ui:UXML&gt;</code></pre>
+
+<div class="path">Assets/UI/Dialogue.uss</div>
+<pre class="uss"><code>.dlg-root {
+    flex-grow: 1;
+    display: none;
+    position: relative;
+}
+
+.dlg-dim {
+    position: absolute;
+    left: 0; right: 0; top: 0; bottom: 0;
+    background-color: rgba(0, 0, 0, 0.65);
+    display: none;
+}
+
+.dlg-dim.visible { display: flex; }
+
+.dlg-slot {
+    position: absolute;
+    left: 0; right: 0;
+    padding: 24px;
+    display: none;
+    align-items: center;
+}
+
+.dlg-slot.top { top: 0; justify-content: flex-start; }
+.dlg-slot.center { top: 0; bottom: 0; justify-content: center; }
+.dlg-slot.bottom { bottom: 0; justify-content: flex-end; }
+.dlg-slot.active { display: flex; }
+
+.dlg-box {
+    min-height: 120px;
+    width: 100%;
+    max-width: 900px;
+    background-color: rgba(15, 25, 70, 0.94);
+    border-width: 3px;
+    border-color: rgb(200, 210, 255);
+    border-radius: 4px;
+    padding: 14px 18px;
+    flex-direction: row;
+}
+
+.dlg-box.bg-none {
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+}
+
+.dlg-box.bg-dark {
+    background-color: rgba(0, 0, 0, 0.85);
+    border-width: 0;
+}
+
+.dlg-portrait {
+    width: 96px;
+    height: 96px;
+    margin-right: 14px;
+    flex-shrink: 0;
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.dlg-portrait.right {
+    margin-right: 0;
+    margin-left: 14px;
+}
+
+.dlg-textcol { flex-grow: 1; flex-direction: column; }
+
+.dlg-speaker {
+    color: rgb(255, 220, 120);
+    font-size: 16px;
+    -unity-font-style: bold;
+    margin-bottom: 6px;
+}
+
+.dlg-body {
+    color: rgb(240, 240, 255);
+    font-size: 15px;
+    white-space: normal;
+    flex-grow: 1;
+}
+
+.dlg-choices { flex-direction: column; margin-top: 10px; }
+
+.dlg-choice {
+    margin-top: 4px;
+    padding: 8px 12px;
+    background-color: rgba(40, 60, 140, 0.9);
+    border-width: 2px;
+    border-color: rgb(160, 180, 240);
+    color: rgb(255, 255, 255);
+    font-size: 14px;
+}
+
+.dlg-continue {
+    color: rgb(200, 210, 255);
+    -unity-text-align: middle-right;
+    margin-top: 4px;
+}</code></pre>
+
+<div class="path">Assets/Scripts/Dialogue/DialogueRunner.cs</div>
+<pre><code>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace AF
+{
+    public class DialogueRunner : MonoBehaviour
+    {
+        public static DialogueRunner Instance { get; private set; }
+
+        [SerializeField] UIDocument document;
+        [SerializeField] float charsPerSecond = 40f;
+
+        VisualElement root;
+        VisualElement dim;
+        VisualElement slotTop, slotCenter, slotBottom;
+        VisualElement boxTop, boxCenter, boxBottom;
+
+        bool skipping;
+        bool waitingAdvance;
+        int chosenIndex = -1;
+        bool playing;
+
+        public bool IsPlaying =&gt; playing;
+
+        void Awake()
+        {
+            Instance = this;
+            var ve = document.rootVisualElement;
+            root = ve.Q("root");
+            dim = ve.Q("dim");
+            slotTop = ve.Q("slot-top");
+            slotCenter = ve.Q("slot-center");
+            slotBottom = ve.Q("slot-bottom");
+            boxTop = ve.Q("box-top");
+            boxCenter = ve.Q("box-center");
+            boxBottom = ve.Q("box-bottom");
+            Hide();
+        }
+
+        void Update()
+        {
+            if (!playing) return;
+
+            bool pressed = Input.GetMouseButtonDown(0)
+                || Input.GetKeyDown(KeyCode.E)
+                || Input.GetKeyDown(KeyCode.Space)
+                || (Input.touchCount &gt; 0 &amp;&amp; Input.GetTouch(0).phase == TouchPhase.Began);
+
+            if (!pressed) return;
+
+            if (!waitingAdvance) skipping = true;
+            else waitingAdvance = false;
+        }
+
+        public IEnumerator Play(DialogueSequence sequence)
+        {
+            if (sequence == null || sequence.lines == null) yield break;
+
+            playing = true;
+            root.style.display = DisplayStyle.Flex;
+
+            for (int i = 0; i &lt; sequence.lines.Count; i++)
+            {
+                DialogueSequence branch = null;
+                yield return PlayLine(sequence.lines[i], b =&gt; branch = b);
+                if (branch != null)
+                {
+                    yield return Play(branch);
+                    break;
+                }
+            }
+
+            Hide();
+            playing = false;
+        }
+
+        IEnumerator PlayLine(DialogueLine line, System.Action&lt;DialogueSequence&gt; onBranch)
+        {
+            skipping = false;
+            waitingAdvance = false;
+            chosenIndex = -1;
+
+            // Slot activo
+            slotTop.RemoveFromClassList("active");
+            slotCenter.RemoveFromClassList("active");
+            slotBottom.RemoveFromClassList("active");
+
+            VisualElement slot = slotBottom;
+            VisualElement box = boxBottom;
+            if (line.position == DialoguePosition.Top) { slot = slotTop; box = boxTop; }
+            else if (line.position == DialoguePosition.Center) { slot = slotCenter; box = boxCenter; }
+            slot.AddToClassList("active");
+
+            // Fundo
+            dim.EnableInClassList("visible", line.background == DialogueBackground.Dark
+                || line.background == DialogueBackground.None);
+            // Dark = dim + box dark; None = dim opcional + box transparente
+            // Simplificação: Dark e None mostram dim; Box não.
+            dim.EnableInClassList("visible", line.background != DialogueBackground.Box);
+
+            box.Clear();
+            box.RemoveFromClassList("bg-none");
+            box.RemoveFromClassList("bg-dark");
+            if (line.background == DialogueBackground.None) box.AddToClassList("bg-none");
+            if (line.background == DialogueBackground.Dark) box.AddToClassList("bg-dark");
+
+            // Portrait
+            VisualElement portrait = null;
+            if (line.portrait != null)
+            {
+                portrait = new VisualElement();
+                portrait.AddToClassList("dlg-portrait");
+                if (line.portraitSide == PortraitSide.Right)
+                    portrait.AddToClassList("right");
+                portrait.style.backgroundImage = new StyleBackground(line.portrait);
+            }
+
+            var textCol = new VisualElement();
+            textCol.AddToClassList("dlg-textcol");
+
+            var speaker = new Label(line.speakerName ?? "");
+            speaker.AddToClassList("dlg-speaker");
+            var body = new Label("");
+            body.AddToClassList("dlg-body");
+            var choicesRoot = new VisualElement();
+            choicesRoot.AddToClassList("dlg-choices");
+            var cont = new Label("▼");
+            cont.AddToClassList("dlg-continue");
+            cont.style.display = DisplayStyle.None;
+
+            textCol.Add(speaker);
+            textCol.Add(body);
+            textCol.Add(choicesRoot);
+            textCol.Add(cont);
+
+            if (line.portraitSide == PortraitSide.Right)
+            {
+                box.Add(textCol);
+                if (portrait != null) box.Add(portrait);
+            }
+            else
+            {
+                if (portrait != null) box.Add(portrait);
+                box.Add(textCol);
+            }
+
+            // Typewriter
+            string message = line.message ?? "";
+            float delay = 1f / Mathf.Max(1f, charsPerSecond);
+            for (int c = 0; c &lt; message.Length; c++)
+            {
+                if (skipping) { body.text = message; break; }
+                body.text += message[c];
+                yield return new WaitForSecondsRealtime(delay);
+            }
+
+            if (line.choices != null &amp;&amp; line.choices.Count &gt; 0)
+            {
+                for (int i = 0; i &lt; line.choices.Count; i++)
+                {
+                    int captured = i;
+                    var btn = new Button(() =&gt; chosenIndex = captured)
+                    {
+                        text = line.choices[i].text
+                    };
+                    btn.AddToClassList("dlg-choice");
+                    choicesRoot.Add(btn);
+                }
+
+                yield return new WaitUntil(() =&gt; chosenIndex &gt;= 0);
+                onBranch?.Invoke(line.choices[chosenIndex].next);
+            }
+            else
+            {
+                cont.style.display = DisplayStyle.Flex;
+                waitingAdvance = true;
+                yield return null; // evita que o mesmo tap avance
+                yield return new WaitUntil(() =&gt; !waitingAdvance);
+                onBranch?.Invoke(null);
+            }
+        }
+
+        void Hide()
+        {
+            root.style.display = DisplayStyle.None;
+            dim.RemoveFromClassList("visible");
+            slotTop.RemoveFromClassList("active");
+            slotCenter.RemoveFromClassList("active");
+            slotBottom.RemoveFromClassList("active");
+            boxTop.Clear();
+            boxCenter.Clear();
+            boxBottom.Clear();
+        }
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s8">8. Cutscenes — SequencePlayer</h2>
+
+<div class="card">
+  <span class="label ok">Porquê isto em vez de Moment + filhos EventBase</span>
+  <ul style="margin-bottom:0">
+    <li><strong>Dados vs. cena</strong> — diálogos/espera são ScriptableObjects reutilizáveis; mover NPC / controlos ficam como MonoBehaviour steps com refs de cena.</li>
+    <li><strong>Ordem explícita</strong> — lista serializada no inspector, não depende de sibling order.</li>
+    <li><strong>Cancelável + flag global</strong> — <code>GameFlow.IsInCutscene</code> bloqueia menu, lock-on, input.</li>
+    <li>Sem Timeline, sem Event Bus — só coroutines + UnityEvents locais se precisares.</li>
+  </ul>
+</div>
+
+<div class="path">Assets/Scripts/Cutscene/GameFlow.cs</div>
+<pre><code>namespace AF
+{
+    public static class GameFlow
+    {
+        public static bool IsInCutscene { get; private set; }
+
+        public static void SetCutscene(bool value) =&gt; IsInCutscene = value;
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Cutscene/ISequenceStep.cs</div>
+<pre><code>using System.Collections;
+
+namespace AF
+{
+    public interface ISequenceStep
+    {
+        IEnumerator Execute();
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Cutscene/SequencePlayer.cs</div>
+<pre><code>using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Events;
+
+namespace AF
+{
+    /// &lt;summary&gt;
+    /// Corre steps em ordem. Steps = componentes no mesmo GO (ou lista explícita).
+    /// &lt;/summary&gt;
+    public class SequencePlayer : MonoBehaviour
+    {
+        [Tooltip("Se vazio, recolhe todos os MonoBehaviour ISequenceStep neste GO (ordem do inspector).")]
+        [SerializeField] List&lt;MonoBehaviour&gt; stepBehaviours = new();
+
+        public UnityEvent onStart;
+        public UnityEvent onEnd;
+
+        Coroutine running;
+        public bool IsRunning { get; private set; }
+
+        public void Trigger()
+        {
+            if (IsRunning) return;
+            running = StartCoroutine(Run());
+        }
+
+        public void Cancel()
+        {
+            if (running != null) StopCoroutine(running);
+            Finish();
+        }
+
+        IEnumerator Run()
+        {
+            IsRunning = true;
+            GameFlow.SetCutscene(true);
+            onStart?.Invoke();
+
+            var steps = ResolveSteps();
+            for (int i = 0; i &lt; steps.Count; i++)
+            {
+                if (steps[i] != null)
+                    yield return steps[i].Execute();
+            }
+
+            Finish();
+        }
+
+        List&lt;ISequenceStep&gt; ResolveSteps()
+        {
+            var list = new List&lt;ISequenceStep&gt;();
+            if (stepBehaviours != null &amp;&amp; stepBehaviours.Count &gt; 0)
+            {
+                foreach (var mb in stepBehaviours)
+                    if (mb is ISequenceStep s) list.Add(s);
+            }
+            else
+            {
+                foreach (var mb in GetComponents&lt;MonoBehaviour&gt;())
+                    if (mb is ISequenceStep s &amp;&amp; !ReferenceEquals(mb, this))
+                        list.Add(s);
+            }
+            return list;
+        }
+
+        void Finish()
+        {
+            running = null;
+            IsRunning = false;
+            GameFlow.SetCutscene(false);
+            onEnd?.Invoke();
+        }
+
+        void OnDisable()
+        {
+            if (IsRunning) Finish();
+        }
+    }
+}</code></pre>
+
+<h3>Steps úteis</h3>
+
+<div class="path">Assets/Scripts/Cutscene/Steps/DialogueStep.cs</div>
+<pre><code>using System.Collections;
+using UnityEngine;
+
+namespace AF
+{
+    public class DialogueStep : MonoBehaviour, ISequenceStep
+    {
+        [SerializeField] DialogueSequence sequence;
+
+        public IEnumerator Execute()
+        {
+            if (DialogueRunner.Instance == null || sequence == null)
+            {
+                Debug.LogWarning("DialogueStep: runner ou sequence em falta.");
+                yield break;
+            }
+            yield return DialogueRunner.Instance.Play(sequence);
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Cutscene/Steps/WaitStep.cs</div>
+<pre><code>using System.Collections;
+using UnityEngine;
+
+namespace AF
+{
+    public class WaitStep : MonoBehaviour, ISequenceStep
+    {
+        [SerializeField] float seconds = 1f;
+        [SerializeField] bool useRealtime = true;
+
+        public IEnumerator Execute()
+        {
+            if (useRealtime)
+                yield return new WaitForSecondsRealtime(seconds);
+            else
+                yield return new WaitForSeconds(seconds);
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Cutscene/Steps/SetPlayerControlStep.cs</div>
+<pre><code>using System.Collections;
+using UnityEngine;
+
+namespace AF
+{
+    public class SetPlayerControlStep : MonoBehaviour, ISequenceStep
+    {
+        [SerializeField] PlayerInput playerInput;
+        [SerializeField] bool enableControl;
+
+        public IEnumerator Execute()
+        {
+            if (playerInput != null)
+                playerInput.enabled = enableControl;
+            yield return null;
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/Cutscene/Steps/MoveCharacterStep.cs</div>
+<pre><code>using System.Collections;
+using UnityEngine;
+
+namespace AF
+{
+    public class MoveCharacterStep : MonoBehaviour, ISequenceStep
+    {
+        [SerializeField] CharacterManager character;
+        [SerializeField] Transform waypoint;
+        [SerializeField] float timeout = 8f;
+
+        public IEnumerator Execute()
+        {
+            if (character == null || waypoint == null) yield break;
+
+            character.SetDestination(waypoint.position);
+            float t = 0f;
+            while (t &lt; timeout)
+            {
+                var motor = character.Motor;
+                if (motor != null)
+                {
+                    float dist = Vector3.Distance(
+                        character.transform.position, waypoint.position);
+                    if (dist &lt;= motor.StoppingDistance + 0.15f)
+                        yield break;
+                }
+
+                t += Time.deltaTime;
+                yield return null;
+            }
+        }
+    }
+}</code></pre>
+
+<div class="flow">[Trigger / Bonfire.onRested / Interact]
+        │
+        ▼
+   SequencePlayer.Trigger()
+        │
+        ▼ sequencial
+   SetPlayerControl(false) → DialogueStep → WaitStep → MoveCharacter → SetPlayerControl(true)
+        │
+        ▼
+   onEnd + GameFlow.IsInCutscene = false</div>
+
+<!-- ============================================================ -->
+<h2 id="s9">9. Wiring Unity</h2>
+
+<ol>
+  <li><strong>PlayerProgress</strong> — GO vazio na cena (ou bootstrap), assigna prefab do Bloodstain.</li>
+  <li><strong>GoldReward</strong> — em cada inimigo, liga <code>Health</code>, define <code>goldAmount</code>.</li>
+  <li><strong>Bonfire</strong> — prefab com trigger + respawnPoint. Interact chama <code>Rest(player)</code>.</li>
+  <li><strong>Bloodstain</strong> — prefab com visual + script. Referenciado em PlayerProgress.</li>
+  <li><strong>PATCH DeathReactor</strong> — copia o bloco amarelo (secção 2).</li>
+  <li><strong>PATCH Weapon / WeaponInstance</strong> — campos + runtime durability (secção 3). Preenche preços nos SOs de armas.</li>
+  <li><strong>WeaponDurability</strong> — no player, liga CombatManager / Equipment / Inventory.</li>
+  <li><strong>ShopInventory SO</strong> + <code>ShopService</code> / <code>BlacksmithService</code> na cena (ou no mesmo GO do menu).</li>
+  <li><strong>PATCH Health.Heal</strong> + <strong>PATCH InventoryManager</strong> (secção 5). Cria SO Consumable (poção).</li>
+  <li><strong>Menu</strong> — UIDocument Screen Space + GameMenu.uxml/uss + <code>GameMenuController</code>. Gear icon já está no UXML.</li>
+  <li><strong>Dialogue</strong> — UIDocument + Dialogue.uxml/uss + <code>DialogueRunner</code>. Cria DialogueSequence SOs.</li>
+  <li><strong>Cutscene</strong> — GO com <code>SequencePlayer</code> + steps como componentes. Chama <code>Trigger()</code> de um interact / UnityEvent.</li>
+</ol>
+
+<div class="flow">Ordem de teste sugerida
+1. Matar inimigo → ouro sobe no HUD do menu
+2. Abrir gear → Inventário mostra arma + poção; usar poção cura
+3. Loja → comprar arma gasta ouro e aparece no inventário
+4. Atacar até partir arma → remove do inventário
+5. Ferreiro → reparar / estender mais barato que recomprar
+6. Descansar na fogueira → cura + poções repostas; LastBonfire definido
+7. Morrer → bloodstain com ouro; respawn na fogueira; tocar bloodstain recupera
+8. DialogueSequence Play → portrait + bottom box; linha com Dark/Center
+9. SequencePlayer → bloqueia menu (GameFlow) → diálogo → retoma controlo</div>
+
+<div class="card warn">
+  <span class="label warn">Relação com o doc antigo</span>
+  <p style="margin-bottom:0">Chest, HP mundo, stamina BotW e lock-on por tap continuam em <a href="UI-Chest-Moments-LockOn.html">UI-Chest-Moments-LockOn.html</a>. Este doc <strong>substitui</strong> a proposta de Moments (s7) e o menu/diálogo simples (s5–s6) daquele ficheiro — usa SequencePlayer + DialogueRunner data-driven em vez disso.</p>
+</div>
+
+<footer>
+  Documento vivo. Patches amarelos = ficheiros existentes; copiar à mão. Próximos passos possíveis: marker visual no bloodstain, save do Wallet entre sessões, monetização (IAP de ouro), Ink stories em cima do DialogueSequence.
+</footer>
+
+</div>
+</body>
+</html>
