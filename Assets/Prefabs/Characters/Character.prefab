@@ -279,8 +279,6 @@ GameObject:
   - component: {fileID: 5619519043771692139}
   - component: {fileID: 1453379683501499573}
   - component: {fileID: 568325947147586379}
-  - component: {fileID: 6571494400191017289}
-  - component: {fileID: 8111000000000000001}
   - component: {fileID: 8111000000000000002}
   - component: {fileID: 7596761662381212878}
   - component: {fileID: 5183624182593511415}
@@ -296,6 +294,8 @@ GameObject:
   - component: {fileID: 1071878966149854846}
   - component: {fileID: 6051265088138471669}
   - component: {fileID: 2746758125811668220}
+  - component: {fileID: 1938915903511308228}
+  - component: {fileID: 7021790640550017808}
   m_Layer: 0
   m_Name: Character
   m_TagString: Untagged
@@ -461,45 +461,6 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
---- !u!143 &6571494400191017289
-CharacterController:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3673545139705214888}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 0
-  serializedVersion: 3
-  m_Height: 1.8
-  m_Radius: 0.2
-  m_SlopeLimit: 45
-  m_StepOffset: 0.3
-  m_SkinWidth: 0.08
-  m_MinMoveDistance: 0.001
-  m_Center: {x: 0, y: 1, z: 0}
---- !u!114 &8111000000000000001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3673545139705214888}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c3d4e5f60718293a4b5c6d7e8f901a2b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AF.CharacterControllerMotor
-  runSpeed: 5.5
-  gravity: -20
 --- !u!114 &8111000000000000002
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -527,7 +488,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   name: Humanoid
   animator: {fileID: 5619519043771692139}
-  characterControllerMotor: {fileID: 8111000000000000001}
+  characterControllerMotor: {fileID: 0}
   navMeshAgentMotor: {fileID: 8111000000000000002}
   health: {fileID: 5366300287412475226}
   characterDamageReceiver: {fileID: 2655909083216702146}
@@ -567,6 +528,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sightRange: 10
   sightAngle: 60
+  eyeHeight: 1.4
   characterManager: {fileID: 7596761662381212878}
 --- !u!114 &1894252696675560339
 MonoBehaviour:
@@ -745,6 +707,56 @@ MonoBehaviour:
   defaultWeapon: {fileID: 11400000, guid: 406b292ef56df47408ced7d70d744939, type: 2}
   randomDefaultWeapons: []
   equipmentManager: {fileID: 6051265088138471669}
+--- !u!136 &1938915903511308228
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3673545139705214888}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.25
+  m_Height: 1.74
+  m_Direction: 1
+  m_Center: {x: 0, y: 1, z: 0}
+--- !u!54 &7021790640550017808
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3673545139705214888}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1 &6515205292472850048
 GameObject:
   m_ObjectHideFlags: 0

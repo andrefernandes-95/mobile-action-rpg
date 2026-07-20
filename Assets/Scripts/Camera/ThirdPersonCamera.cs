@@ -2,10 +2,6 @@ namespace AF
 {
     using UnityEngine;
 
-    /// <summary>
-    /// Third-person camera mobile: pitch/distância fixos.
-    /// Colisão: RaycastAll do pivot até à câmara, ignora o player, pull-in imediato.
-    /// </summary>
     public class ThirdPersonCamera : MonoBehaviour
     {
         [Header("Target")]
@@ -21,14 +17,12 @@ namespace AF
         [SerializeField] float yawSmoothTimeMax = 0.18f;
 
         [Header("Position smoothing")]
-        [Tooltip("Suavização só quando NÃO há parede. Com parede a posição aplica-se logo.")]
         [SerializeField] float followSmoothTime = 0.12f;
 
         [Header("Collision")]
         [SerializeField] LayerMask wallLayer = ~0;
         [SerializeField] float wallBuffer = 0.15f;
         [SerializeField] float minDistanceFromTarget = 0.8f;
-        [Tooltip("Tempo para a câmara VOLTAR a afastar-se (entrar na parede é imediato).")]
         [SerializeField] float zoomOutSmoothTime = 0.2f;
 
         readonly RaycastHit[] hitBuffer = new RaycastHit[16];
@@ -61,35 +55,46 @@ namespace AF
                 return;
             }
 
-            float rawMove = Mathf.Clamp01(target.MoveAmount);
-            smoothedMoveAmount = Mathf.SmoothDamp(
-                smoothedMoveAmount,
-                rawMove,
-                ref moveAmountVelocity,
-                0.15f
-            );
+            bool lockedOn = target.lockOn != null
+                && target.lockOn.isLockedOn
+                && target.lockOn.lockOnTarget != null;
 
-            float cameraBlend = smoothedMoveAmount * smoothedMoveAmount;
-            UpdateYaw(cameraBlend);
+            float rawMove = Mathf.Clamp01(target.MoveAmount);
+            float cameraBlend;
+
+            if (lockedOn)
+            {
+                smoothedMoveAmount = rawMove;
+                moveAmountVelocity = 0f;
+                cameraBlend = 1f;
+            }
+            else
+            {
+                smoothedMoveAmount = Mathf.SmoothDamp(
+                    smoothedMoveAmount,
+                    rawMove,
+                    ref moveAmountVelocity,
+                    0.15f
+                );
+                cameraBlend = smoothedMoveAmount * smoothedMoveAmount;
+            }
+
+            UpdateYaw(cameraBlend, lockedOn);
 
             Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
             Vector3 pivot = target.transform.position + Vector3.up * targetHeight;
-
-            // Direção do pivot → câmara desejada
             Vector3 toCamera = -(rotation * Vector3.forward);
             float occludedDistance = ResolveCameraDistance(pivot, toCamera);
 
             bool blocked = occludedDistance < distance - 0.01f;
 
-            if (blocked)
+            if (blocked || lockedOn)
             {
-                // Entrar (puxar para o player) = imediato — senão ficas atrás da parede
                 currentDistance = occludedDistance;
                 distanceVelocity = 0f;
             }
             else
             {
-                // Sair = suave
                 currentDistance = Mathf.SmoothDamp(
                     currentDistance,
                     occludedDistance,
@@ -100,7 +105,7 @@ namespace AF
 
             Vector3 desiredPos = pivot + toCamera * currentDistance;
 
-            if (blocked)
+            if (blocked || lockedOn)
             {
                 transform.position = desiredPos;
             }
@@ -120,9 +125,17 @@ namespace AF
             }
         }
 
-        void UpdateYaw(float cameraBlend)
+        void UpdateYaw(float cameraBlend, bool lockedOn)
         {
             float targetYaw = target.transform.eulerAngles.y;
+
+            if (lockedOn)
+            {
+                yaw = targetYaw;
+                yawVelocity = 0f;
+                return;
+            }
+
             float smoothTime = Mathf.Lerp(yawSmoothTimeMin, yawSmoothTimeMax, cameraBlend);
 
             yaw = Mathf.SmoothDampAngle(
@@ -143,8 +156,6 @@ namespace AF
 
             toCamera.Normalize();
 
-            // Raycast (não SphereCast): MeshColliders não-convexos das dungeons
-            // não respondem bem a SphereCast.
             int hitCount = Physics.RaycastNonAlloc(
                 pivot,
                 toCamera,

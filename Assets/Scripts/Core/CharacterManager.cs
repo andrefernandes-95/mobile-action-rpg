@@ -35,10 +35,18 @@ namespace AF
         [Header("Patrol")]
         public Transform[] patrolPoints;
 
+        float inputMoveAmount;
+        Vector3 inputMoveDirection;
+
         public float MoveAmount
         {
             get
             {
+                if (IsPlayer())
+                {
+                    return inputMoveAmount;
+                }
+
                 if (motor != null)
                 {
                     return motor.MoveAmount;
@@ -93,6 +101,8 @@ namespace AF
                 return;
             }
 
+            inputMoveAmount = Mathf.Clamp01(moveAmount);
+            inputMoveDirection = direction;
             motor.Move(direction, moveAmount);
         }
 
@@ -108,6 +118,9 @@ namespace AF
 
         public void Stop()
         {
+            inputMoveAmount = 0f;
+            inputMoveDirection = Vector3.zero;
+
             if (motor != null)
             {
                 motor.Stop();
@@ -170,15 +183,53 @@ namespace AF
                 return;
             }
 
-            float speedParam = MoveAmount;
+            float vertical = 0f;
+            float horizontal = 0f;
+            bool lockedOn = lockOn != null && lockOn.isLockedOn && lockOn.lockOnTarget != null;
 
-            if (!IsPlayer())
+            if (IsPlayer() && lockedOn)
             {
-                float max = Mathf.Max(0.01f, motor.RunSpeed);
-                speedParam = Mathf.Clamp01(motor.PlanarVelocity.magnitude / max);
-            }
+                float amount = inputMoveAmount;
 
-            animator.SetFloat(AnimHashes.Vertical, speedParam, animSpeedDamp, Time.deltaTime);
+                if (amount > 0.01f && inputMoveDirection.sqrMagnitude > 0.0001f)
+                {
+                    Vector3 toTarget = lockOn.lockOnTarget.position - transform.position;
+                    toTarget.y = 0f;
+
+                    if (toTarget.sqrMagnitude > 0.0001f)
+                    {
+                        Quaternion faceRot = Quaternion.LookRotation(toTarget.normalized);
+                        Vector3 local = Quaternion.Inverse(faceRot) * inputMoveDirection;
+                        local.y = 0f;
+
+                        float maxAxis = Mathf.Max(Mathf.Abs(local.x), Mathf.Abs(local.z));
+                        if (maxAxis > 0.0001f)
+                        {
+                            vertical = (local.z / maxAxis) * amount;
+                            horizontal = (local.x / maxAxis) * amount;
+                        }
+                    }
+                }
+
+                animator.SetFloat(AnimHashes.Vertical, vertical);
+                animator.SetFloat(AnimHashes.Horizontal, horizontal);
+            }
+            else
+            {
+                if (IsPlayer())
+                {
+                    vertical = inputMoveAmount;
+                }
+                else
+                {
+                    float max = Mathf.Max(0.01f, motor.RunSpeed);
+                    vertical = Mathf.Clamp01(motor.PlanarVelocity.magnitude / max);
+                }
+
+                horizontal = 0f;
+                animator.SetFloat(AnimHashes.Vertical, vertical, animSpeedDamp, Time.deltaTime);
+                animator.SetFloat(AnimHashes.Horizontal, horizontal, animSpeedDamp, Time.deltaTime);
+            }
         }
 
         public bool IsPlayer()

@@ -83,7 +83,6 @@ namespace AF
             Vector3 raw = camForward * v + camRight * h;
             float magnitude = Mathf.Clamp01(raw.magnitude);
 
-            // Só ignora ruído numérico. Stick mexe = personagem mexe.
             if (magnitude < 0.01f)
             {
                 characterManager.Stop();
