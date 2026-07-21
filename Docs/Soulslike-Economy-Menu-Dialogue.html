@@ -69,6 +69,7 @@
     <li><a href="#s4">Loja + Ferreiro</a></li>
     <li><a href="#s5">Consumíveis / poções</a></li>
     <li><a href="#s6">Menu principal (gear icon)</a></li>
+    <li><a href="#s6b">EquipmentMenu — ecrã real do projeto</a></li>
     <li><a href="#s7">Diálogos Final Fantasy (data-driven)</a></li>
     <li><a href="#s8">Cutscenes — SequencePlayer</a></li>
     <li><a href="#s9">Wiring Unity</a></li>
@@ -1278,6 +1279,277 @@ namespace AF
         }
     }
 }</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s6b">6·B. EquipmentMenu — ecrã real do projeto</h2>
+
+<div class="card">
+  <span class="label ok">O que é</span>
+  <p style="margin-bottom:0">Versão concreta do teu <code>Assets/UI/EquipmentMenu.uxml</code> (UI Builder). Segue a <strong>opção B</strong>: cada arma numa linha com <code>Equip</code> · <code>Repair</code> · <code>Sell</code>, header com <em>Current Attack Damage</em>, tabs Weapons/Shields/Armors/Accessory. Reutiliza o teu <code>Styles.uss</code> (<code>.button</code>, <code>.label</code>). Os nomes dos elementos batem com a tua hierarquia (<code>ItemInfo</code>, <code>IconAndName</code>, <code>Attention</code>, <code>ItemName</code>, <code>Description</code>, <code>Indicator</code>, <code>Status</code>, <code>Actions</code>) para o controller os encontrar por <code>Q()</code>.</p>
+</div>
+
+<div class="card warn">
+  <span class="label warn">Decisão: Sell vs Extend</span>
+  <p style="margin-bottom:0">O teu ecrã usa <strong>Sell</strong> (vender por ouro) em vez do <em>Extend</em> da secção 4. Faz sentido: como as armas partem/não são permanentes, vender uma que não usas devolve algum ouro. Podes ter os dois — Sell aqui, Extend no ferreiro. Abaixo implemento <code>Sell</code>.</p>
+</div>
+
+<h3>UXML — ecrã</h3>
+<div class="path">Assets/UI/EquipmentMenu.uxml</div>
+<pre class="uss"><code>&lt;ui:UXML xmlns:ui="UnityEngine.UIElements"&gt;
+  &lt;Style src="project://database/Assets/UI/Styles.uss#Styles" /&gt;
+  &lt;ui:VisualElement name="Container" style="padding: 24px;"&gt;
+    &lt;ui:Button text="X" name="CloseButton" class="button"
+               style="align-self: flex-end; padding-right: 12px; padding-left: 12px;" /&gt;
+    &lt;ui:VisualElement name="Tab" class="button"&gt;
+      &lt;ui:Label text="Equipment" name="Title" /&gt;
+      &lt;ui:VisualElement name="TabContent" style="flex-direction: row;"&gt;
+        &lt;ui:Button text="Weapons"     name="WeaponsTabButton"    class="button" /&gt;
+        &lt;ui:Button text="Shields"     name="ShieldsTabButton"    class="button" /&gt;
+        &lt;ui:Button text="Armors"      name="ArmorsTabButton"     class="button" /&gt;
+        &lt;ui:Button text="Accessory 1" name="Accessory1TabButton" class="button" /&gt;
+        &lt;ui:Button text="Accessory 2" name="Accessory2TabButton" class="button" /&gt;
+      &lt;/ui:VisualElement&gt;
+      &lt;ui:Label text="Current Attack Damage: 100" name="CurrentAttackDamage"
+                class="label" style="margin-top: 8px;" /&gt;
+      &lt;ui:ScrollView name="Items" style="flex-grow: 1; margin-top: 8px;" /&gt;
+    &lt;/ui:VisualElement&gt;
+  &lt;/ui:VisualElement&gt;
+&lt;/ui:UXML&gt;</code></pre>
+
+<div class="card warn">
+  <span class="label warn">Referência ao Styles.uss</span>
+  <p style="margin-bottom:0">No teu ficheiro o UI Builder gerou o <code>&lt;Style src="...?fileID=...&amp;guid=..."&gt;</code> completo — deixa esse como está. Aqui mostro a forma curta só por legibilidade.</p>
+</div>
+
+<h3>UXML — template da linha</h3>
+<div class="path">Assets/UI/WeaponListItem.uxml</div>
+<pre class="uss"><code>&lt;ui:UXML xmlns:ui="UnityEngine.UIElements"&gt;
+  &lt;Style src="project://database/Assets/UI/Styles.uss#Styles" /&gt;
+  &lt;ui:VisualElement name="ItemInfo" class="item-row"&gt;
+
+    &lt;ui:VisualElement name="ItemMain"
+        style="flex-direction: row; justify-content: space-between; align-items: center;"&gt;
+      &lt;ui:VisualElement name="IconAndName"
+          style="flex-direction: row; align-items: center;"&gt;
+        &lt;ui:VisualElement name="Icon" class="item-icon" /&gt;
+        &lt;ui:Label text="Greatsword" name="ItemName" class="label" /&gt;
+        &lt;ui:VisualElement name="Attention" class="attention-dot" /&gt;
+      &lt;/ui:VisualElement&gt;
+
+      &lt;ui:VisualElement name="Actions" style="flex-direction: row;"&gt;
+        &lt;ui:Button text="Equip"            name="EquipButton"  class="button" /&gt;
+        &lt;ui:Button text="Repair (10 Gold)" name="RepairButton" class="button" /&gt;
+        &lt;ui:Button text="Sell (40 Gold)"   name="SellButton"   class="button" /&gt;
+      &lt;/ui:VisualElement&gt;
+    &lt;/ui:VisualElement&gt;
+
+    &lt;ui:VisualElement name="ItemStats"
+        style="flex-direction: row; align-items: center; margin-top: 6px;"&gt;
+      &lt;ui:Label text="Attack Damage: 110" name="Description" class="label" /&gt;
+      &lt;ui:VisualElement name="Indicator" class="stat-dot" /&gt;
+    &lt;/ui:VisualElement&gt;
+
+    &lt;ui:Label text="Current Durability: 100/200" name="Status" class="label" /&gt;
+  &lt;/ui:VisualElement&gt;
+&lt;/ui:UXML&gt;</code></pre>
+
+<h3>USS — acrescenta ao teu Styles.uss</h3>
+<div class="path patch">Assets/UI/Styles.uss — acrescenta</div>
+<pre class="highlight"><code>.item-row {
+    border-width: 1px;
+    border-color: rgb(120, 140, 200);
+    border-radius: 5px;
+    padding: 10px;
+    margin-top: 6px;
+    background-color: rgba(255, 255, 255, 0.04);
+}
+
+.item-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.attention-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+    margin-left: 8px;
+    background-color: rgb(240, 180, 41); /* aviso — durabilidade baixa */
+    display: none;
+}
+
+.stat-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+    margin-left: 8px;
+    background-color: rgb(90, 220, 90); /* verde/vermelho via C# */
+}</code></pre>
+
+<h3>Controller</h3>
+<div class="path">Assets/Scripts/UI/EquipmentMenuController.cs</div>
+<pre><code>using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace AF
+{
+    public class EquipmentMenuController : MonoBehaviour
+    {
+        [SerializeField] UIDocument document;
+        [SerializeField] VisualTreeAsset weaponRowTemplate; // WeaponListItem.uxml
+
+        [Header("Systems")]
+        [SerializeField] InventoryManager inventory;
+        [SerializeField] EquipmentManager equipment;
+        [SerializeField] BlacksmithService blacksmith;
+        [SerializeField] ShopService shop;
+
+        VisualElement root;
+        ScrollView items;
+        Label currentAttack;
+
+        void OnEnable()
+        {
+            root = document.rootVisualElement;
+            items = root.Q&lt;ScrollView&gt;("Items");
+            currentAttack = root.Q&lt;Label&gt;("CurrentAttackDamage");
+
+            var close = root.Q&lt;Button&gt;("CloseButton");
+            if (close != null) close.clicked += Close;
+
+            var weaponsTab = root.Q&lt;Button&gt;("WeaponsTabButton");
+            if (weaponsTab != null) weaponsTab.clicked += ShowWeapons;
+            // Shields / Armors / Accessory: placeholders por agora
+
+            ShowWeapons();
+        }
+
+        public void Open()
+        {
+            root.style.display = DisplayStyle.Flex;
+            Time.timeScale = 0f;
+            ShowWeapons();
+        }
+
+        void Close()
+        {
+            root.style.display = DisplayStyle.None;
+            Time.timeScale = 1f;
+        }
+
+        void ShowWeapons()
+        {
+            if (items == null) return;
+            items.Clear();
+
+            int equippedDamage = equipment != null &amp;&amp; equipment.weaponInstance != null
+                ? equipment.weaponInstance.weaponData.amount
+                : 0;
+
+            if (currentAttack != null)
+                currentAttack.text = $"Current Attack Damage: {equippedDamage}";
+
+            if (inventory == null) return;
+
+            foreach (WeaponInstance wi in inventory.ownedWeapons)
+                items.Add(BuildRow(wi, equippedDamage));
+        }
+
+        VisualElement BuildRow(WeaponInstance wi, int equippedDamage)
+        {
+            VisualElement row = weaponRowTemplate != null
+                ? weaponRowTemplate.Instantiate()
+                : new VisualElement();
+
+            Weapon data = wi.weaponData;
+            bool equipped = equipment != null &amp;&amp; equipment.weaponInstance == wi;
+
+            var name = row.Q&lt;Label&gt;("ItemName");
+            var description = row.Q&lt;Label&gt;("Description");
+            var indicator = row.Q("Indicator");
+            var attention = row.Q("Attention");
+            var status = row.Q&lt;Label&gt;("Status");
+            var equipBtn = row.Q&lt;Button&gt;("EquipButton");
+            var repairBtn = row.Q&lt;Button&gt;("RepairButton");
+            var sellBtn = row.Q&lt;Button&gt;("SellButton");
+
+            if (name != null) name.text = data.displayName;
+            if (description != null) description.text = $"Attack Damage: {data.amount}";
+            if (status != null)
+                status.text = $"Current Durability: {wi.durability}/{wi.maxDurability}";
+
+            // Indicator: verde se &gt;= arma equipada, vermelho se pior
+            if (indicator != null)
+                indicator.style.backgroundColor = data.amount &gt;= equippedDamage
+                    ? new Color(0.35f, 0.86f, 0.35f)
+                    : new Color(0.85f, 0.40f, 0.40f);
+
+            // Attention: aviso quando durabilidade &lt;= 25%
+            if (attention != null)
+                attention.style.display = wi.DurabilityNormalized &lt;= 0.25f
+                    ? DisplayStyle.Flex : DisplayStyle.None;
+
+            if (equipBtn != null)
+            {
+                equipBtn.text = equipped ? "Equipped" : "Equip";
+                equipBtn.SetEnabled(!equipped);
+                equipBtn.clicked += () =&gt; { equipment.EquipWeapon(data); ShowWeapons(); };
+            }
+
+            if (repairBtn != null)
+            {
+                int cost = wi.RepairCost;
+                repairBtn.text = cost &gt; 0 ? $"Repair ({cost} Gold)" : "Repair";
+                repairBtn.SetEnabled(cost &gt; 0);
+                repairBtn.clicked += () =&gt; { if (blacksmith.Repair(wi)) ShowWeapons(); };
+            }
+
+            if (sellBtn != null)
+            {
+                int value = shop != null ? shop.SellValue(data) : 0;
+                sellBtn.text = $"Sell ({value} Gold)";
+                sellBtn.clicked += () =&gt; { if (shop.SellWeapon(wi)) ShowWeapons(); };
+            }
+
+            return row;
+        }
+    }
+}</code></pre>
+
+<h3>Sell — acrescenta ao ShopService (secção 4)</h3>
+<div class="path patch">Assets/Scripts/Shop/ShopService.cs — acrescenta (+ ref ao EquipmentManager)</div>
+<pre class="highlight"><code>[SerializeField] EquipmentManager equipment;
+[SerializeField, Range(0f, 1f)] float sellRatio = 0.4f; // Sell = 40% do buyPrice
+
+public int SellValue(Weapon weapon) =&gt;
+    weapon != null ? Mathf.RoundToInt(weapon.buyPrice * sellRatio) : 0;
+
+public bool SellWeapon(WeaponInstance instance)
+{
+    if (instance == null || inventory == null) return false;
+    if (PlayerProgress.Instance == null) return false;
+
+    // desequipar se for a arma actual
+    if (equipment != null &amp;&amp; equipment.weaponInstance == instance)
+        equipment.UnequipWeapon();
+
+    if (!inventory.ownedWeapons.Remove(instance)) return false;
+
+    PlayerProgress.Instance.Wallet.Add(SellValue(instance.weaponData));
+    return true;
+}</code></pre>
+
+<div class="card">
+  <span class="label ok">Wiring</span>
+  <ul style="margin-bottom:0">
+    <li><code>WeaponListItem.uxml</code> → arrasta para o campo <code>weaponRowTemplate</code> do controller.</li>
+    <li><code>EquipmentMenuController</code> → liga <code>UIDocument</code> (EquipmentMenu), Inventory, Equipment, Blacksmith, Shop.</li>
+    <li>O botão <code>Equipment</code> do <code>PlayerHUD.uxml</code> chama <code>EquipmentMenuController.Open()</code>.</li>
+    <li>Tabs Shields/Armors/Accessory ficam como placeholder até teres esses tipos de item.</li>
+  </ul>
+</div>
 
 <!-- ============================================================ -->
 <h2 id="s7">7. Diálogos Final Fantasy (data-driven)</h2>

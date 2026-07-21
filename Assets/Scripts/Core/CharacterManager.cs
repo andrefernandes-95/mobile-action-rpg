@@ -56,8 +56,11 @@ namespace AF
             }
         }
 
+        Vector3 defaultPosition;
+
         void Awake()
         {
+            defaultPosition = transform.position;
             SetupMotor();
         }
 
@@ -286,6 +289,11 @@ namespace AF
             navMeshAgentMotor.enabled = true;
             navMeshAgentMotor.SetMotorEnabled(true);
             motor = navMeshAgentMotor;
+        }
+
+        public void RestoreDefaultPosition()
+        {
+            transform.position = defaultPosition;
         }
     }
 }

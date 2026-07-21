@@ -25,6 +25,10 @@ namespace AF
         [SerializeField] float minDistanceFromTarget = 0.8f;
         [SerializeField] float zoomOutSmoothTime = 0.2f;
 
+        [Header("FOV")]
+        [SerializeField] float portraitModeFov = 80;
+        [SerializeField] float landscapeModeFov = 60;
+
         readonly RaycastHit[] hitBuffer = new RaycastHit[16];
 
         float yaw;
@@ -46,6 +50,8 @@ namespace AF
             {
                 yaw = transform.eulerAngles.y;
             }
+
+            ApplyFov();
         }
 
         void LateUpdate()
@@ -219,5 +225,34 @@ namespace AF
 
             return false;
         }
+
+        #region FOV
+
+        bool IsPortraitMode()
+        {
+            return Screen.height > Screen.width;
+        }
+
+        void ApplyFov()
+        {
+            Camera.main.fieldOfView = IsPortraitMode() ? portraitModeFov : landscapeModeFov;
+        }
+
+        void OnApplicationFocus(bool focus)
+        {
+            if (focus)
+            {
+                ApplyFov();
+            }
+        }
+
+        void OnApplicationPause(bool pause)
+        {
+            if (!pause)
+            {
+                ApplyFov();
+            }
+        }
+        #endregion
     }
 }

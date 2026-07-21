@@ -1,0 +1,12 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/Styles.uss?fileID=7433441132597879392&amp;guid=d4ffe311c652d8f4cbe959577391f799&amp;type=3#Styles"/>
+    <ui:VisualElement name="Container" style="padding-top: 24px; padding-right: 24px; padding-bottom: 24px; padding-left: 24px;">
+        <ui:Button text="X" name="CloseButton" class="button" style="align-self: flex-end; padding-right: 12px; padding-left: 12px;"/>
+        <ui:VisualElement name="Tab" class="button">
+            <ui:Label text="Settings" name="Title"/>
+            <ui:VisualElement name="TabContent">
+                <ui:Button text="Exit Game" name="ExitGameButton" class="button"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

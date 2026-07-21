@@ -69,7 +69,7 @@ namespace AF
             {
                 controller.CombatRuntime.LastAttackTime = Time.time;
 
-                if (Random.Range(0, 1f) >= 0.25f)
+                if (Random.Range(0, 1f) >= 0.15f)
                 {
                     controller.character.combatManager.Attack();
                 }

@@ -1,0 +1,14 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/Styles.uss?fileID=7433441132597879392&amp;guid=d4ffe311c652d8f4cbe959577391f799&amp;type=3#Styles"/>
+    <ui:VisualElement name="PlayerHUD" style="align-items: flex-start; flex-direction: row; justify-content: space-between; padding-top: 8px; padding-right: 8px; padding-bottom: 8px; padding-left: 8px;">
+        <ui:VisualElement name="Info" style="flex-direction: column;">
+            <ui:Label text="Weapon Durability: 25/100" name="WeaponDurability" class="label"/>
+            <ui:Label text="Potions Available: 3" name="PotionsAvailable" class="label"/>
+        </ui:VisualElement>
+        <ui:VisualElement name="Actions" style="flex-direction: row;">
+            <ui:Button text="Equipment" name="Equipment" class="button"/>
+            <ui:Button text="Shop" name="Shop" class="button"/>
+            <ui:Button text="Settings" name="SettingsButton" class="button"/>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

@@ -61,5 +61,17 @@ namespace AF
                 SceneManager.LoadScene(lastCheckpoint.scene);
             }
         }
+
+        public void UndoDeath()
+        {
+            characterManager.animator.Play(AnimHashes.Idle);
+
+            if (characterManager.Motor != null)
+            {
+                characterManager.Motor.SetMotorEnabled(true);
+            }
+
+            characterManager.isBusy = false;
+        }
     }
 }
