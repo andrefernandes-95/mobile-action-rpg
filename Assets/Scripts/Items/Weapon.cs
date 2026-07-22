@@ -15,6 +15,13 @@ namespace AF
         [Header("Damage")]
         public DamageType damageType;
         public int amount;
+
+        [Header("Durability")]
+        public int maxDurability = 50;
+        public int repairCostPerPoint = 2; // Repairing should always be lower than buying price
+        public int extendCostPerPoint = 100; // Cost of extending durability
+        public int extendAmount = 10; // Points gained by extending durability
+
         [Header("Range")]
         public float engageRadius = 3f;
 

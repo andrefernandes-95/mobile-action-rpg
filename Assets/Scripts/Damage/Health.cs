@@ -71,5 +71,14 @@ namespace AF
             }
         }
 
+        public void Restore(int amount)
+        {
+            if (IsDead || amount <= 0)
+            {
+                return;
+            }
+
+            Current = Mathf.Min(Max, Current + amount);
+        }
     }
 }

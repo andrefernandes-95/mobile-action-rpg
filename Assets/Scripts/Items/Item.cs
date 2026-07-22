@@ -8,6 +8,6 @@ namespace AF
         public string displayName;
         [TextArea] public string description;
         public Sprite icon;
-        public ItemValue value = ItemValue.COMMON;
+        public int price;
     }
 }
