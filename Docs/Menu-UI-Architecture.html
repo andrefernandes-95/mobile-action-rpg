@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>As Profundezas — Menu UI · Arquitetura escalável</title>
+  <style>
+    :root {
+      --bg:#0f1117; --surface:#1a1d27; --surface2:#242836; --text:#e6e9f0;
+      --muted:#9aa3b5; --accent:#6c9eff; --accent2:#7ee787; --warn:#f0b429;
+      --danger:#ff8ba7; --border:#343a4d; --code:#12151c;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;padding:2rem 1rem 4rem}
+    .wrap{max-width:980px;margin:0 auto}
+    header{margin-bottom:2rem;padding-bottom:1.25rem;border-bottom:1px solid var(--border)}
+    h1{font-size:1.85rem;margin-bottom:.4rem}
+    .sub{color:var(--muted);font-size:1rem}
+    h2{font-size:1.25rem;color:var(--accent);margin:2.2rem 0 .7rem;padding-top:.3rem}
+    h3{font-size:1rem;color:var(--accent2);margin:1.3rem 0 .4rem}
+    p,li{margin-bottom:.55rem;color:var(--muted)}
+    ul,ol{padding-left:1.25rem;margin-bottom:.9rem}
+    a{color:var(--accent)}
+    strong{color:var(--text)}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;margin:1rem 0}
+    .card.warn{border-color:#6b5420;background:#1c1810}
+    .card.fix{border-color:#5a2436;background:#1c1014}
+    .label{display:inline-block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:.15rem .45rem;border-radius:4px;margin-bottom:.5rem}
+    .label.warn{background:#4a3810;color:var(--warn)}
+    .label.fix{background:#4a1f2e;color:var(--danger)}
+    .label.ok{background:#1a3d2b;color:var(--accent2)}
+    .label.patch{background:#4a3810;color:var(--warn)}
+    .toc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;margin:1.2rem 0}
+    .toc a{text-decoration:none}.toc a:hover{text-decoration:underline}
+    .path{font-family:Consolas,monospace;font-size:.75rem;color:var(--accent2);margin:1rem 0 -.35rem}
+    .path::before{content:"📄 "}
+    .path.patch{color:var(--warn)}
+    .path.patch::before{content:"✏️ PATCH "}
+    pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem;overflow-x:auto;font-family:Consolas,monospace;font-size:.8rem;line-height:1.5;margin:.5rem 0 1.1rem;color:#d6deeb}
+    pre.highlight, pre.patch{
+      background:#3d3210;
+      border-color:#f0b429;
+      box-shadow:inset 0 0 0 1px rgba(240,180,41,.35);
+    }
+    code{font-family:Consolas,monospace;font-size:.88em;background:var(--surface2);padding:.05em .3em;border-radius:3px}
+    pre code{background:none;padding:0;font-size:1em}
+    .flow{font-family:Consolas,monospace;font-size:.78rem;background:var(--code);border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem;white-space:pre;overflow-x:auto;color:var(--muted);margin:1rem 0}
+    footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--border);color:var(--muted);font-size:.85rem}
+    .uss{border-left:3px solid var(--warn)}
+    table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.85rem}
+    th,td{border:1px solid var(--border);padding:.5rem .7rem;text-align:left;color:var(--muted)}
+    th{background:var(--surface2);color:var(--text)}
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Menu UI · Arquitetura escalável</h1>
+  <p class="sub">Redesenho da camada de menus do projeto <code>AF</code> (UI Toolkit). Substitui o <code>GameMenuController</code> monolítico por uma arquitetura desacoplada e reutilizável em Equipment, Shop e Settings. Continua o doc <a href="Soulslike-Economy-Menu-Dialogue.html">Soulslike · Economy · Menu · Dialogue</a> — assume que já tens tudo <em>antes</em> do <code>GameMenuController</code> (economia, progressão, durabilidade, loja/ferreiro, consumíveis).</p>
+</header>
+
+<nav class="toc">
+  <strong>Índice</strong>
+  <ol>
+    <li><a href="#s0">Porque mudar — o problema do god class</a></li>
+    <li><a href="#s1">Visão de arquitetura</a></li>
+    <li><a href="#s2">Navegação — MenuId + MenuManager</a></li>
+    <li><a href="#s3">Base — MenuScreen (Template Method)</a></li>
+    <li><a href="#s4">HUD — ligar os botões do PlayerHUD</a></li>
+    <li><a href="#s5">Tabs reutilizáveis — ITabPage + TabView (Strategy)</a></li>
+    <li><a href="#s6">Linhas de lista reutilizáveis — ItemRowView (MVVM-lite)</a></li>
+    <li><a href="#s7">EquipmentScreen + tabs</a></li>
+    <li><a href="#s8">Reutilizar em Shop e Settings</a></li>
+    <li><a href="#s9">Pastas + wiring + checklist</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================ -->
+<h2 id="s0">0. Porque mudar — o problema do god class</h2>
+
+<div class="card fix">
+  <span class="label fix">Sintomas do GameMenuController atual</span>
+  <ul style="margin-bottom:0">
+    <li><strong>Uma classe faz tudo</strong> — navegação, dados de inventário, loja, ferreiro, opções, construção de linhas, ações. Cresce sem limite.</li>
+    <li><strong>switch por tab</strong> — cada nova secção é mais um <code>case</code> no mesmo método. Frágil e difícil de testar.</li>
+    <li><strong>Acoplamento</strong> — o menu conhece <code>InventoryManager</code>, <code>ShopService</code>, <code>BlacksmithService</code>, <code>SceneManager</code>… tudo ao mesmo tempo.</li>
+    <li><strong>Nada reutilizável</strong> — a lista de itens do Equipment não serve para a Shop sem copiar/colar.</li>
+  </ul>
+</div>
+
+<div class="card">
+  <span class="label ok">Objetivos do redesenho</span>
+  <ul style="margin-bottom:0">
+    <li>Cada ecrã (Equipment, Shop, Settings) é uma classe pequena e independente.</li>
+    <li>Abrir/fechar/pausar centralizado num sítio só — os ecrãs não sabem uns dos outros.</li>
+    <li>Tabs adicionam-se sem tocar em código existente (Open/Closed Principle).</li>
+    <li>A linha de item é um componente reutilizável (Equipment reusa em Shop).</li>
+    <li>Dependências injetadas por <code>[SerializeField]</code> — testável e explícito.</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s1">1. Visão de arquitetura</h2>
+
+<div class="flow">                         ┌───────────────────────┐
+   PlayerHUD  ────────────▶│      MenuManager       │  (Coordinator / Mediator)
+   (Equipment/Shop/Set)    │  open · close · pause  │
+                           └───────────┬───────────┘
+                                       │ Enter()/Exit()
+                    ┌──────────────────┼───────────────────┐
+                    ▼                  ▼                   ▼
+            ┌──────────────┐   ┌──────────────┐    ┌──────────────┐
+            │EquipmentScreen│  │  ShopScreen  │    │SettingsScreen│   : MenuScreen
+            └──────┬───────┘   └──────┬───────┘    └──────────────┘   (Template Method)
+                   │ TabView          │ TabView
+          ┌────────┼────────┐         │
+          ▼        ▼        ▼         ▼
+      WeaponsTab ShieldsTab ...    BuyWeaponsTab      : ITabPage (Strategy)
+          │                            │
+          └──────────┬─────────────────┘
+                     ▼
+              ItemRowView.Build(template, model)      : MVVM-lite / Builder
+              (reutilizado por qualquer lista)</div>
+
+<table>
+  <tr><th>Camada</th><th>Responsabilidade</th><th>Padrão</th></tr>
+  <tr><td><code>MenuManager</code></td><td>Que ecrã está aberto; abrir/fechar; pausar o jogo</td><td>Coordinator / Mediator + Singleton</td></tr>
+  <tr><td><code>MenuScreen</code></td><td>Ciclo de vida comum (bind, enter, exit, close button)</td><td>Template Method</td></tr>
+  <tr><td><code>ITabPage</code> / <code>TabView</code></td><td>Conteúdo por categoria dentro de um ecrã</td><td>Strategy</td></tr>
+  <tr><td><code>ItemRowView</code> + <code>ItemRowModel</code></td><td>Construir uma linha de lista a partir de dados</td><td>MVVM-lite / Builder</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="s2">2. Navegação — MenuId + MenuManager</h2>
+
+<div class="path">Assets/Scripts/UI/Menu/MenuId.cs</div>
+<pre><code>namespace AF
+{
+    public enum MenuId
+    {
+        None,
+        Equipment,
+        Shop,
+        Settings,
+    }
+}</code></pre>
+
+<div class="card">
+  <span class="label ok">MenuManager</span>
+  <p style="margin-bottom:0">Único ponto que sabe que ecrã está ativo. Os ecrãs registam-se sozinhos no <code>OnEnable</code>. O HUD só pede <code>Open(MenuId)</code> — não conhece as classes concretas. Respeita <code>GameFlow.IsInCutscene</code> (do doc anterior).</p>
+</div>
+
+<div class="path">Assets/Scripts/UI/Menu/MenuManager.cs</div>
+<pre><code>using System.Collections.Generic;
+using UnityEngine;
+
+namespace AF
+{
+    public class MenuManager : MonoBehaviour
+    {
+        public static MenuManager Instance { get; private set; }
+
+        [SerializeField] bool pauseWhileOpen = true;
+
+        readonly Dictionary&lt;MenuId, MenuScreen&gt; screens = new();
+        MenuScreen active;
+
+        public bool AnyOpen =&gt; active != null;
+        public MenuId ActiveId =&gt; active != null ? active.Id : MenuId.None;
+
+        void Awake()
+        {
+            if (Instance != null &amp;&amp; Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+        }
+
+        public void Register(MenuScreen screen) =&gt; screens[screen.Id] = screen;
+
+        public void Unregister(MenuScreen screen)
+        {
+            if (screens.TryGetValue(screen.Id, out var s) &amp;&amp; s == screen)
+                screens.Remove(screen.Id);
+        }
+
+        public void Toggle(MenuId id)
+        {
+            if (active != null &amp;&amp; active.Id == id) Close();
+            else Open(id);
+        }
+
+        public void Open(MenuId id)
+        {
+            if (GameFlow.IsInCutscene) return;
+            if (!screens.TryGetValue(id, out var next)) return;
+            if (next == active) return;
+
+            active?.Exit();
+            active = next;
+            active.Enter();
+
+            if (pauseWhileOpen) Time.timeScale = 0f;
+        }
+
+        public void Close()
+        {
+            if (active == null) return;
+
+            active.Exit();
+            active = null;
+
+            if (pauseWhileOpen) Time.timeScale = 1f;
+        }
+    }
+}</code></pre>
+
+<div class="card warn">
+  <span class="label warn">Escalar para um stack</span>
+  <p style="margin-bottom:0">Se um dia quiseres sub-menus empilhados (ex.: confirmar compra por cima da loja), troca o campo <code>active</code> por um <code>Stack&lt;MenuScreen&gt;</code>: <code>Open</code> faz <em>suspend</em> do topo e <em>push</em>; <code>Close</code> faz <em>pop</em> e <em>resume</em>. O resto da API fica igual — os ecrãs não mudam.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s3">3. Base — MenuScreen (Template Method)</h2>
+
+<div class="card">
+  <span class="label ok">Contrato comum</span>
+  <p style="margin-bottom:0">Todos os UXML de menu partilham a estrutura <code>Container &gt; CloseButton + Tab</code>. A base trata do <code>CloseButton</code>, display e registo. As subclasses só implementam <code>Bind()</code> (querys uma vez) e opcionalmente <code>OnOpen()</code> / <code>OnClose()</code> (refresh de dados).</p>
+</div>
+
+<div class="path">Assets/Scripts/UI/Menu/MenuScreen.cs</div>
+<pre><code>using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace AF
+{
+    [RequireComponent(typeof(UIDocument))]
+    public abstract class MenuScreen : MonoBehaviour
+    {
+        [SerializeField] protected UIDocument document;
+
+        public abstract MenuId Id { get; }
+        public bool IsOpen { get; private set; }
+
+        protected VisualElement Root { get; private set; }
+
+        protected virtual void Awake()
+        {
+            if (document == null) document = GetComponent&lt;UIDocument&gt;();
+        }
+
+        protected virtual void OnEnable()
+        {
+            Root = document.rootVisualElement;
+
+            var closeButton = Root.Q&lt;Button&gt;("CloseButton");
+            if (closeButton != null)
+                closeButton.clicked += () =&gt; MenuManager.Instance?.Close();
+
+            Bind();
+            Root.style.display = DisplayStyle.None;
+            MenuManager.Instance?.Register(this);
+        }
+
+        protected virtual void OnDisable()
+        {
+            MenuManager.Instance?.Unregister(this);
+        }
+
+        // Chamado só pelo MenuManager — direção única.
+        internal void Enter()
+        {
+            Root.style.display = DisplayStyle.Flex;
+            IsOpen = true;
+            OnOpen();
+        }
+
+        internal void Exit()
+        {
+            OnClose();
+            Root.style.display = DisplayStyle.None;
+            IsOpen = false;
+        }
+
+        /// &lt;summary&gt;Query aos elementos, uma vez. Sem lógica de dados.&lt;/summary&gt;
+        protected abstract void Bind();
+
+        /// &lt;summary&gt;Refresh sempre que abre.&lt;/summary&gt;
+        protected virtual void OnOpen() { }
+        protected virtual void OnClose() { }
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s4">4. HUD — ligar os botões do PlayerHUD</h2>
+
+<div class="card">
+  <span class="label ok">Desacoplado</span>
+  <p style="margin-bottom:0">O <code>PlayerHUD.uxml</code> tem <code>Equipment</code>, <code>Shop</code>, <code>SettingsButton</code>. Um componente único liga-os ao <code>MenuManager</code> por <code>MenuId</code> — não conhece nenhuma classe de ecrã.</p>
+</div>
+
+<div class="path">Assets/Scripts/UI/Menu/HudMenuButtons.cs</div>
+<pre><code>using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace AF
+{
+    public class HudMenuButtons : MonoBehaviour
+    {
+        [SerializeField] UIDocument hudDocument;
+
+        void OnEnable()
+        {
+            var root = hudDocument.rootVisualElement;
+            Bind(root, "Equipment", MenuId.Equipment);
+            Bind(root, "Shop", MenuId.Shop);
+            Bind(root, "SettingsButton", MenuId.Settings);
+        }
+
+        void Bind(VisualElement root, string buttonName, MenuId id)
+        {
+            var btn = root.Q&lt;Button&gt;(buttonName);
+            if (btn != null)
+                btn.clicked += () =&gt; MenuManager.Instance.Toggle(id);
+        }
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s5">5. Tabs reutilizáveis — ITabPage + TabView (Strategy)</h2>
+
+<div class="card">
+  <span class="label ok">Uma tab = uma estratégia</span>
+  <p style="margin-bottom:0">Cada categoria (Weapons, Shields…) implementa <code>ITabPage</code>: sabe a que botão responde e como construir o seu conteúdo num <em>host</em>. O <code>TabView</code> liga botões ↔ páginas e troca a ativa. Adicionar uma tab nova = criar uma classe e registá-la; zero <code>switch</code>.</p>
+</div>
+
+<div class="path">Assets/Scripts/UI/Menu/ITabPage.cs</div>
+<pre><code>using UnityEngine.UIElements;
+
+namespace AF
+{
+    public interface ITabPage
+    {
+        /// &lt;summary&gt;Nome do Button no UXML que ativa esta página.&lt;/summary&gt;
+        string TabButtonName { get; }
+
+        /// &lt;summary&gt;Constrói / refresca o conteúdo dentro do host.&lt;/summary&gt;
+        void Enter(VisualElement host);
+
+        /// &lt;summary&gt;Limpeza opcional ao sair da tab.&lt;/summary&gt;
+        void Leave();
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/UI/Menu/TabView.cs</div>
+<pre><code>using System.Collections.Generic;
+using UnityEngine.UIElements;
+
+namespace AF
+{
+    public class TabView
+    {
+        readonly VisualElement buttonsRoot;
+        readonly VisualElement contentHost;
+        readonly List&lt;ITabPage&gt; pages = new();
+
+        ITabPage current;
+
+        public TabView(VisualElement buttonsRoot, VisualElement contentHost)
+        {
+            this.buttonsRoot = buttonsRoot;
+            this.contentHost = contentHost;
+        }
+
+        public void AddPage(ITabPage page)
+        {
+            pages.Add(page);
+
+            var btn = buttonsRoot.Q&lt;Button&gt;(page.TabButtonName);
+            if (btn != null)
+                btn.clicked += () =&gt; Select(page);
+        }
+
+        public void Select(ITabPage page)
+        {
+            if (current == page)
+            {
+                page.Enter(contentHost); // refresh
+                return;
+            }
+
+            current?.Leave();
+            current = page;
+            contentHost.Clear();
+            current.Enter(contentHost);
+        }
+
+        public void SelectFirst()
+        {
+            if (pages.Count &gt; 0) Select(pages[0]);
+        }
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s6">6. Linhas de lista reutilizáveis — ItemRowView (MVVM-lite)</h2>
+
+<div class="card">
+  <span class="label ok">Uma linha, muitos usos</span>
+  <p style="margin-bottom:0">A linha deixa de ter os botões fixos <code>Equip/Repair/Sell</code> no UXML. Passa a receber um <strong>modelo</strong> (nome, ícone, descrição, estado, indicador e uma lista de <em>ações</em>). Assim a mesma linha serve o Equipment (Equip/Repair/Sell) e a Shop (Buy) sem duplicação.</p>
+</div>
+
+<div class="path">Assets/Scripts/UI/Menu/ItemRowModel.cs</div>
+<pre><code>using System;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace AF
+{
+    public struct ItemAction
+    {
+        public string Label;
+        public Action OnClick;
+        public bool Enabled;
+
+        public ItemAction(string label, Action onClick, bool enabled = true)
+        {
+            Label = label;
+            OnClick = onClick;
+            Enabled = enabled;
+        }
+    }
+
+    public class ItemRowModel
+    {
+        public string Name;
+        public Sprite Icon;
+        public string Description;          // ex.: "Attack Damage: 110"
+        public string Status;               // ex.: "Current Durability: 100/200"
+        public bool ShowIndicator;
+        public Color IndicatorColor = Color.white;
+        public readonly List&lt;ItemAction&gt; Actions = new();
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/UI/Menu/ItemRowView.cs</div>
+<pre><code>using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace AF
+{
+    /// &lt;summary&gt;
+    /// Constrói uma linha a partir do template WeaponListItem.uxml + um modelo.
+    /// Os nomes batem com o teu UXML: ItemName, ItemIcon, Description, Status,
+    /// Indicator, Actions.
+    /// &lt;/summary&gt;
+    public static class ItemRowView
+    {
+        public static VisualElement Build(VisualTreeAsset template, ItemRowModel model)
+        {
+            VisualElement row = template.Instantiate();
+
+            var name = row.Q&lt;Label&gt;("ItemName");
+            if (name != null) name.text = model.Name;
+
+            var icon = row.Q("ItemIcon");
+            if (icon != null &amp;&amp; model.Icon != null)
+                icon.style.backgroundImage = new StyleBackground(model.Icon);
+
+            var description = row.Q&lt;Label&gt;("Description");
+            if (description != null) description.text = model.Description;
+
+            var status = row.Q&lt;Label&gt;("Status");
+            if (status != null) status.text = model.Status;
+
+            var indicator = row.Q("Indicator");
+            if (indicator != null)
+            {
+                indicator.style.display = model.ShowIndicator
+                    ? DisplayStyle.Flex : DisplayStyle.None;
+                indicator.style.backgroundColor = model.IndicatorColor;
+            }
+
+            var actions = row.Q("Actions");
+            if (actions != null)
+            {
+                actions.Clear();
+                foreach (var action in model.Actions)
+                {
+                    var captured = action;
+                    var btn = new Button(() =&gt; captured.OnClick?.Invoke())
+                    {
+                        text = captured.Label
+                    };
+                    btn.AddToClassList("button");
+                    btn.SetEnabled(captured.Enabled);
+                    actions.Add(btn);
+                }
+            }
+
+            return row;
+        }
+    }
+}</code></pre>
+
+<h3>UXML — extrair a linha para um template</h3>
+<div class="card warn">
+  <span class="label warn">Nota</span>
+  <p style="margin-bottom:0">A linha <code>Item</code> que tens inline no <code>EquipmentMenu.uxml</code> passa para o seu próprio ficheiro e o <code>Actions</code> fica <strong>vazio</strong> (as ações são criadas em runtime). Assim é reutilizável.</p>
+</div>
+
+<div class="path">Assets/UI/WeaponListItem.uxml</div>
+<pre class="uss"><code>&lt;ui:UXML xmlns:ui="UnityEngine.UIElements"&gt;
+  &lt;Style src="project://database/Assets/UI/Styles.uss#Styles" /&gt;
+  &lt;ui:VisualElement name="Item" class="button"
+      style="flex-grow: 1; flex-direction: row; align-items: center;
+             justify-content: space-around; margin-bottom: 8px;"&gt;
+    &lt;ui:VisualElement name="ItemInfo" style="flex-grow: 1;"&gt;
+      &lt;ui:VisualElement name="IconAndName" style="flex-direction: row;"&gt;
+        &lt;ui:VisualElement name="ItemIcon" style="width: 35px; height: 35px;" /&gt;
+        &lt;ui:Label text="Greatsword" name="ItemName" class="label" /&gt;
+      &lt;/ui:VisualElement&gt;
+      &lt;ui:VisualElement name="Stats" style="flex-direction: row; align-items: center;"&gt;
+        &lt;ui:Label text="Attack Damage: 110" name="Description" class="label" /&gt;
+        &lt;ui:VisualElement name="Indicator"
+            style="width: 15px; height: 15px; border-radius: 50%;
+                   background-color: rgb(59, 255, 13);" /&gt;
+      &lt;/ui:VisualElement&gt;
+      &lt;ui:Label text="Current Durability: 100/200" name="Status" class="label" /&gt;
+    &lt;/ui:VisualElement&gt;
+
+    &lt;!-- Actions vazio — preenchido por ItemRowView em runtime --&gt;
+    &lt;ui:VisualElement name="Actions" style="flex-direction: row;" /&gt;
+  &lt;/ui:VisualElement&gt;
+&lt;/ui:UXML&gt;</code></pre>
+
+<h3>UXML — EquipmentMenu com host de conteúdo</h3>
+<div class="card warn">
+  <span class="label patch">PATCH — ficheiro existente</span>
+  <p style="margin-bottom:0">Remove a <code>Item</code> inline e a <code>ScrollView</code>/label; deixa um host vazio <code>TabContentHost</code> que cada tab preenche. As tab buttons ficam iguais.</p>
+</div>
+
+<div class="path patch">Assets/UI/EquipmentMenu.uxml — TabContent</div>
+<pre class="highlight"><code>&lt;ui:VisualElement name="TabContent" style="flex-direction: column;"&gt;
+  &lt;ui:VisualElement name="EquipmentCategories" style="flex-direction: row;"&gt;
+    &lt;ui:Button text="Weapons"     name="WeaponsTabButton"    class="button" /&gt;
+    &lt;ui:Button text="Shields"     name="ShieldsTabButton"    class="button" /&gt;
+    &lt;ui:Button text="Armors"      name="ArmorsTabButton"     class="button" /&gt;
+    &lt;ui:Button text="Accessory 1" name="Accessory1TabButton" class="button" /&gt;
+    &lt;ui:Button text="Accessory 2" name="Accessory2TabButton" class="button" /&gt;
+  &lt;/ui:VisualElement&gt;
+
+  &lt;!-- host vazio: cada ITabPage constrói aqui --&gt;
+  &lt;ui:VisualElement name="TabContentHost"
+      style="flex-grow: 1; margin-top: 16px;" /&gt;
+&lt;/ui:VisualElement&gt;</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s7">7. EquipmentScreen + tabs</h2>
+
+<div class="card">
+  <span class="label ok">Ecrã fino</span>
+  <p style="margin-bottom:0">O <code>EquipmentScreen</code> só monta o <code>TabView</code> e regista as páginas. A lógica de armas vive em <code>WeaponsTab</code>. Categorias sem dados ainda usam <code>ComingSoonTab</code>.</p>
+</div>
+
+<div class="path">Assets/Scripts/UI/Menu/Equipment/EquipmentScreen.cs</div>
+<pre><code>using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace AF
+{
+    public class EquipmentScreen : MenuScreen
+    {
+        public override MenuId Id =&gt; MenuId.Equipment;
+
+        [Header("Template")]
+        [SerializeField] VisualTreeAsset weaponRowTemplate; // WeaponListItem.uxml
+
+        [Header("Systems")]
+        [SerializeField] InventoryManager inventory;
+        [SerializeField] EquipmentManager equipment;
+        [SerializeField] BlacksmithService blacksmith;
+        [SerializeField] ShopService shop;
+
+        TabView tabs;
+
+        protected override void Bind()
+        {
+            var categories = Root.Q("EquipmentCategories");
+            var host = Root.Q("TabContentHost");
+
+            tabs = new TabView(categories, host);
+            tabs.AddPage(new WeaponsTab(weaponRowTemplate, inventory, equipment, blacksmith, shop));
+            tabs.AddPage(new ComingSoonTab("ShieldsTabButton", "Shields — brevemente"));
+            tabs.AddPage(new ComingSoonTab("ArmorsTabButton", "Armors — brevemente"));
+            tabs.AddPage(new ComingSoonTab("Accessory1TabButton", "Accessory 1 — brevemente"));
+            tabs.AddPage(new ComingSoonTab("Accessory2TabButton", "Accessory 2 — brevemente"));
+        }
+
+        protected override void OnOpen() =&gt; tabs.SelectFirst();
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/UI/Menu/Equipment/WeaponsTab.cs</div>
+<pre><code>using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace AF
+{
+    public class WeaponsTab : ITabPage
+    {
+        public string TabButtonName =&gt; "WeaponsTabButton";
+
+        readonly VisualTreeAsset rowTemplate;
+        readonly InventoryManager inventory;
+        readonly EquipmentManager equipment;
+        readonly BlacksmithService blacksmith;
+        readonly ShopService shop;
+
+        VisualElement host;
+
+        public WeaponsTab(
+            VisualTreeAsset rowTemplate,
+            InventoryManager inventory,
+            EquipmentManager equipment,
+            BlacksmithService blacksmith,
+            ShopService shop)
+        {
+            this.rowTemplate = rowTemplate;
+            this.inventory = inventory;
+            this.equipment = equipment;
+            this.blacksmith = blacksmith;
+            this.shop = shop;
+        }
+
+        public void Enter(VisualElement contentHost)
+        {
+            host = contentHost;
+            host.Clear();
+
+            int equippedDamage = equipment != null &amp;&amp; equipment.weaponInstance != null
+                ? equipment.weaponInstance.weaponData.amount
+                : 0;
+
+            var header = new Label($"Current Attack Damage: {equippedDamage}");
+            header.AddToClassList("label");
+            host.Add(header);
+
+            var scroll = new ScrollView { style = { marginTop = 16 } };
+            host.Add(scroll);
+
+            if (inventory == null) return;
+
+            foreach (var wi in inventory.ownedWeapons)
+                scroll.Add(ItemRowView.Build(rowTemplate, BuildModel(wi, equippedDamage)));
+        }
+
+        public void Leave() { }
+
+        ItemRowModel BuildModel(WeaponInstance wi, int equippedDamage)
+        {
+            Weapon data = wi.weaponData;
+            bool equipped = equipment != null &amp;&amp; equipment.weaponInstance == wi;
+
+            var model = new ItemRowModel
+            {
+                Name = data.displayName,
+                Icon = data.icon,
+                Description = $"Attack Damage: {data.amount}",
+                Status = $"Current Durability: {wi.durability}/{wi.maxDurability}",
+                ShowIndicator = true,
+                IndicatorColor = data.amount &gt;= equippedDamage
+                    ? new Color(0.23f, 1f, 0.05f)   // verde: melhor/igual
+                    : new Color(0.90f, 0.40f, 0.40f) // vermelho: pior
+            };
+
+            if (equipped)
+            {
+                model.Actions.Add(new ItemAction("Equipped", null, enabled: false));
+            }
+            else
+            {
+                model.Actions.Add(new ItemAction("Equip", () =&gt;
+                {
+                    equipment.EquipWeapon(data);
+                    Enter(host); // refresh
+                }));
+            }
+
+            int repairCost = wi.RepairCost;
+            model.Actions.Add(new ItemAction(
+                repairCost &gt; 0 ? $"Repair ({repairCost} Gold)" : "Repair",
+                () =&gt; { if (blacksmith.Repair(wi)) Enter(host); },
+                enabled: repairCost &gt; 0));
+
+            int sellValue = shop != null ? shop.SellValue(data) : 0;
+            model.Actions.Add(new ItemAction($"Sell ({sellValue} Gold)",
+                () =&gt; { if (shop.SellWeapon(wi)) Enter(host); }));
+
+            return model;
+        }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/UI/Menu/ComingSoonTab.cs</div>
+<pre><code>using UnityEngine.UIElements;
+
+namespace AF
+{
+    /// &lt;summary&gt;Página placeholder para categorias ainda sem dados.&lt;/summary&gt;
+    public class ComingSoonTab : ITabPage
+    {
+        public string TabButtonName { get; }
+
+        readonly string message;
+
+        public ComingSoonTab(string tabButtonName, string message)
+        {
+            TabButtonName = tabButtonName;
+            this.message = message;
+        }
+
+        public void Enter(VisualElement host)
+        {
+            host.Clear();
+            var label = new Label(message);
+            label.AddToClassList("label");
+            host.Add(label);
+        }
+
+        public void Leave() { }
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s8">8. Reutilizar em Shop e Settings</h2>
+
+<div class="card">
+  <span class="label ok">O padrão paga-se aqui</span>
+  <p style="margin-bottom:0">A Shop reusa <code>MenuScreen</code> + <code>TabView</code> + <code>ItemRowView</code>. A Settings é trivial — mostra que a base serve até menus simples.</p>
+</div>
+
+<div class="path">Assets/Scripts/UI/Menu/Shop/ShopScreen.cs</div>
+<pre><code>using UnityEngine;
+
+namespace AF
+{
+    public class ShopScreen : MenuScreen
+    {
+        public override MenuId Id =&gt; MenuId.Shop;
+
+        [SerializeField] VisualTreeAsset weaponRowTemplate;
+        [SerializeField] ShopService shop;
+
+        TabView tabs;
+
+        protected override void Bind()
+        {
+            var categories = Root.Q("EquipmentCategories"); // ou "ShopCategories"
+            var host = Root.Q("TabContentHost");
+
+            tabs = new TabView(categories, host);
+            tabs.AddPage(new BuyWeaponsTab(weaponRowTemplate, shop));
+            // tabs.AddPage(new BuyPotionsTab(...));
+        }
+
+        protected override void OnOpen() =&gt; tabs.SelectFirst();
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/UI/Menu/Shop/BuyWeaponsTab.cs</div>
+<pre><code>using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace AF
+{
+    public class BuyWeaponsTab : ITabPage
+    {
+        public string TabButtonName =&gt; "WeaponsTabButton";
+
+        readonly VisualTreeAsset rowTemplate;
+        readonly ShopService shop;
+        VisualElement host;
+
+        public BuyWeaponsTab(VisualTreeAsset rowTemplate, ShopService shop)
+        {
+            this.rowTemplate = rowTemplate;
+            this.shop = shop;
+        }
+
+        public void Enter(VisualElement contentHost)
+        {
+            host = contentHost;
+            host.Clear();
+
+            var scroll = new ScrollView();
+            host.Add(scroll);
+
+            if (shop == null || shop.Catalog == null) return;
+
+            foreach (var weapon in shop.Catalog.weapons)
+            {
+                if (weapon == null) continue;
+
+                var model = new ItemRowModel
+                {
+                    Name = weapon.displayName,
+                    Icon = weapon.icon,
+                    Description = $"Attack Damage: {weapon.amount}",
+                    Status = $"Durability: {weapon.maxDurability}",
+                    ShowIndicator = false
+                };
+
+                // mesma linha, ação diferente — sem duplicar UI
+                model.Actions.Add(new ItemAction($"Buy ({weapon.buyPrice} Gold)",
+                    () =&gt; { if (shop.BuyWeapon(weapon)) Enter(host); }));
+
+                scroll.Add(ItemRowView.Build(rowTemplate, model));
+            }
+        }
+
+        public void Leave() { }
+    }
+}</code></pre>
+
+<div class="path">Assets/Scripts/UI/Menu/Settings/SettingsScreen.cs</div>
+<pre><code>using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UIElements;
+
+namespace AF
+{
+    public class SettingsScreen : MenuScreen
+    {
+        public override MenuId Id =&gt; MenuId.Settings;
+
+        protected override void Bind()
+        {
+            var exit = Root.Q&lt;Button&gt;("ExitGameButton");
+            if (exit != null) exit.clicked += QuitGame;
+
+            // exemplo: botão de reiniciar, se o adicionares ao UXML
+            var restart = Root.Q&lt;Button&gt;("RestartButton");
+            if (restart != null) restart.clicked += Restart;
+        }
+
+        void Restart()
+        {
+            Time.timeScale = 1f;
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
+
+        void QuitGame()
+        {
+            Application.Quit();
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#endif
+        }
+    }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="s9">9. Pastas + wiring + checklist</h2>
+
+<div class="flow">Assets/Scripts/UI/Menu/
+  MenuId.cs
+  MenuManager.cs
+  MenuScreen.cs
+  HudMenuButtons.cs
+  ITabPage.cs
+  TabView.cs
+  ItemRowModel.cs
+  ItemRowView.cs
+  ComingSoonTab.cs
+  Equipment/
+    EquipmentScreen.cs
+    WeaponsTab.cs
+  Shop/
+    ShopScreen.cs
+    BuyWeaponsTab.cs
+  Settings/
+    SettingsScreen.cs
+
+Assets/UI/
+  WeaponListItem.uxml   (novo — linha extraída)
+  EquipmentMenu.uxml    (patch — host vazio)</div>
+
+<ol>
+  <li><strong>MenuManager</strong> — 1 GO na cena com o componente. <code>pauseWhileOpen</code> ligado.</li>
+  <li><strong>HudMenuButtons</strong> — no GO do HUD; liga o <code>UIDocument</code> do PlayerHUD.</li>
+  <li><strong>Cada ecrã</strong> — GO com <code>UIDocument</code> (EquipmentMenu / SettingsMenu / Shop) + o respetivo <code>MenuScreen</code>. Injeta systems e <code>weaponRowTemplate</code> (WeaponListItem.uxml).</li>
+  <li><strong>WeaponListItem.uxml</strong> — extrai a linha do EquipmentMenu; deixa <code>Actions</code> vazio.</li>
+  <li><strong>EquipmentMenu.uxml</strong> — aplica o patch (host <code>TabContentHost</code>).</li>
+  <li><strong>ShopService.SellValue/SellWeapon</strong> — já definidos no doc anterior (secção 6·B).</li>
+</ol>
+
+<div class="flow">Ordem de teste sugerida
+1. HUD → botão Equipment → MenuManager abre EquipmentScreen, jogo pausa
+2. Tab Weapons ativa por defeito → lista de armas com Equip/Repair/Sell
+3. Equipar → header "Current Attack Damage" atualiza + indicador verde/vermelho
+4. Tab Shields → "brevemente" (ComingSoonTab), sem crashes
+5. CloseButton → MenuManager fecha, timescale volta a 1
+6. HUD → Shop → mesma linha, ação Buy (ItemRowView reutilizado)
+7. HUD → Settings → Exit/Restart</div>
+
+<div class="card warn">
+  <span class="label warn">Relação com os docs anteriores</span>
+  <p style="margin-bottom:0">Este doc <strong>substitui</strong> o <code>GameMenuController</code> (secção 6) e o <code>EquipmentMenuController</code> (secção 6·B) de <a href="Soulslike-Economy-Menu-Dialogue.html">Soulslike · Economy · Menu · Dialogue</a>. As secções de <em>Diálogos</em> (7) e <em>Cutscenes</em> (8) desse doc mantêm-se válidas e sem alterações — o <code>MenuManager</code> respeita <code>GameFlow.IsInCutscene</code> tal como elas.</p>
+</div>
+
+<footer>
+  Documento vivo. Patches amarelos = ficheiros existentes; copiar à mão. Próximos passos possíveis: stack de menus para sub-diálogos de confirmação, animações de transição (USS transitions no display/opacity), e um <code>ItemRowModel</code> por tipo (armas / poções / shields) com um builder dedicado por categoria.
+</footer>
+
+</div>
+</body>
+</html>
