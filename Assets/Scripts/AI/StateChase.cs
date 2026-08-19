@@ -25,6 +25,11 @@ namespace AF
                 return;
             }
 
+            if (controller.character.isBusy)
+            {
+                return;
+            }
+
             float dist = Vector3.Distance(
                 controller.transform.position,
                 player.transform.position

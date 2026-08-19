@@ -90,6 +90,11 @@ namespace AF
         {
             lockOnTarget = target;
             isLockedOn = target != null;
+
+            if (target.TryGetComponent(out LockOn lockOn) && lockOn.characterManager.IsPlayer())
+            {
+                lockOn.SetLockOn(this.transform);
+            }
         }
 
         void ClearLockOn()

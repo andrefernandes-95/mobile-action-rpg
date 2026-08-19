@@ -110,8 +110,10 @@ namespace AF
                     $"Sell ({sellValue} Gold)",
                     () =>
                     {
-                        // Check Sell — acrescenta ao ShopService (secção 4) in file:///C:/Users/andre/Desktop/Dungeoncrawler%200.1/Docs/Soulslike-Economy-Menu-Dialogue.html#s2
-                        //if (shop != null && shop.SellW)
+                        if (shop != null && shop.SellWeapon(weaponInstance))
+                        {
+                            Enter(host);
+                        }
                     }
                 )
             );

@@ -1,0 +1,8 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/Styles.uss?fileID=7433441132597879392&amp;guid=d4ffe311c652d8f4cbe959577391f799&amp;type=3#Styles"/>
+    <ui:VisualElement style="flex-grow: 1; background-color: rgb(0, 0, 0); align-items: center; justify-content: center;">
+        <ui:Label text="UNHOLY SWORD" name="GameTitle" class="label" style="-unity-font-style: bold; font-size: 24px; -unity-font-definition: url(&quot;project://database/Assets/TextMesh%20Pro/Fonts/LiberationSans.ttf?fileID=12800000&amp;guid=e3265ab4bf004d28a9537516768c1c75&amp;type=3#LiberationSans&quot;); -unity-text-align: upper-center;"/>
+        <ui:Label text="&quot;Here they come again. Heroes...&#10;Galvanized by promises of loot and effortless levelling.&quot;" name="Headliner" class="label" style="-unity-font-style: bold-and-italic; font-size: 24px; -unity-font-definition: url(&quot;project://database/Assets/TextMesh%20Pro/Fonts/LiberationSans.ttf?fileID=12800000&amp;guid=e3265ab4bf004d28a9537516768c1c75&amp;type=3#LiberationSans&quot;); -unity-text-align: upper-center; white-space: normal;"/>
+        <ui:Label text="A Game By André Fernandes" name="Author" class="label" style="-unity-font-style: normal; font-size: 16px; -unity-font-definition: url(&quot;project://database/Assets/TextMesh%20Pro/Fonts/LiberationSans.ttf?fileID=12800000&amp;guid=e3265ab4bf004d28a9537516768c1c75&amp;type=3#LiberationSans&quot;); -unity-text-align: upper-center;"/>
+    </ui:VisualElement>
+</ui:UXML>

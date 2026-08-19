@@ -24,6 +24,12 @@ namespace AF
             var host = Root.Q("TabContentHost");
 
             tabs = new TabView(categories, host);
+            tabs.AddPage(new WeaponsTab(weaponRowTemplate, inventory, equipment, blacksmith, shop));
+            tabs.AddPage(new ComingSoonTab("ShieldsTabButton", "Coming soon..."));
+            tabs.AddPage(new ComingSoonTab("ArmorsTabButton", "Coming soon..."));
+            tabs.AddPage(new ComingSoonTab("ShieldsTabButton", "Coming soon..."));
+            tabs.AddPage(new ComingSoonTab("Accessory1TabButton", "Coming soon..."));
+            tabs.AddPage(new ComingSoonTab("Accessory2TabButton", "Coming soon..."));
         }
 
         protected override void OnOpen()

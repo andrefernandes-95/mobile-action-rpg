@@ -11,6 +11,8 @@ namespace AF
             private set;
         }
 
+        public bool HasShownTitleScreen = false;
+
         [Header("Wallet")]
         public Wallet wallet = new();
 
@@ -20,6 +22,7 @@ namespace AF
 
         [Header("Bloodstain")]
         [SerializeField] Bloodstain currentBloodstain;
+
 
         void Awake()
         {
@@ -57,5 +60,6 @@ namespace AF
                 currentBloodstain = null;
             }
         }
+
     }
 }

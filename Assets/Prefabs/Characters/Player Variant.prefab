@@ -15,7 +15,7 @@ PrefabInstance:
     - target: {fileID: 2746758125811668220, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
       propertyPath: defaultWeapon
       value: 
-      objectReference: {fileID: 11400000, guid: 3771c939bea1f9d41be1b65601a59e44, type: 2}
+      objectReference: {fileID: 11400000, guid: 406b292ef56df47408ced7d70d744939, type: 2}
     - target: {fileID: 2746758125811668220, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
       propertyPath: randomDefaultWeapons.Array.size
       value: 0
@@ -75,6 +75,10 @@ PrefabInstance:
     - target: {fileID: 3903456157624417881, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5366300287412475226, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
+      propertyPath: maxHealth
+      value: 200
       objectReference: {fileID: 0}
     - target: {fileID: 6571494400191017289, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
       propertyPath: m_Enabled

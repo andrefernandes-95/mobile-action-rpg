@@ -15,9 +15,16 @@ MonoBehaviour:
   displayName: 
   description: 
   icon: {fileID: 0}
-  value: 100
-  weaponType: 0
+  price: 0
   prefab: {fileID: 6545519597365330864, guid: 144091f13ee874d49a57a4d4469401c5, type: 3}
+  weaponType: 0
   damageType: 1
   amount: 25
+  maxDurability: 50
+  repairCostPerPoint: 2
+  extendCostPerPoint: 100
+  extendAmount: 10
   engageRadius: 3
+  position: {x: 0, y: 0, z: 0}
+  rotation: {x: 0, y: 0, z: 0}
+  overrideController: {fileID: 0}

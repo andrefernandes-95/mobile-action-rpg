@@ -9,9 +9,6 @@ namespace AF
         public WeaponType weaponType = WeaponType.Unarmed;
         public Ability attackAbility;
 
-        [Header("Prefab")]
-        public GameObject prefab;
-
         [Header("Damage")]
         public DamageType damageType;
         public int amount;
@@ -41,5 +38,21 @@ namespace AF
         {
             equipmentManager.UnequipWeapon();
         }
+
+        public override string GetDescription()
+        {
+            return $"Attack: {amount}";
+        }
+
+        public override int Difference(Item item)
+        {
+            if (item == null || item is not Weapon weapon)
+            {
+                return amount;
+            }
+
+            return this.amount - weapon.amount;
+        }
+
     }
 }

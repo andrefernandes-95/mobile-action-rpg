@@ -704,9 +704,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 38abd8d8d1c3a6147b16b5f57088d13d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AF.InventoryManager
+  ownedConsumables: []
   defaultWeapon: {fileID: 11400000, guid: 406b292ef56df47408ced7d70d744939, type: 2}
   randomDefaultWeapons: []
+  defaultConsumables: []
   equipmentManager: {fileID: 6051265088138471669}
+  characterManager: {fileID: 7596761662381212878}
 --- !u!136 &1938915903511308228
 CapsuleCollider:
   m_ObjectHideFlags: 0

@@ -26,6 +26,22 @@ namespace AF
             SetupDefaultInventory();
         }
 
+        public void SwitchWeapon(Weapon currentWeapon, Weapon newWeapon)
+        {
+            equipmentManager.UnequipWeapon();
+
+            if (TryGetWeaponInstance(currentWeapon, out WeaponInstance currentWeaponInstance))
+            {
+                ownedWeapons.Remove(currentWeaponInstance);
+            }
+
+            currentWeapon.SpawnInWorld(equipmentManager.transform.position);
+
+            AddItem(newWeapon);
+
+            equipmentManager.EquipWeapon(newWeapon);
+        }
+
         public void AddItem<T>(T item, int count = 1) where T : Item
         {
             string id = Guid.NewGuid().ToString();

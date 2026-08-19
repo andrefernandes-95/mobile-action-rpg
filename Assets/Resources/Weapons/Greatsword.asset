@@ -12,14 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4d8c6a2987e61e741953b3a78b135ee9, type: 3}
   m_Name: Greatsword
   m_EditorClassIdentifier: Assembly-CSharp::AF.Weapon
-  displayName: 
+  displayName: Greatsword
   description: 
   icon: {fileID: 0}
-  value: 100
+  price: 0
+  prefab: {fileID: 917620831920337535, guid: 16033b3588c85dd4486aa2a97055133b, type: 3}
   weaponType: 1
-  prefab: {fileID: 6545519597365330864, guid: 1b242a91b10ee8a4bb190756a274689c, type: 3}
   damageType: 0
   amount: 75
+  maxDurability: 50
+  repairCostPerPoint: 2
+  extendCostPerPoint: 100
+  extendAmount: 10
   engageRadius: 6
   position: {x: 0.0818, y: 0.039, z: 0.0258}
   rotation: {x: 351.37885, y: 259.29996, z: 96.34227}
