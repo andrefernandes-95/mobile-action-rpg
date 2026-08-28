@@ -284,7 +284,6 @@ GameObject:
   - component: {fileID: 5183624182593511415}
   - component: {fileID: 7278692042160151555}
   - component: {fileID: 1894252696675560339}
-  - component: {fileID: 6993023815756133690}
   - component: {fileID: 5514083125158227923}
   - component: {fileID: 3581561514803754065}
   - component: {fileID: 2655909083216702146}
@@ -298,6 +297,7 @@ GameObject:
   - component: {fileID: 7021790640550017808}
   - component: {fileID: 3694762054876876332}
   - component: {fileID: 2808758534763451558}
+  - component: {fileID: 1751959002524849175}
   m_Layer: 0
   m_Name: Character
   m_TagString: Untagged
@@ -494,7 +494,7 @@ MonoBehaviour:
   characterDamageReceiver: {fileID: 2655909083216702146}
   dodge: {fileID: 3581561514803754065}
   perception: {fileID: 7278692042160151555}
-  lockOn: {fileID: 6993023815756133690}
+  lockOn: {fileID: 0}
   combatManager: {fileID: 5514083125158227923}
   rotationSpeed: 24
   animSpeedDamp: 0.12
@@ -548,24 +548,6 @@ MonoBehaviour:
   chaseState: {fileID: 11400000, guid: b389d707210c78845aedbc3831dfac1a, type: 2}
   combatState: {fileID: 11400000, guid: c114ee413b85ba3418ac835f42cfbb18, type: 2}
   currentState: {fileID: 0}
---- !u!114 &6993023815756133690
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3673545139705214888}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7b7bb1cc13bf041d6accf9d468ba1214, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AF.LockOn
-  lockOnTarget: {fileID: 0}
-  isLockedOn: 0
-  lockOnRotationSpeed: 15
-  chasingEnemies: []
-  lockOnMaxDistance: 6
-  characterManager: {fileID: 7596761662381212878}
 --- !u!114 &5514083125158227923
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -790,6 +772,22 @@ MonoBehaviour:
   combatManager: {fileID: 5514083125158227923}
   equipmentManager: {fileID: 6051265088138471669}
   inventoryManager: {fileID: 2746758125811668220}
+--- !u!114 &1751959002524849175
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3673545139705214888}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b91b67a02e945354ca5ce327f67e7f33, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AF.Sight
+  sightRadius: 5
+  playerLayer:
+    serializedVersion: 2
+    m_Bits: 512
 --- !u!1 &6515205292472850048
 GameObject:
   m_ObjectHideFlags: 0

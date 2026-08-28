@@ -33,6 +33,10 @@ PrefabInstance:
       value: Player Variant
       objectReference: {fileID: 0}
     - target: {fileID: 3673545139705214888, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 3673545139705214888, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
       propertyPath: m_TagString
       value: Player
       objectReference: {fileID: 0}
@@ -85,6 +89,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7596761662381212878, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
+      propertyPath: lockOn
+      value: 
+      objectReference: {fileID: 8026749635206305553}
+    - target: {fileID: 7596761662381212878, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
       propertyPath: navMeshAgentMotor
       value: 
       objectReference: {fileID: 0}
@@ -118,6 +126,7 @@ PrefabInstance:
     - {fileID: 1938915903511308228, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
     - {fileID: 7021790640550017808, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
     - {fileID: 3694762054876876332, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
+    - {fileID: 1751959002524849175, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
@@ -130,6 +139,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 3673545139705214888, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
       insertIndex: -1
       addedObject: {fileID: 418547903596118080}
+    - targetCorrespondingSourceObject: {fileID: 3673545139705214888, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8026749635206305553}
   m_SourcePrefab: {fileID: 100100000, guid: 4e2af9022c9030141aafac16beebb3e7, type: 3}
 --- !u!1 &3093272199366084540 stripped
 GameObject:
@@ -188,3 +200,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AF.RespawnReactor
   characterController: {fileID: 8981748939910873782}
+--- !u!114 &8026749635206305553
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3093272199366084540}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b7bb1cc13bf041d6accf9d468ba1214, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AF.LockOn
+  lockOnTarget: {fileID: 0}
+  isLockedOn: 0
+  lockOnRotationSpeed: 15

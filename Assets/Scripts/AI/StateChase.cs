@@ -9,12 +9,6 @@ namespace AF
 
         public override void Enter(StateMachine controller)
         {
-            var player = controller.character.GetPlayer();
-
-            if (player != null && !controller.character.health.IsDead)
-            {
-                player.lockOn.RegisterChasingEnemy(controller.character);
-            }
         }
 
         public override void Tick(StateMachine controller)
@@ -35,19 +29,13 @@ namespace AF
                 player.transform.position
             );
 
-            if (
-                dist > controller.character.perception.sightRange * disengageMultiplier
-                || controller.character.health.IsDead
-                || player.health.IsDead
-            )
+            if (controller.character.health.IsDead || player.health.IsDead)
             {
                 controller.SwitchState(
                     controller.patrolState != null
                         ? controller.patrolState
                         : controller.idleState
                 );
-
-                player.lockOn.UnregisterChasingEnemy(controller.character);
                 return;
             }
 
