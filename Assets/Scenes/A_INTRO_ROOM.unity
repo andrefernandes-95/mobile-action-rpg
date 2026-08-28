@@ -9157,7 +9157,7 @@ MonoBehaviour:
   fadeDuration: 1
   headlinerDuration: 4
   gameTitleDuration: 4
-  skip: 1
+  skip: 0
 --- !u!1001 &1867004222
 PrefabInstance:
   m_ObjectHideFlags: 0

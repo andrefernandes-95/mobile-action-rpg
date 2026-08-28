@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Um Motor para Player e AI — Tutorial</title>
+  <style>
+    :root { --bg:#0d1117; --panel:#161b22; --panel2:#1f2630; --text:#e6edf3; --muted:#9ba7b4; --line:#30363d; --green:#65d89b; --blue:#79c0ff; --orange:#f2b766; --red:#ff7b72; --code:#090c10; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; color:var(--text); background:var(--bg); font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    a { color:var(--blue); }
+    code { font-family:"Cascadia Code",Consolas,monospace; }
+    .layout { display:grid; grid-template-columns:270px minmax(0,1fr); min-height:100vh; }
+    aside { position:sticky; top:0; height:100vh; padding:28px 22px; border-right:1px solid var(--line); background:#10151c; overflow:auto; }
+    aside strong { display:block; color:var(--green); letter-spacing:.08em; text-transform:uppercase; font-size:12px; }
+    aside h1 { font-size:21px; line-height:1.25; margin:8px 0 24px; }
+    nav a { display:block; padding:7px 0; color:var(--muted); text-decoration:none; font-size:14px; }
+    nav a:hover { color:var(--text); }
+    main { width:min(100%, 1060px); padding:54px clamp(24px,5vw,72px) 100px; }
+    section { margin:0 0 72px; scroll-margin-top:25px; }
+    h2 { margin:0 0 18px; font-size:clamp(27px,4vw,42px); line-height:1.15; letter-spacing:-.025em; }
+    h3 { margin:32px 0 10px; font-size:21px; }
+    p { max-width:76ch; }
+    .lead { color:var(--muted); font-size:19px; max-width:72ch; }
+    .eyebrow { color:var(--green); font-weight:700; letter-spacing:.09em; text-transform:uppercase; font-size:12px; }
+    .hero { padding:48px 0 28px; }
+    .hero h2 { font-size:clamp(42px,7vw,72px); max-width:900px; }
+    .hero h2 span { color:var(--green); }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin:24px 0; }
+    .card { padding:22px; background:var(--panel); border:1px solid var(--line); border-radius:12px; }
+    .card h3 { margin:0 0 8px; }
+    .card p { margin:0; color:var(--muted); }
+    .bad { border-left:4px solid var(--red); }
+    .good { border-left:4px solid var(--green); }
+    .note { padding:18px 20px; margin:24px 0; background:rgba(121,192,255,.08); border-left:4px solid var(--blue); }
+    .warn { padding:18px 20px; margin:24px 0; background:rgba(242,183,102,.08); border-left:4px solid var(--orange); }
+    .flow { display:flex; align-items:stretch; gap:10px; margin:26px 0; }
+    .node { flex:1; padding:17px; text-align:center; background:var(--panel); border:1px solid var(--line); border-radius:10px; }
+    .node b { display:block; color:var(--green); }
+    .arrow { align-self:center; color:var(--muted); font-size:24px; }
+    .codebox { position:relative; margin:18px 0 30px; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--code); }
+    .codehead { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; color:var(--muted); background:var(--panel2); border-bottom:1px solid var(--line); font-size:13px; }
+    button { cursor:pointer; border:1px solid var(--line); border-radius:7px; color:var(--text); background:var(--panel); padding:6px 10px; }
+    button:hover { border-color:var(--blue); }
+    pre { margin:0; padding:20px; overflow:auto; tab-size:4; font-size:13px; line-height:1.55; }
+    .kw { color:#ff7b72; } .ty { color:#79c0ff; } .st { color:#a5d6ff; } .cm { color:#8b949e; }
+    table { width:100%; border-collapse:collapse; margin:20px 0; }
+    th,td { padding:12px 14px; text-align:left; border-bottom:1px solid var(--line); vertical-align:top; }
+    th { color:var(--muted); font-size:13px; }
+    .steps { counter-reset:step; padding:0; }
+    .steps li { list-style:none; position:relative; padding:0 0 24px 46px; }
+    .steps li::before { counter-increment:step; content:counter(step); position:absolute; left:0; top:0; width:30px; height:30px; display:grid; place-items:center; border-radius:50%; background:var(--green); color:#07130d; font-weight:800; }
+    .quiz { padding:22px; background:var(--panel); border:1px solid var(--line); border-radius:12px; }
+    details { border-top:1px solid var(--line); padding:12px 0; }
+    summary { cursor:pointer; color:var(--blue); }
+    footer { color:var(--muted); border-top:1px solid var(--line); padding-top:28px; }
+    @media (max-width:800px) { .layout{display:block} aside{position:relative;height:auto;border-right:0;border-bottom:1px solid var(--line)} nav{display:none} main{padding-top:28px}.grid{grid-template-columns:1fr}.flow{flex-direction:column}.arrow{transform:rotate(90deg)} }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside>
+    <strong>Unity · Movimento</strong>
+    <h1>Um Motor para Player e AI</h1>
+    <nav>
+      <a href="#diagnostico">1. Diagnóstico</a>
+      <a href="#contrato">2. O contrato actual</a>
+      <a href="#modelo">3. O modelo simples</a>
+      <a href="#motor">4. MovementMotor completo</a>
+      <a href="#manager">5. CharacterManager</a>
+      <a href="#troca">6. Troca de personagem</a>
+      <a href="#instalacao">7. Instalação no Unity</a>
+      <a href="#testes">8. Testes</a>
+      <a href="#tradeoffs">9. Limites</a>
+    </nav>
+  </aside>
+
+  <main>
+    <header class="hero">
+      <div class="eyebrow">Tutorial baseado no código real do projecto</div>
+      <h2>Duas formas de andar.<br><span>Uma só classe.</span></h2>
+      <p class="lead">O Player recebe uma direcção e move-se imediatamente com <code>CharacterController</code>. A AI recebe um destino e deixa o <code>NavMeshAgent</code> encontrar o caminho. O método <code>IsPlayer()</code> é o único interruptor.</p>
+    </header>
+
+    <section id="diagnostico">
+      <div class="eyebrow">01 · Diagnóstico</div>
+      <h2>O que existe hoje?</h2>
+      <p>O projecto usa o padrão Strategy: <code>CharacterManager</code> fala com a interface <code>IMovementMotor</code>, e em runtime escolhe uma de duas classes.</p>
+      <div class="flow">
+        <div class="node"><b>CharacterManager</b>pede Move, Stop ou SetDestination</div>
+        <div class="arrow">→</div>
+        <div class="node"><b>IMovementMotor</b>contrato comum</div>
+        <div class="arrow">→</div>
+        <div class="node"><b>CC / NavMesh</b>duas implementações</div>
+      </div>
+      <div class="grid">
+        <div class="card bad"><h3>Custo actual</h3><p>3 ficheiros de movimento, referências duplicadas, activação/desactivação manual e métodos vazios para satisfazer a interface.</p></div>
+        <div class="card good"><h3>O que preservamos</h3><p>Player preciso, AI com pathfinding, troca de personagem, dodge, animação, patrulha, chase e morte.</p></div>
+      </div>
+      <p>A interface não está “errada”. É uma boa escolha quando existem várias implementações independentes. Aqui, porém, as duas vivem sempre no mesmo tipo de personagem e trocam através de uma única regra global. Para este jogo, podemos pagar menos abstracção.</p>
+    </section>
+
+    <section id="contrato">
+      <div class="eyebrow">02 · Contrato actual</div>
+      <h2>Nove membros, mas nem todos são comuns</h2>
+      <table>
+        <thead><tr><th>Membro</th><th>Player</th><th>AI</th></tr></thead>
+        <tbody>
+          <tr><td><code>Move</code></td><td>Função principal</td><td>Quase desnecessário</td></tr>
+          <tr><td><code>SetDestination</code></td><td>Fica vazio</td><td>Função principal</td></tr>
+          <tr><td><code>StoppingDistance</code></td><td>Devolve sempre 0</td><td>Valor real do Agent</td></tr>
+          <tr><td><code>RemainingDistance / HasPath</code></td><td>Valores falsos</td><td>Valores reais do Agent</td></tr>
+          <tr><td><code>Stop / ApplyDisplacement</code></td><td>Úteis</td><td>Úteis</td></tr>
+        </tbody>
+      </table>
+      <div class="note"><b>Leitura importante:</b> a interface unifica a forma de chamar, não o significado. Isto obriga o Player a fingir que conhece destinos e caminhos. A classe única pode manter a mesma API pública, mas assumir honestamente que alguns métodos pertencem apenas a um dos modos.</div>
+    </section>
+
+    <section id="modelo">
+      <div class="eyebrow">03 · Modelo mental</div>
+      <h2><code>IsPlayer()</code> funciona como uma prop</h2>
+      <p>Pensa num componente React que recebe <code>isPlayer</code>. Se for verdadeiro, renderiza controlos manuais; se for falso, renderiza navegação automática. Em Unity não renderizamos UI — escolhemos o componente físico activo.</p>
+      <div class="flow">
+        <div class="node"><b>IsPlayer() == true</b>CC ligado · Agent desligado<br><code>Move(direction)</code></div>
+        <div class="arrow">↔</div>
+        <div class="node"><b>IsPlayer() == false</b>CC desligado · Agent ligado<br><code>SetDestination(position)</code></div>
+      </div>
+      <p>A regra de ouro é: <b>nunca deixar os dois componentes activos ao mesmo tempo</b>. Caso contrário, ambos tentam escrever no mesmo <code>Transform</code>.</p>
+    </section>
+
+    <section id="motor">
+      <div class="eyebrow">04 · Código final</div>
+      <h2>A classe única: <code>MovementMotor.cs</code></h2>
+      <p>Este ficheiro substitui <code>IMovementMotor.cs</code>, <code>CharacterControllerMotor.cs</code> e <code>NavMeshAgentMotor.cs</code>. Não há herança de gameplay nem interface; só um <code>MonoBehaviour</code> com dois caminhos explícitos.</p>
+      <div class="codebox">
+        <div class="codehead"><span>Assets/Scripts/Movement/MovementMotor.cs</span><button type="button" onclick="copyCode(this)">Copiar</button></div>
+<pre><code>using UnityEngine;
+using UnityEngine.AI;
+
+namespace AF
+{
+    [RequireComponent(typeof(CharacterController))]
+    [RequireComponent(typeof(NavMeshAgent))]
+    public sealed class MovementMotor : MonoBehaviour
+    {
+        [SerializeField] float runSpeed = 5.5f;
+        [SerializeField] float gravity = -20f;
+
+        CharacterManager character;
+        CharacterController controller;
+        NavMeshAgent agent;
+        Vector3 velocity;
+        bool motorEnabled = true;
+
+        public float MoveAmount { get; private set; }
+        public float RunSpeed =&gt; runSpeed;
+
+        public Vector3 PlanarVelocity
+        {
+            get
+            {
+                if (character.IsPlayer())
+                {
+                    return new Vector3(velocity.x, 0f, velocity.z);
+                }
+
+                if (agent.enabled)
+                {
+                    Vector3 agentVelocity = agent.velocity;
+                    agentVelocity.y = 0f;
+                    return agentVelocity;
+                }
+
+                return Vector3.zero;
+            }
+        }
+
+        public float StoppingDistance =&gt; character.IsPlayer() ? 0f : agent.stoppingDistance;
+        public float RemainingDistance =&gt; agent.enabled ? agent.remainingDistance : 0f;
+        public bool HasPath =&gt; agent.enabled &amp;&amp; agent.hasPath;
+        public bool IsMotorEnabled =&gt; motorEnabled;
+
+        void Awake()
+        {
+            character = GetComponent&lt;CharacterManager&gt;();
+            controller = GetComponent&lt;CharacterController&gt;();
+            agent = GetComponent&lt;NavMeshAgent&gt;();
+            agent.updateRotation = false;
+        }
+
+        void Start()
+        {
+            RefreshMode();
+        }
+
+        public void RefreshMode()
+        {
+            bool isPlayer = character.IsPlayer();
+
+            if (agent.enabled &amp;&amp; agent.isOnNavMesh)
+            {
+                agent.ResetPath();
+            }
+
+            controller.enabled = false;
+            agent.enabled = false;
+
+            if (motorEnabled &amp;&amp; isPlayer)
+            {
+                controller.enabled = true;
+            }
+            else if (motorEnabled)
+            {
+                agent.enabled = true;
+            }
+
+            velocity = Vector3.zero;
+            MoveAmount = 0f;
+        }
+
+        public void Move(Vector3 direction, float moveAmount)
+        {
+            if (!motorEnabled || !character.IsPlayer() || !controller.enabled)
+            {
+                return;
+            }
+
+            MoveAmount = Mathf.Clamp01(moveAmount);
+            direction.y = 0f;
+
+            if (direction.sqrMagnitude &lt; 0.0001f || MoveAmount &lt;= 0f)
+            {
+                Stop();
+                return;
+            }
+
+            direction.Normalize();
+            velocity.x = direction.x * runSpeed * MoveAmount;
+            velocity.z = direction.z * runSpeed * MoveAmount;
+
+            ApplyGravity();
+            controller.Move(velocity * Time.deltaTime);
+        }
+
+        public void SetDestination(Vector3 worldPosition)
+        {
+            if (!motorEnabled || character.IsPlayer() || !agent.enabled || !agent.isOnNavMesh)
+            {
+                return;
+            }
+
+            MoveAmount = 1f;
+            agent.speed = runSpeed;
+            agent.SetDestination(worldPosition);
+        }
+
+        public void Stop()
+        {
+            MoveAmount = 0f;
+
+            if (character.IsPlayer())
+            {
+                velocity.x = 0f;
+                velocity.z = 0f;
+
+                if (motorEnabled &amp;&amp; controller.enabled)
+                {
+                    ApplyGravity();
+                    controller.Move(new Vector3(0f, velocity.y, 0f) * Time.deltaTime);
+                }
+
+                return;
+            }
+
+            if (agent.enabled &amp;&amp; agent.isOnNavMesh)
+            {
+                agent.ResetPath();
+                agent.velocity = Vector3.zero;
+            }
+        }
+
+        public void ApplyDisplacement(Vector3 worldDelta)
+        {
+            if (!motorEnabled)
+            {
+                return;
+            }
+
+            if (character.IsPlayer())
+            {
+                controller.Move(worldDelta);
+                return;
+            }
+
+            agent.Move(worldDelta);
+        }
+
+        public void SetMotorEnabled(bool enabled)
+        {
+            motorEnabled = enabled;
+
+            if (!enabled)
+            {
+                velocity = Vector3.zero;
+                MoveAmount = 0f;
+            }
+
+            RefreshMode();
+        }
+
+        void ApplyGravity()
+        {
+            if (controller.isGrounded &amp;&amp; velocity.y &lt; 0f)
+            {
+                velocity.y = -2f;
+            }
+            else
+            {
+                velocity.y += gravity * Time.deltaTime;
+            }
+        }
+    }
+}</code></pre>
+      </div>
+      <div class="warn"><b>Porque não guardamos o último destino?</b> Para máxima simplicidade. Chamar <code>SetDestination</code> em cada frame de chase é normal. A optimização antiga de 0,15 pode voltar apenas se o Profiler provar que faz falta.</div>
+    </section>
+
+    <section id="manager">
+      <div class="eyebrow">05 · Integração</div>
+      <h2>Simplificar o <code>CharacterManager</code></h2>
+      <p>O manager deixa de descobrir duas estratégias. Passa a ter uma única referência concreta.</p>
+      <h3>1. Substituir os campos</h3>
+      <div class="codebox"><div class="codehead"><span>CharacterManager.cs · campos</span><button type="button" onclick="copyCode(this)">Copiar</button></div><pre><code>[Header("Movement")]
+[SerializeField] MovementMotor motor;
+
+public MovementMotor Motor =&gt; motor;</code></pre></div>
+      <h3>2. Simplificar <code>Awake</code></h3>
+      <div class="codebox"><div class="codehead"><span>CharacterManager.cs · Awake</span><button type="button" onclick="copyCode(this)">Copiar</button></div><pre><code>void Awake()
+{
+    defaultPosition = transform.position;
+
+    if (motor == null)
+    {
+        motor = GetComponent&lt;MovementMotor&gt;();
+    }
+}</code></pre></div>
+      <h3>3. Substituir a troca de motores</h3>
+      <div class="codebox"><div class="codehead"><span>CharacterManager.cs · controlo</span><button type="button" onclick="copyCode(this)">Copiar</button></div><pre><code>public void GiveControlToAI()
+{
+    motor.RefreshMode();
+}
+
+public void GiveControlToPlayer()
+{
+    GameContext.SetPlayer(this);
+    motor.RefreshMode();
+}</code></pre></div>
+      <p>Todo o resto de <code>CharacterManager</code> pode permanecer igual: <code>Move</code>, <code>SetDestination</code>, <code>Stop</code>, rotação, animação, dodge e morte continuam a chamar a mesma API.</p>
+      <div class="note"><b>Apaga do manager:</b> os campos <code>CharacterControllerMotor</code> e <code>NavMeshAgentMotor</code>, <code>SetupMotor()</code>, <code>UseCharacterControllerMotor()</code> e <code>UseNavMeshMotor()</code>.</div>
+    </section>
+
+    <section id="troca">
+      <div class="eyebrow">06 · Detalhe crítico</div>
+      <h2>A ordem da troca importa</h2>
+      <p>No código actual, a personagem antiga recebe AI antes de <code>GameContext.Player</code> mudar. Mas o novo motor decide tudo consultando <code>IsPlayer()</code>. Portanto, primeiro mudamos o Player global; só depois refrescamos a personagem anterior.</p>
+      <div class="codebox">
+        <div class="codehead"><span>PlayerInput.cs · SetCharacter completo</span><button type="button" onclick="copyCode(this)">Copiar</button></div>
+<pre><code>void SetCharacter(CharacterManager character)
+{
+    CharacterManager previousCharacter = characterManager;
+
+    characterManager = character;
+    characterManager.GiveControlToPlayer();
+
+    if (previousCharacter != null &amp;&amp; previousCharacter != characterManager)
+    {
+        previousCharacter.GiveControlToAI();
+    }
+
+    onSetCurrentCharacter?.Invoke(characterManager);
+}</code></pre>
+      </div>
+      <p>Sequência: a nova personagem torna-se Player → o seu motor liga o CC → a anterior já responde <code>false</code> a <code>IsPlayer()</code> → o seu motor liga o Agent.</p>
+    </section>
+
+    <section id="instalacao">
+      <div class="eyebrow">07 · Aplicação</div>
+      <h2>Passo a passo no Unity</h2>
+      <ol class="steps">
+        <li><b>Criar <code>MovementMotor.cs</code></b><br>Cola a classe completa apresentada acima.</li>
+        <li><b>Alterar <code>CharacterManager.cs</code></b><br>Troca os campos, simplifica <code>Awake</code>, troca os dois métodos de controlo e remove os métodos antigos.</li>
+        <li><b>Alterar <code>PlayerInput.SetCharacter</code></b><br>Usa a ordem segura apresentada acima.</li>
+        <li><b>Actualizar todos os prefabs</b><br>Remove <code>CharacterControllerMotor</code> e <code>NavMeshAgentMotor</code>. Adiciona <code>MovementMotor</code>. Os componentes <code>CharacterController</code> e <code>NavMeshAgent</code> ficam presentes.</li>
+        <li><b>Atribuir a referência</b><br>Arrasta o <code>MovementMotor</code> para o campo Motor do <code>CharacterManager</code>, ou deixa <code>Awake</code> encontrá-lo.</li>
+        <li><b>Apagar os ficheiros antigos</b><br>Só depois de os prefabs e o manager compilarem: <code>IMovementMotor.cs</code>, <code>CharacterControllerMotor.cs</code> e <code>NavMeshAgentMotor.cs</code>.</li>
+      </ol>
+      <div class="warn"><b>Unity e referências perdidas:</b> remover scripts dos prefabs antes de apagar os ficheiros evita componentes “Missing Script”. Faz a migração num prefab de teste primeiro.</div>
+    </section>
+
+    <section id="testes">
+      <div class="eyebrow">08 · Verificação</div>
+      <h2>Checklist curta, mas completa</h2>
+      <table>
+        <thead><tr><th>Cenário</th><th>Resultado esperado</th></tr></thead>
+        <tbody>
+          <tr><td>Começar a cena</td><td>Player: CC activo. Inimigos: Agent activo.</td></tr>
+          <tr><td>Mexer joystick lentamente</td><td>Velocidade proporcional e animação sem saltos.</td></tr>
+          <tr><td>Patrulha</td><td>AI escolhe pontos e <code>HasPath</code> funciona.</td></tr>
+          <tr><td>Chase e combate</td><td>Agent pára à <code>stoppingDistance</code>.</td></tr>
+          <tr><td>Dodge</td><td><code>ApplyDisplacement</code> usa o componente activo.</td></tr>
+          <tr><td>Morte e respawn</td><td><code>SetMotorEnabled</code> desliga e volta a ligar o modo certo.</td></tr>
+          <tr><td>Trocar personagem</td><td>A anterior vira AI; a nova recebe controlo imediato.</td></tr>
+        </tbody>
+      </table>
+      <div class="quiz">
+        <b>Pergunta de engenharia</b>
+        <p>Porque é perigoso executar <code>previousCharacter.GiveControlToAI()</code> antes de alterar <code>GameContext.Player</code>?</p>
+        <details><summary>Ver resposta</summary><p>Porque <code>previousCharacter.IsPlayer()</code> ainda devolve <code>true</code>. O motor voltaria a ligar o CharacterController em vez do NavMeshAgent.</p></details>
+      </div>
+    </section>
+
+    <section id="tradeoffs">
+      <div class="eyebrow">09 · Decisão consciente</div>
+      <h2>O que ganhamos — e o que aceitamos</h2>
+      <div class="grid">
+        <div class="card good"><h3>Ganhamos</h3><p>Uma classe, uma referência, uma regra de escolha, menos setup e fluxo muito mais fácil de seguir no Inspector e no debugger.</p></div>
+        <div class="card bad"><h3>Aceitamos</h3><p>Todos os personagens têm CC e Agent; a classe conhece ambos; adicionar um terceiro motor exigirá novos <code>if</code>.</p></div>
+      </div>
+      <p>Para o estado actual do projecto, este compromisso é razoável: existem exactamente dois modos e ambos pertencem ao mesmo personagem. Se um dia aparecer voo, natação, veículo e multiplayer, a interface volta a ganhar valor. Não construímos hoje a arquitectura de um problema que ainda não existe.</p>
+      <div class="note"><b>Versão mínima da regra:</b> <code>Move</code> só trabalha para Player. <code>SetDestination</code> só trabalha para AI. <code>Stop</code> e <code>ApplyDisplacement</code> escolhem o componente através de <code>IsPlayer()</code>.</div>
+    </section>
+
+    <footer>
+      Tutorial preparado a partir de <code>IMovementMotor</code>, <code>CharacterControllerMotor</code>, <code>NavMeshAgentMotor</code>, <code>CharacterManager</code>, <code>PlayerInput</code>, <code>StatePatrol</code> e <code>StateChase</code> existentes no projecto.
+    </footer>
+  </main>
+</div>
+<script>
+  async function copyCode(button) {
+    const code = button.closest('.codebox').querySelector('code').innerText;
+    await navigator.clipboard.writeText(code);
+    const old = button.textContent;
+    button.textContent = 'Copiado';
+    setTimeout(() => button.textContent = old, 1200);
+  }
+</script>
+</body>
+</html>
