@@ -12,6 +12,7 @@ namespace AF
         [SerializeField] Transform secondaryHand;
 
         [Header("Components")]
+        [SerializeField] CharacterManager owner;
         [SerializeField] InventoryManager inventoryManager;
         [SerializeField] Animator animator;
 
@@ -19,23 +20,32 @@ namespace AF
 
         void Start()
         {
+            if (owner.IsPlayer())
+            {
+                EquipWeapon(inventoryManager.GetWeapon());
+            }
+
             defaultOverrideController = animator.runtimeAnimatorController;
         }
 
-        public void EquipWeapon(Weapon weapon)
+        public void EquipWeapon(WeaponInstance weaponInstance)
         {
-            if (inventoryManager.TryGetWeaponInstance(weapon, out WeaponInstance weaponInstance))
+            if (weaponInstance == null)
             {
-                UnequipWeapon();
+                return;
+            }
 
-                this.weaponInstance = weaponInstance;
-                worldWeapon = Instantiate(weapon.prefab, primaryHand.transform).GetComponent<Hitbox>();
-                worldWeapon.transform.SetLocalPositionAndRotation(weapon.position, Quaternion.Euler(weapon.rotation));
+            UnequipWeapon();
 
-                if (weapon.overrideController != null)
-                {
-                    animator.runtimeAnimatorController = weapon.overrideController;
-                }
+            this.weaponInstance = weaponInstance;
+
+            Weapon weapon = weaponInstance.weaponData;
+            worldWeapon = Instantiate(weapon.prefab, primaryHand.transform).GetComponent<Hitbox>();
+            worldWeapon.transform.SetLocalPositionAndRotation(weapon.position, Quaternion.Euler(weapon.rotation));
+
+            if (weapon.overrideController != null)
+            {
+                animator.runtimeAnimatorController = weapon.overrideController;
             }
         }
 

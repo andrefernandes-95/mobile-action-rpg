@@ -35,22 +35,7 @@ namespace AF
             {
                 return;
             }
-
-            weaponInstance.ConsumeDurability(1);
-
-            if (!weaponInstance.IsBroken)
-            {
-                return;
-            }
-
-            BreakWeapon(weaponInstance);
         }
 
-        void BreakWeapon(WeaponInstance weaponInstance)
-        {
-            equipmentManager.UnequipWeapon();
-            inventoryManager.ownedWeapons.Remove(weaponInstance);
-            OnWeaponBroke?.Invoke(weaponInstance);
-        }
     }
 }

@@ -52,6 +52,13 @@ namespace AF
 
             characterManager.Stop();
             SetCurrentAbility(weaponAbility, true);
+
+
+            if (!characterManager.IsPlayer())
+            {
+                // AI should stop when attacking to give player an edge
+                characterManager.isBusy = true;
+            }
         }
 
         public void OnSpecialAbility()

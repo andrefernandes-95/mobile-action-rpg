@@ -27,8 +27,7 @@ namespace AF
                 return false;
             }
 
-            inventoryManager.AddItem(weapon);
-
+            inventoryManager.SwitchWeapon(weapon);
             return true;
         }
 
@@ -52,7 +51,7 @@ namespace AF
                 equipmentManager.UnequipWeapon();
             }
 
-            if (!inventoryManager.ownedWeapons.Remove(weaponInstance))
+            if (inventoryManager.GetWeapon() == null)
             {
                 return false;
             }

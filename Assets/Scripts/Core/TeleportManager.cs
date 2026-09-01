@@ -11,10 +11,6 @@ namespace AF
             private set;
         }
 
-
-        [Header("Next Spawnpoint")]
-        [SerializeField] string nextSpawnpoint;
-
         void Awake()
         {
             if (Instance != null && Instance != this)
@@ -29,12 +25,7 @@ namespace AF
 
         public void TryToSpawnPlayer(Transform player)
         {
-            if (nextSpawnpoint == null || string.IsNullOrEmpty(nextSpawnpoint))
-            {
-                return;
-            }
-
-            GameObject spawn = GameObject.Find(nextSpawnpoint);
+            GameObject spawn = GameObject.Find("Spawn");
 
             if (spawn != null)
             {
@@ -46,13 +37,11 @@ namespace AF
                 cc.enabled = true;
             }
 
-            this.nextSpawnpoint = null;
             FindAnyObjectByType<ScreenFader>().FadeIn(null);
         }
 
-        public void Teleport(string sceneName, string nextSpawnpoint)
+        public void Teleport(string sceneName)
         {
-            this.nextSpawnpoint = nextSpawnpoint;
             FindAnyObjectByType<ScreenFader>().FadeOut(() =>
             {
                 SceneManager.LoadScene(sceneName);

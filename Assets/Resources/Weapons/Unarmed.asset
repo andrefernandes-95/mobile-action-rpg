@@ -20,6 +20,8 @@ MonoBehaviour:
   weaponType: 0
   damageType: 1
   amount: 25
+  swing: {fileID: 8300000, guid: 1e0e4d5b1fac9e046895d5965a9e0f4d, type: 3}
+  hit: {fileID: 8300000, guid: 00bc006da0666ec48ba39420881c3d68, type: 3}
   maxDurability: 50
   repairCostPerPoint: 2
   extendCostPerPoint: 100

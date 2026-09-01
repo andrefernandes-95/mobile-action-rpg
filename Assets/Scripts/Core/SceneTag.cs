@@ -2,9 +2,6 @@ using UnityEngine;
 
 namespace AF
 {
-    public enum SceneTag
-    {
-        A_INTRO_ROOM,
-        B1_WEAPON_SELECTION
-    }
+    [CreateAssetMenu(menuName = "Data / Scene Tag")]
+    public class SceneTag : ScriptableObject { }
 }

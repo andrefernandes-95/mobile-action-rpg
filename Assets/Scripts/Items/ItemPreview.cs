@@ -180,7 +180,7 @@ namespace AF
         {
             if (item is Weapon weapon)
             {
-                inventoryManager.SwitchWeapon(equipmentManager.weaponInstance?.weaponData, weapon);
+                inventoryManager.SwitchWeapon(weapon);
                 rootGameObject.SetActive(false);
             }
 

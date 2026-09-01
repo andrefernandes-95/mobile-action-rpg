@@ -16,6 +16,9 @@ namespace AF
 
         [SerializeField] TrailRenderer trailRenderer;
 
+        AudioSource swingAudioSource;
+        AudioSource hitAudioSource;
+
         void Awake()
         {
             hitboxOwner = GetComponentInParent<CharacterManager>();
@@ -23,6 +26,18 @@ namespace AF
             {
                 trailRenderer.emitting = false;
             }
+
+            swingAudioSource = this.gameObject.AddComponent<AudioSource>();
+            hitAudioSource = this.gameObject.AddComponent<AudioSource>();
+            NormalizeAudioSource(swingAudioSource);
+            NormalizeAudioSource(hitAudioSource);
+        }
+
+        void NormalizeAudioSource(AudioSource audioSource)
+        {
+            audioSource.playOnAwake = false;
+            audioSource.loop = false;
+            audioSource.spatialBlend = 1;
         }
 
         public void OpenHitbox()
@@ -34,6 +49,8 @@ namespace AF
                 trailRenderer.emitting = true;
             }
             hitboxOwner.combatManager.onHitboxOpen?.Invoke(this);
+
+            PlaySwing();
         }
 
         public void CloseHitbox()
@@ -95,6 +112,39 @@ namespace AF
             }
 
             damageable.Receive(packet);
+            PlayHit();
+        }
+
+        Weapon GetWeapon()
+        {
+            if (hitboxOwner.TryGetComponent<EquipmentManager>(out var equipmentManager))
+            {
+                if (equipmentManager.weaponInstance != null)
+                {
+                    return equipmentManager.weaponInstance.weaponData;
+                }
+            }
+            return null;
+        }
+
+        void PlaySwing()
+        {
+            Weapon wp = GetWeapon();
+
+            if (wp != null)
+            {
+                swingAudioSource.PlayOneShot(wp.swing);
+            }
+        }
+
+        void PlayHit()
+        {
+            Weapon wp = GetWeapon();
+
+            if (wp != null)
+            {
+                swingAudioSource.PlayOneShot(wp.hit);
+            }
         }
     }
 }

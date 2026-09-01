@@ -6,7 +6,7 @@ namespace AF
     {
         public bool Repair(WeaponInstance weaponInstance)
         {
-            if (weaponInstance == null || weaponInstance.durability >= weaponInstance.maxDurability)
+            if (weaponInstance == null)
             {
                 return false;
             }
@@ -15,19 +15,6 @@ namespace AF
             {
                 return false;
             }
-
-            int cost = weaponInstance.RepairCost;
-            if (cost <= 0)
-            {
-                return false;
-            }
-
-            if (!PlayerProgress.Instance.wallet.TrySpend(cost))
-            {
-                return false;
-            }
-
-            weaponInstance.Repair();
 
             return true;
         }
@@ -45,13 +32,6 @@ namespace AF
                 return false;
             }
 
-            int cost = weaponInstance.ExtendCost;
-            if (!PlayerProgress.Instance.wallet.TrySpend(cost))
-            {
-                return false;
-            }
-
-            weaponInstance.Extend(weaponInstance.weaponData.extendAmount);
             return true;
         }
     }

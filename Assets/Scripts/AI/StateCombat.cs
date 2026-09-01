@@ -13,10 +13,16 @@ namespace AF
 
         public override void Enter(StateMachine controller)
         {
+            controller.character.Stop();
         }
 
         public override void Tick(StateMachine controller)
         {
+            if (controller.character.isBusy)
+            {
+                return;
+            }
+
             var player = controller.character.GetPlayer();
             if (player == null)
             {

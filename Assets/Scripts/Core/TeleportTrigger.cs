@@ -8,11 +8,12 @@ namespace AF
     {
         [SerializeField] Transform spawnpointTransform;
 
-        [SerializeField] SceneTag goTo;
+        [SerializeField] SceneTag[] goTo;
+        SceneTag SelectedGoTo;
 
         void Awake()
         {
-            spawnpointTransform.gameObject.name = ConstructSpawnpointName();
+            SelectedGoTo = goTo.Length > 0 ? goTo[UnityEngine.Random.Range(0, goTo.Length)] : null;
 
             if (TryGetComponent(out MeshRenderer meshRenderer))
             {
@@ -20,18 +21,13 @@ namespace AF
             }
         }
 
-        string ConstructSpawnpointName()
-        {
-            return goTo.ToString() + "_" + SceneManager.GetActiveScene().name;
-        }
-
-        string ConstructNextSpawnpointName()
-        {
-            return SceneManager.GetActiveScene().name + "_" + goTo.ToString();
-        }
-
         void OnTriggerEnter(Collider other)
         {
+            if (SelectedGoTo == null)
+            {
+                return;
+            }
+
             if (other.CompareTag("Player"))
             {
                 Teleport();
@@ -40,7 +36,12 @@ namespace AF
 
         public void Teleport()
         {
-            TeleportManager.Instance.Teleport(goTo.ToString(), ConstructNextSpawnpointName());
+            if (SelectedGoTo == null)
+            {
+                return;
+            }
+
+            TeleportManager.Instance.Teleport(SelectedGoTo.name);
         }
     }
 }

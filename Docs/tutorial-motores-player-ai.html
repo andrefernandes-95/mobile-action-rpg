@@ -1,0 +1,1207 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PlayerMotor e AIMotor — Tutorial completo</title>
+  <style>
+    :root { --bg:#0b1016; --panel:#141b24; --panel2:#1b2531; --text:#e8eef5; --muted:#9cabb9; --line:#2b3947; --green:#6ee7a8; --blue:#7cc7ff; --orange:#ffc66d; --red:#ff837a; --code:#070b10; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; color:var(--text); background:var(--bg); font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    a { color:var(--blue); }
+    code { font-family:"Cascadia Code",Consolas,monospace; }
+    .layout { display:grid; grid-template-columns:280px minmax(0,1fr); min-height:100vh; }
+    aside { position:sticky; top:0; height:100vh; padding:28px 22px; border-right:1px solid var(--line); background:#0f151d; overflow:auto; }
+    aside strong { display:block; color:var(--green); letter-spacing:.09em; text-transform:uppercase; font-size:12px; }
+    aside h1 { font-size:21px; line-height:1.25; margin:8px 0 24px; }
+    nav a { display:block; padding:7px 0; color:var(--muted); text-decoration:none; font-size:14px; }
+    nav a:hover { color:var(--text); }
+    main { width:min(100%,1100px); padding:54px clamp(24px,5vw,72px) 100px; }
+    section { margin:0 0 76px; scroll-margin-top:25px; }
+    h2 { margin:0 0 18px; font-size:clamp(27px,4vw,42px); line-height:1.15; letter-spacing:-.025em; }
+    h3 { margin:32px 0 10px; font-size:21px; }
+    p { max-width:78ch; }
+    .lead { color:var(--muted); font-size:19px; max-width:74ch; }
+    .eyebrow { color:var(--green); font-weight:750; letter-spacing:.09em; text-transform:uppercase; font-size:12px; }
+    .hero { padding:48px 0 28px; }
+    .hero h2 { font-size:clamp(42px,7vw,72px); max-width:950px; }
+    .hero h2 span { color:var(--green); }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin:24px 0; }
+    .card { padding:22px; background:var(--panel); border:1px solid var(--line); border-radius:12px; }
+    .card h3 { margin:0 0 8px; }
+    .card p { margin:0; color:var(--muted); }
+    .good { border-left:4px solid var(--green); }
+    .warn { padding:18px 20px; margin:24px 0; background:rgba(255,198,109,.08); border-left:4px solid var(--orange); }
+    .note { padding:18px 20px; margin:24px 0; background:rgba(124,199,255,.08); border-left:4px solid var(--blue); }
+    .flow { display:grid; grid-template-columns:1fr auto 1fr auto 1fr; align-items:stretch; gap:10px; margin:28px 0; }
+    .node { padding:18px; text-align:center; background:var(--panel); border:1px solid var(--line); border-radius:10px; }
+    .node b { display:block; color:var(--green); }
+    .arrow { align-self:center; color:var(--muted); font-size:24px; }
+    .codebox { position:relative; margin:18px 0 32px; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--code); }
+    .codehead { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:10px 14px; color:var(--muted); background:var(--panel2); border-bottom:1px solid var(--line); font-size:13px; }
+    button { cursor:pointer; border:1px solid var(--line); border-radius:7px; color:var(--text); background:var(--panel); padding:6px 10px; }
+    button:hover { border-color:var(--blue); }
+    pre { margin:0; padding:20px; overflow:auto; tab-size:4; font-size:13px; line-height:1.55; }
+    table { width:100%; border-collapse:collapse; margin:20px 0; }
+    th,td { padding:12px 14px; text-align:left; border-bottom:1px solid var(--line); vertical-align:top; }
+    th { color:var(--muted); font-size:13px; }
+    .steps { counter-reset:step; padding:0; }
+    .steps li { list-style:none; position:relative; padding:0 0 24px 46px; }
+    .steps li::before { counter-increment:step; content:counter(step); position:absolute; left:0; top:0; width:30px; height:30px; display:grid; place-items:center; border-radius:50%; background:var(--green); color:#07130d; font-weight:800; }
+    footer { color:var(--muted); border-top:1px solid var(--line); padding-top:28px; }
+    @media (max-width:850px) { .layout{display:block} aside{position:relative;height:auto;border-right:0;border-bottom:1px solid var(--line)} nav{display:none} main{padding-top:28px}.grid{grid-template-columns:1fr}.flow{grid-template-columns:1fr}.arrow{transform:rotate(90deg);justify-self:center} }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside>
+    <strong>Unity · Movimento</strong>
+    <h1>PlayerMotor + AIMotor</h1>
+    <nav>
+      <a href="#objectivo">1. Objectivo</a>
+      <a href="#arquitectura">2. Arquitectura</a>
+      <a href="#interface">3. IMovementMotor</a>
+      <a href="#player-motor">4. PlayerMotor</a>
+      <a href="#ai-motor">5. AIMotor</a>
+      <a href="#manager">6. CharacterManager</a>
+      <a href="#input">7. PlayerInput</a>
+      <a href="#state-machine">8. StateMachine</a>
+      <a href="#states">9. Estados AI</a>
+      <a href="#combat-manager">10. CombatManager</a>
+      <a href="#instalacao">11. Instalação</a>
+      <a href="#testes">12. Testes</a>
+    </nav>
+  </aside>
+
+  <main>
+    <header class="hero">
+      <div class="eyebrow">Tutorial completo · versão separada</div>
+      <h2>Um manager agnóstico.<br><span>Dois motores simples.</span></h2>
+      <p class="lead"><code>PlayerMotor</code> trata apenas do <code>CharacterController</code>. <code>AIMotor</code> trata apenas do <code>NavMeshAgent</code>. O <code>CharacterManager</code> não sabe qual dos dois está activo: conhece apenas um contrato mínimo.</p>
+    </header>
+
+    <section id="objectivo">
+      <div class="eyebrow">01 · Objectivo</div>
+      <h2>Cada classe tem um trabalho óbvio</h2>
+      <div class="grid">
+        <div class="card good"><h3>Player</h3><p>Recebe uma direcção do joystick ou teclado e move imediatamente o <code>CharacterController</code>.</p></div>
+        <div class="card good"><h3>AI</h3><p>Recebe um ponto no mundo, entrega-o ao <code>NavMeshAgent</code> e pára quando entra em combate.</p></div>
+      </div>
+      <p>O manager continua responsável por animação, rotação, estado ocupado e referências de gameplay. Não escolhe caminhos, não lê input e não conhece <code>NavMeshAgent</code> nem <code>CharacterController</code>.</p>
+      <div class="note"><b>Regra principal:</b> os sistemas que sabem o que querem movem o motor certo. <code>PlayerInput</code> usa <code>PlayerMotor</code>; a máquina de estados usa <code>AIMotor</code>.</div>
+    </section>
+
+    <section id="arquitectura">
+      <div class="eyebrow">02 · Arquitectura</div>
+      <h2>Dependências pequenas e explícitas</h2>
+      <div class="flow">
+        <div class="node"><b>PlayerInput</b><code>PlayerMotor.Move()</code></div>
+        <div class="arrow">→</div>
+        <div class="node"><b>CharacterManager</b><code>IMovementMotor</code><br>anima e roda</div>
+        <div class="arrow">←</div>
+        <div class="node"><b>StateMachine</b><code>AIMotor.SetDestination()</code></div>
+      </div>
+      <table>
+        <thead><tr><th>Classe</th><th>Sabe o quê?</th><th>Não sabe o quê?</th></tr></thead>
+        <tbody>
+          <tr><td><code>PlayerMotor</code></td><td>Input direccional e CharacterController</td><td>NavMesh, patrulha ou combate</td></tr>
+          <tr><td><code>AIMotor</code></td><td>Destino, caminho e NavMeshAgent</td><td>Joystick ou teclas</td></tr>
+          <tr><td><code>CharacterManager</code></td><td>Motor activo através da interface</td><td>Tipo concreto do motor</td></tr>
+        </tbody>
+      </table>
+      <p><code>SetMotor()</code> funciona como injectar uma prop num componente: desliga o motor antigo, guarda o novo e liga-o. O manager não precisa de um <code>if</code> para descobrir o tipo.</p>
+    </section>
+
+    <section id="interface">
+      <div class="eyebrow">03 · Contrato mínimo</div>
+      <h2><code>IMovementMotor.cs</code></h2>
+      <p>A interface só contém operações verdadeiramente comuns. <code>Move</code> pertence ao Player. <code>SetDestination</code>, caminho e distância pertencem à AI.</p>
+      <div class="codebox"><div class="codehead"><span>Assets/Scripts/Movement/IMovementMotor.cs</span><button type="button" onclick="copyCode(this)">Copiar</button></div><pre><code>using UnityEngine;
+
+namespace AF
+{
+    public interface IMovementMotor
+    {
+        float MoveAmount { get; }
+        float RunSpeed { get; }
+        Vector3 PlanarVelocity { get; }
+        bool IsMotorEnabled { get; }
+
+        void Stop();
+        void ApplyDisplacement(Vector3 worldDelta);
+        void SetMotorEnabled(bool enabled);
+    }
+}</code></pre></div>
+    </section>
+
+    <section id="player-motor">
+      <div class="eyebrow">04 · Movimento do Player</div>
+      <h2><code>PlayerMotor.cs</code></h2>
+      <p>O Player não tem destino, path ou stopping distance. O stick dá uma direcção; o controller move-se nesse frame.</p>
+      <div class="codebox"><div class="codehead"><span>Assets/Scripts/Movement/PlayerMotor.cs</span><button type="button" onclick="copyCode(this)">Copiar</button></div><pre><code>using UnityEngine;
+
+namespace AF
+{
+    [RequireComponent(typeof(CharacterController))]
+    public sealed class PlayerMotor : MonoBehaviour, IMovementMotor
+    {
+        [SerializeField] float runSpeed = 5.5f;
+        [SerializeField] float gravity = -20f;
+
+        CharacterController controller;
+        Vector3 velocity;
+
+        public float MoveAmount { get; private set; }
+        public float RunSpeed =&gt; runSpeed;
+        public Vector3 PlanarVelocity =&gt; new Vector3(velocity.x, 0f, velocity.z);
+        public bool IsMotorEnabled =&gt; controller != null &amp;&amp; controller.enabled;
+
+        void Awake()
+        {
+            controller = GetComponent&lt;CharacterController&gt;();
+            controller.enabled = false;
+        }
+
+        public void Move(Vector3 direction, float moveAmount)
+        {
+            if (!IsMotorEnabled)
+            {
+                return;
+            }
+
+            MoveAmount = Mathf.Clamp01(moveAmount);
+            direction.y = 0f;
+
+            if (direction.sqrMagnitude &lt; 0.0001f || MoveAmount &lt;= 0f)
+            {
+                Stop();
+                return;
+            }
+
+            direction.Normalize();
+            velocity.x = direction.x * runSpeed * MoveAmount;
+            velocity.z = direction.z * runSpeed * MoveAmount;
+
+            ApplyGravity();
+            controller.Move(velocity * Time.deltaTime);
+        }
+
+        public void Stop()
+        {
+            MoveAmount = 0f;
+            velocity.x = 0f;
+            velocity.z = 0f;
+
+            if (!IsMotorEnabled)
+            {
+                return;
+            }
+
+            ApplyGravity();
+            controller.Move(Vector3.up * velocity.y * Time.deltaTime);
+        }
+
+        void ApplyGravity()
+        {
+            if (controller.isGrounded &amp;&amp; velocity.y &lt; 0f)
+            {
+                velocity.y = -2f;
+            }
+            else
+            {
+                velocity.y += gravity * Time.deltaTime;
+            }
+        }
+
+        public void ApplyDisplacement(Vector3 worldDelta)
+        {
+            if (IsMotorEnabled)
+            {
+                controller.Move(worldDelta);
+            }
+        }
+
+        public void SetMotorEnabled(bool enabled)
+        {
+            controller.enabled = enabled;
+
+            if (!enabled)
+            {
+                velocity = Vector3.zero;
+                MoveAmount = 0f;
+            }
+        }
+    }
+}</code></pre></div>
+    </section>
+
+    <section id="ai-motor">
+      <div class="eyebrow">05 · Movimento da AI</div>
+      <h2><code>AIMotor.cs</code></h2>
+      <p>A AI só recebe destinos. O <code>NavMeshAgent</code> calcula o caminho, a velocidade e a distância restante.</p>
+      <div class="codebox"><div class="codehead"><span>Assets/Scripts/Movement/AIMotor.cs</span><button type="button" onclick="copyCode(this)">Copiar</button></div><pre><code>using UnityEngine;
+using UnityEngine.AI;
+
+namespace AF
+{
+    [RequireComponent(typeof(NavMeshAgent))]
+    public sealed class AIMotor : MonoBehaviour, IMovementMotor
+    {
+        [SerializeField] float runSpeed = 5.5f;
+
+        NavMeshAgent agent;
+
+        public float MoveAmount { get; private set; }
+        public float RunSpeed =&gt; runSpeed;
+        public float StoppingDistance =&gt; agent.stoppingDistance;
+        public float RemainingDistance =&gt; IsMotorEnabled ? agent.remainingDistance : 0f;
+        public bool HasPath =&gt; IsMotorEnabled &amp;&amp; agent.hasPath;
+        public bool IsMotorEnabled =&gt; agent != null &amp;&amp; agent.enabled &amp;&amp; agent.isOnNavMesh;
+
+        public Vector3 PlanarVelocity
+        {
+            get
+            {
+                if (!IsMotorEnabled)
+                {
+                    return Vector3.zero;
+                }
+
+                Vector3 velocity = agent.velocity;
+                velocity.y = 0f;
+                return velocity;
+            }
+        }
+
+        void Awake()
+        {
+            agent = GetComponent&lt;NavMeshAgent&gt;();
+            agent.updateRotation = false;
+
+            if (runSpeed &lt;= 0f)
+            {
+                runSpeed = agent.speed;
+            }
+
+            agent.enabled = false;
+        }
+
+        public void SetDestination(Vector3 worldPosition)
+        {
+            if (!IsMotorEnabled)
+            {
+                return;
+            }
+
+            MoveAmount = 1f;
+            agent.speed = runSpeed;
+            agent.SetDestination(worldPosition);
+        }
+
+        public void Stop()
+        {
+            MoveAmount = 0f;
+
+            if (!IsMotorEnabled)
+            {
+                return;
+            }
+
+            agent.ResetPath();
+            agent.velocity = Vector3.zero;
+        }
+
+        public void ApplyDisplacement(Vector3 worldDelta)
+        {
+            if (IsMotorEnabled)
+            {
+                agent.Move(worldDelta);
+            }
+        }
+
+        public void SetMotorEnabled(bool enabled)
+        {
+            if (!enabled)
+            {
+                Stop();
+            }
+
+            agent.enabled = enabled;
+        }
+    }
+}</code></pre></div>
+      <div class="warn"><b>Importante:</b> o <code>NavMeshAgent</code> só pode ser activado sobre um NavMesh válido. Confirma que os prefabs nascem em cima da área navegável.</div>
+    </section>
+
+    <section id="manager">
+      <div class="eyebrow">06 · Manager agnóstico</div>
+      <h2><code>CharacterManager.cs</code> completo</h2>
+      <p>Repara que esta classe não contém os nomes <code>PlayerMotor</code>, <code>AIMotor</code>, <code>CharacterController</code> ou <code>NavMeshAgent</code>.</p>
+      <div class="codebox"><div class="codehead"><span>Assets/Scripts/Core/CharacterManager.cs</span><button type="button" onclick="copyCode(this)">Copiar</button></div><pre><code>namespace AF
+{
+    using UnityEngine;
+
+    public class CharacterManager : MonoBehaviour
+    {
+        [Header("Name")]
+        public new string name = "";
+
+        [Header("Components")]
+        public Animator animator;
+
+        [Header("Character Components")]
+        public Health health;
+        public CharacterDamageReceiver characterDamageReceiver;
+        public Dodge dodge;
+        public Perception perception;
+        public LockOn lockOn;
+        public CombatManager combatManager;
+
+        [Header("Locomotion")]
+        public float rotationSpeed = 10f;
+        public float animSpeedDamp = 0.12f;
+
+        [Header("Patrol")]
+        public Transform[] patrolPoints;
+
+        public bool isBusy = false;
+
+        IMovementMotor motor;
+        float inputMoveAmount;
+        Vector3 inputMoveDirection;
+        Vector3 defaultPosition;
+
+        public IMovementMotor Motor =&gt; motor;
+        public float MoveAmount =&gt; motor != null ? motor.MoveAmount : 0f;
+
+        void Awake()
+        {
+            defaultPosition = transform.position;
+        }
+
+        void Update()
+        {
+            UpdateRotation();
+            UpdateAnimation();
+        }
+
+        public void SetMotor(IMovementMotor newMotor)
+        {
+            if (motor == newMotor)
+            {
+                return;
+            }
+
+            if (motor != null)
+            {
+                motor.SetMotorEnabled(false);
+            }
+
+            motor = newMotor;
+
+            if (motor != null)
+            {
+                motor.SetMotorEnabled(true);
+            }
+        }
+
+        public void SetMovementInput(Vector3 direction, float moveAmount)
+        {
+            inputMoveDirection = direction;
+            inputMoveAmount = Mathf.Clamp01(moveAmount);
+        }
+
+        public void OnIdle()
+        {
+            isBusy = false;
+        }
+
+        public void Stop()
+        {
+            inputMoveAmount = 0f;
+            inputMoveDirection = Vector3.zero;
+
+            if (motor != null)
+            {
+                motor.Stop();
+            }
+        }
+
+        public void ApplyDisplacement(Vector3 worldDelta)
+        {
+            if (motor != null)
+            {
+                motor.ApplyDisplacement(worldDelta);
+            }
+        }
+
+        void UpdateRotation()
+        {
+            if (health != null &amp;&amp; health.IsDead)
+            {
+                return;
+            }
+
+            if (motor == null)
+            {
+                return;
+            }
+
+            if (lockOn != null &amp;&amp; lockOn.isLockedOn &amp;&amp; lockOn.lockOnTarget != null)
+            {
+                Vector3 direction = lockOn.lockOnTarget.position - transform.position;
+                direction.y = 0f;
+
+                if (direction.sqrMagnitude &lt; 0.0001f)
+                {
+                    return;
+                }
+
+                Quaternion targetRotation = Quaternion.LookRotation(direction.normalized);
+                float amount = Mathf.Clamp01(lockOn.lockOnRotationSpeed * Time.deltaTime);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, amount);
+                return;
+            }
+
+            Vector3 moveDirection = motor.PlanarVelocity;
+            float minimum = IsPlayer() ? 0.01f : 0.08f;
+
+            if (moveDirection.sqrMagnitude &lt; minimum)
+            {
+                return;
+            }
+
+            Quaternion moveRotation = Quaternion.LookRotation(moveDirection.normalized);
+            float speed = rotationSpeed * Mathf.Lerp(0.35f, 1f, MoveAmount);
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                moveRotation,
+                speed * Time.deltaTime
+            );
+        }
+
+        void UpdateAnimation()
+        {
+            if (animator == null || motor == null)
+            {
+                return;
+            }
+
+            float vertical = 0f;
+            float horizontal = 0f;
+            bool lockedOn = lockOn != null &amp;&amp; lockOn.isLockedOn &amp;&amp; lockOn.lockOnTarget != null;
+
+            if (IsPlayer() &amp;&amp; lockedOn)
+            {
+                if (inputMoveAmount &gt; 0.01f &amp;&amp; inputMoveDirection.sqrMagnitude &gt; 0.0001f)
+                {
+                    Vector3 toTarget = lockOn.lockOnTarget.position - transform.position;
+                    toTarget.y = 0f;
+
+                    if (toTarget.sqrMagnitude &gt; 0.0001f)
+                    {
+                        Quaternion faceRotation = Quaternion.LookRotation(toTarget.normalized);
+                        Vector3 localDirection = Quaternion.Inverse(faceRotation) * inputMoveDirection;
+                        localDirection.y = 0f;
+
+                        float largestAxis = Mathf.Max(
+                            Mathf.Abs(localDirection.x),
+                            Mathf.Abs(localDirection.z)
+                        );
+
+                        if (largestAxis &gt; 0.0001f)
+                        {
+                            vertical = localDirection.z / largestAxis * inputMoveAmount;
+                            horizontal = localDirection.x / largestAxis * inputMoveAmount;
+                        }
+                    }
+                }
+
+                animator.SetFloat(AnimHashes.Vertical, vertical);
+                animator.SetFloat(AnimHashes.Horizontal, horizontal);
+                return;
+            }
+
+            if (IsPlayer())
+            {
+                vertical = inputMoveAmount;
+            }
+            else
+            {
+                float runSpeed = Mathf.Max(0.01f, motor.RunSpeed);
+                vertical = Mathf.Clamp01(motor.PlanarVelocity.magnitude / runSpeed);
+            }
+
+            animator.SetFloat(AnimHashes.Vertical, vertical, animSpeedDamp, Time.deltaTime);
+            animator.SetFloat(AnimHashes.Horizontal, 0f, animSpeedDamp, Time.deltaTime);
+        }
+
+        public bool IsPlayer()
+        {
+            return GameContext.Player == this;
+        }
+
+        public CharacterManager GetPlayer()
+        {
+            return GameContext.Player;
+        }
+
+        public void RestoreDefaultPosition()
+        {
+            transform.position = defaultPosition;
+        }
+    }
+}</code></pre></div>
+    </section>
+
+    <section id="input">
+      <div class="eyebrow">07 · Controlo humano</div>
+      <h2><code>PlayerInput.cs</code> completo</h2>
+      <p>A troca de personagem actualiza primeiro o <code>GameContext.Player</code>. Depois devolve a personagem anterior à AI e activa o <code>PlayerMotor</code> na nova.</p>
+      <div class="codebox"><div class="codehead"><span>Assets/Scripts/Core/PlayerInput.cs</span><button type="button" onclick="copyCode(this)">Copiar</button></div><pre><code>namespace AF
+{
+    using UnityEngine;
+    using UnityEngine.Events;
+
+    public class PlayerInput : MonoBehaviour
+    {
+        Camera mainCam;
+        PlayerMotor playerMotor;
+
+        public Joystick joystick;
+        public CharacterManager startingCharacterManager;
+
+        [Header("Current Character")]
+        public CharacterManager characterManager;
+
+        [HideInInspector] public UnityEvent&lt;CharacterManager&gt; onSetCurrentCharacter;
+
+        public float MoveAmount { get; private set; }
+        public Vector3 MoveDirection { get; private set; }
+
+        void Start()
+        {
+            mainCam = Camera.main;
+            SetCharacter(startingCharacterManager);
+        }
+
+        void SetCharacter(CharacterManager character)
+        {
+            if (character == null)
+            {
+                return;
+            }
+
+            CharacterManager previousCharacter = characterManager;
+            GameContext.SetPlayer(character);
+
+            if (previousCharacter != null &amp;&amp; previousCharacter != character)
+            {
+                StateMachine previousAI = previousCharacter.GetComponent&lt;StateMachine&gt;();
+
+                if (previousAI != null)
+                {
+                    previousAI.EnableAI();
+                }
+            }
+
+            characterManager = character;
+            playerMotor = characterManager.GetComponent&lt;PlayerMotor&gt;();
+
+            if (playerMotor == null)
+            {
+                Debug.LogError($"{characterManager.name}: falta PlayerMotor.", characterManager);
+                return;
+            }
+
+            characterManager.SetMotor(playerMotor);
+            onSetCurrentCharacter?.Invoke(characterManager);
+        }
+
+        void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                OnSpecialAbility();
+                return;
+            }
+
+            HandleMovement();
+        }
+
+        void HandleMovement()
+        {
+            MoveAmount = 0f;
+            MoveDirection = Vector3.zero;
+
+            if (mainCam == null || characterManager == null || playerMotor == null)
+            {
+                return;
+            }
+
+            if (characterManager.isBusy)
+            {
+                return;
+            }
+
+            float horizontal = Input.GetAxis("Horizontal");
+            float vertical = Input.GetAxis("Vertical");
+
+            if (joystick != null)
+            {
+                horizontal += joystick.Horizontal;
+                vertical += joystick.Vertical;
+            }
+
+            Vector3 cameraForward = mainCam.transform.forward;
+            Vector3 cameraRight = mainCam.transform.right;
+            cameraForward.y = 0f;
+            cameraRight.y = 0f;
+            cameraForward.Normalize();
+            cameraRight.Normalize();
+
+            Vector3 movement = cameraForward * vertical + cameraRight * horizontal;
+            float amount = Mathf.Clamp01(movement.magnitude);
+
+            if (amount &lt; 0.01f)
+            {
+                characterManager.SetMovementInput(Vector3.zero, 0f);
+                playerMotor.Stop();
+                return;
+            }
+
+            MoveAmount = amount;
+            MoveDirection = movement / amount;
+            characterManager.SetMovementInput(MoveDirection, MoveAmount);
+            playerMotor.Move(MoveDirection, MoveAmount);
+        }
+
+        public void OnAttack()
+        {
+            if (characterManager != null)
+            {
+                characterManager.combatManager.Attack();
+            }
+        }
+
+        public void OnSpecialAbility()
+        {
+            if (characterManager != null)
+            {
+                characterManager.combatManager.OnSpecialAbility();
+            }
+        }
+
+        public Vector3 GetDodgeDirection(bool isLockedOn)
+        {
+            float horizontal = Input.GetAxis("Horizontal");
+            float vertical = Input.GetAxis("Vertical");
+
+            if (joystick != null)
+            {
+                horizontal += joystick.Horizontal;
+                vertical += joystick.Vertical;
+            }
+
+            float forwardDirection = isLockedOn ? -1f : 1f;
+            Vector3 cameraForward = mainCam.transform.forward * forwardDirection;
+            Vector3 cameraRight = mainCam.transform.right;
+            cameraForward.y = 0f;
+            cameraRight.y = 0f;
+            cameraForward.Normalize();
+            cameraRight.Normalize();
+
+            Vector3 dodgeDirection = cameraForward * vertical + cameraRight * horizontal;
+
+            if (dodgeDirection.sqrMagnitude &lt; 0.01f)
+            {
+                return characterManager.transform.forward;
+            }
+
+            return dodgeDirection.normalized;
+        }
+    }
+}</code></pre></div>
+    </section>
+
+    <section id="state-machine">
+      <div class="eyebrow">08 · Cérebro da AI</div>
+      <h2><code>StateMachine.cs</code> completo</h2>
+      <p>A máquina de estados é dona do <code>AIMotor</code>. Quando uma personagem deixa de ser Player, <code>EnableAI()</code> injecta esse motor no manager.</p>
+      <div class="codebox"><div class="codehead"><span>Assets/Scripts/AI/StateMachine.cs</span><button type="button" onclick="copyCode(this)">Copiar</button></div><pre><code>namespace AF
+{
+    using UnityEngine;
+
+    public class StateMachine : MonoBehaviour
+    {
+        public CharacterManager character;
+
+        [Header("AI States")]
+        public AIState idleState;
+        public AIState patrolState;
+        public AIState chaseState;
+        public AIState combatState;
+
+        [HideInInspector] public AIState currentState;
+
+        public readonly CombatStateRuntime CombatRuntime = new();
+        public AIMotor Motor { get; private set; }
+
+        void Awake()
+        {
+            if (character == null)
+            {
+                character = GetComponent&lt;CharacterManager&gt;();
+            }
+
+            Motor = GetComponent&lt;AIMotor&gt;();
+        }
+
+        void Start()
+        {
+            if (!character.IsPlayer())
+            {
+                EnableAI();
+            }
+        }
+
+        void Update()
+        {
+            if (!character.IsPlayer() &amp;&amp; Motor != null &amp;&amp; Motor.IsMotorEnabled)
+            {
+                currentState?.Tick(this);
+            }
+        }
+
+        public void EnableAI()
+        {
+            if (Motor == null)
+            {
+                Debug.LogError($"{character.name}: falta AIMotor.", character);
+                return;
+            }
+
+            character.SetMotor(Motor);
+
+            if (currentState == null)
+            {
+                SwitchState(patrolState != null ? patrolState : idleState);
+            }
+        }
+
+        public void SwitchState(AIState newState)
+        {
+            if (newState == null || currentState == newState)
+            {
+                return;
+            }
+
+            currentState?.Exit(this);
+            currentState = newState;
+            currentState.Enter(this);
+        }
+    }
+}</code></pre></div>
+    </section>
+
+    <section id="states">
+      <div class="eyebrow">09 · Estados da AI</div>
+      <h2>Idle, Patrol, Chase e Combat</h2>
+      <p>Os estados deixaram de pedir movimento ao manager. Falam com <code>controller.Motor</code>, que é sempre um <code>AIMotor</code>.</p>
+
+      <h3><code>StateIdle.cs</code></h3>
+      <div class="codebox"><div class="codehead"><span>Assets/Scripts/AI/StateIdle.cs</span><button type="button" onclick="copyCode(this)">Copiar</button></div><pre><code>namespace AF
+{
+    using UnityEngine;
+
+    [CreateAssetMenu(menuName = "AF/AI/States/Idle")]
+    public class StateIdle : AIState
+    {
+        public override void Enter(StateMachine controller)
+        {
+            controller.Motor.Stop();
+        }
+
+        public override void Tick(StateMachine controller)
+        {
+            if (controller.character.perception.CanSeePlayer())
+            {
+                controller.SwitchState(controller.chaseState);
+            }
+        }
+
+        public override void Exit(StateMachine controller)
+        {
+        }
+    }
+}</code></pre></div>
+
+      <h3><code>StatePatrol.cs</code></h3>
+      <div class="codebox"><div class="codehead"><span>Assets/Scripts/AI/StatePatrol.cs</span><button type="button" onclick="copyCode(this)">Copiar</button></div><pre><code>namespace AF
+{
+    using UnityEngine;
+
+    [CreateAssetMenu(menuName = "AF/AI/States/Patrol")]
+    public class StatePatrol : AIState
+    {
+        int patrolIndex;
+
+        public override void Enter(StateMachine controller)
+        {
+            patrolIndex = 0;
+        }
+
+        public override void Tick(StateMachine controller)
+        {
+            if (controller.character.perception.CanSeePlayer())
+            {
+                controller.SwitchState(controller.chaseState);
+                return;
+            }
+
+            Transform[] points = controller.character.patrolPoints;
+
+            if (points == null || points.Length == 0)
+            {
+                return;
+            }
+
+            bool needsNewPoint = !controller.Motor.HasPath
+                || controller.Motor.RemainingDistance &lt; controller.Motor.StoppingDistance;
+
+            if (needsNewPoint)
+            {
+                controller.Motor.SetDestination(points[patrolIndex].position);
+                patrolIndex = (patrolIndex + 1) % points.Length;
+            }
+        }
+
+        public override void Exit(StateMachine controller)
+        {
+            controller.Motor.Stop();
+        }
+    }
+}</code></pre></div>
+
+      <h3><code>StateChase.cs</code></h3>
+      <div class="codebox"><div class="codehead"><span>Assets/Scripts/AI/StateChase.cs</span><button type="button" onclick="copyCode(this)">Copiar</button></div><pre><code>namespace AF
+{
+    using UnityEngine;
+
+    [CreateAssetMenu(menuName = "AF/AI/States/Chase")]
+    public class StateChase : AIState
+    {
+        public float disengageMultiplier = 1.3f;
+
+        public override void Enter(StateMachine controller)
+        {
+        }
+
+        public override void Tick(StateMachine controller)
+        {
+            CharacterManager player = controller.character.GetPlayer();
+
+            if (player == null || controller.character.isBusy)
+            {
+                return;
+            }
+
+            if (controller.character.health.IsDead || player.health.IsDead)
+            {
+                controller.SwitchState(
+                    controller.patrolState != null
+                        ? controller.patrolState
+                        : controller.idleState
+                );
+                return;
+            }
+
+            float distance = Vector3.Distance(
+                controller.transform.position,
+                player.transform.position
+            );
+
+            if (distance &lt;= controller.Motor.StoppingDistance)
+            {
+                controller.SwitchState(controller.combatState);
+                return;
+            }
+
+            controller.Motor.SetDestination(player.transform.position);
+        }
+
+        public override void Exit(StateMachine controller)
+        {
+            controller.Motor.Stop();
+        }
+    }
+}</code></pre></div>
+
+      <h3><code>StateCombat.cs</code></h3>
+      <div class="note"><b>A paragem que pediste está no <code>Enter</code>:</b> assim que a AI entra em combate, o path é apagado e a velocidade do agent fica a zero.</div>
+      <div class="codebox"><div class="codehead"><span>Assets/Scripts/AI/StateCombat.cs</span><button type="button" onclick="copyCode(this)">Copiar</button></div><pre><code>namespace AF
+{
+    using UnityEngine;
+
+    [CreateAssetMenu(menuName = "AF/AI/States/Combat")]
+    public class StateCombat : AIState
+    {
+        [Header("Attack")]
+        public float attackCooldown = 1.2f;
+
+        [Header("Disengage")]
+        public float disengageMultiplier = 1.3f;
+
+        public override void Enter(StateMachine controller)
+        {
+            controller.Motor.Stop();
+        }
+
+        public override void Tick(StateMachine controller)
+        {
+            CharacterManager player = controller.character.GetPlayer();
+
+            if (player == null)
+            {
+                return;
+            }
+
+            if (player.health.IsDead)
+            {
+                controller.SwitchState(
+                    controller.patrolState != null
+                        ? controller.patrolState
+                        : controller.idleState
+                );
+                return;
+            }
+
+            float distance = Vector3.Distance(
+                controller.transform.position,
+                player.transform.position
+            );
+
+            float sight = controller.character.perception.sightRange;
+            float disengageDistance = sight * disengageMultiplier;
+
+            if (distance &gt; disengageDistance
+                || distance &gt; controller.Motor.StoppingDistance)
+            {
+                controller.SwitchState(controller.chaseState);
+                return;
+            }
+
+            Vector3 direction = player.transform.position - controller.transform.position;
+            direction.y = 0f;
+
+            if (direction.sqrMagnitude &gt; 0.01f)
+            {
+                Quaternion rotation = Quaternion.LookRotation(direction);
+                controller.transform.rotation = Quaternion.Slerp(
+                    controller.transform.rotation,
+                    rotation,
+                    Time.deltaTime * controller.character.rotationSpeed
+                );
+            }
+
+            bool cooldownFinished = Time.time
+                &gt;= controller.CombatRuntime.LastAttackTime + attackCooldown;
+
+            if (!controller.character.isBusy &amp;&amp; cooldownFinished)
+            {
+                controller.CombatRuntime.LastAttackTime = Time.time;
+
+                if (Random.Range(0f, 1f) &gt;= 0.15f)
+                {
+                    controller.character.combatManager.Attack();
+                }
+            }
+        }
+
+        public override void Exit(StateMachine controller)
+        {
+        }
+    }
+}</code></pre></div>
+    </section>
+
+    <section id="combat-manager">
+      <div class="eyebrow">10 · Pequena adaptação</div>
+      <h2><code>CombatManager.cs</code> completo</h2>
+      <p>A única alteração é o fallback de <code>GetEngageRadius()</code>: quando não há uma arma válida, lê a distância no <code>AIMotor</code> em vez de a procurar na interface comum.</p>
+      <div class="codebox"><div class="codehead"><span>Assets/Scripts/Combat/CombatManager.cs</span><button type="button" onclick="copyCode(this)">Copiar</button></div><pre><code>using UnityEngine;
+using UnityEngine.Events;
+
+namespace AF
+{
+    public class CombatManager : MonoBehaviour
+    {
+        [Header("Abilities")]
+        [SerializeField] Ability specialAbility;
+        public Ability SpecialAbility =&gt; specialAbility;
+
+        [Header("Components")]
+        [SerializeField] CharacterManager characterManager;
+        [SerializeField] EquipmentManager equipmentManager;
+
+        [Header("Debug")]
+        [SerializeField] Ability currentAbility;
+
+        [HideInInspector] public UnityEvent&lt;Hitbox&gt; onHitboxOpen;
+        [HideInInspector] public UnityEvent&lt;Hitbox&gt; onHitboxClose;
+        [HideInInspector] public UnityEvent&lt;Vector3&gt; onEnemyHit;
+
+        float abilityCooldownEndTime;
+
+        public void ResetStates()
+        {
+        }
+
+        public void Attack()
+        {
+            if (characterManager.isBusy)
+            {
+                return;
+            }
+
+            if (Time.time &lt; abilityCooldownEndTime)
+            {
+                return;
+            }
+
+            if (equipmentManager == null || equipmentManager.weaponInstance == null)
+            {
+                return;
+            }
+
+            WeaponAbility weaponAbility = equipmentManager.weaponInstance.ability;
+
+            if (weaponAbility == null)
+            {
+                return;
+            }
+
+            characterManager.Stop();
+            SetCurrentAbility(weaponAbility, true);
+        }
+
+        public void OnSpecialAbility()
+        {
+            if (specialAbility != null)
+            {
+                SetCurrentAbility(specialAbility, false);
+            }
+        }
+
+        public void SetCurrentAbility(Ability next, bool updateCooldown)
+        {
+            if (currentAbility != null)
+            {
+                currentAbility.OnEnd(characterManager);
+            }
+
+            currentAbility = next;
+            currentAbility?.OnStart(characterManager);
+
+            if (updateCooldown &amp;&amp; currentAbility != null)
+            {
+                abilityCooldownEndTime = Time.time + currentAbility.cooldown;
+            }
+        }
+
+        public bool TryBuildDamagePacket(Vector3 hitPoint, out DamagePacket packet)
+        {
+            if (currentAbility == null)
+            {
+                packet = default;
+                return false;
+            }
+
+            return currentAbility.TryBuildDamagePacket(characterManager, hitPoint, out packet);
+        }
+
+        public float GetEngageRadius()
+        {
+            if (TryGetCurrentWeaponAbility(out WeaponAbility weaponAbility))
+            {
+                return weaponAbility.engageRadius;
+            }
+
+            AIMotor aiMotor = GetComponent&lt;AIMotor&gt;();
+
+            if (aiMotor != null)
+            {
+                return aiMotor.StoppingDistance;
+            }
+
+            return 1.5f;
+        }
+
+        bool TryGetCurrentWeaponAbility(out WeaponAbility weaponAbility)
+        {
+            weaponAbility = null;
+
+            if (equipmentManager == null || equipmentManager.weaponInstance == null)
+            {
+                return false;
+            }
+
+            weaponAbility = equipmentManager.weaponInstance.ability;
+            return weaponAbility != null;
+        }
+    }
+}</code></pre></div>
+    </section>
+
+    <section id="instalacao">
+      <div class="eyebrow">11 · Aplicar no Unity</div>
+      <h2>Ordem segura de migração</h2>
+      <ol class="steps">
+        <li><b>Substitui <code>IMovementMotor.cs</code></b><br>Usa o contrato mínimo apresentado acima.</li>
+        <li><b>Cria <code>PlayerMotor.cs</code> e <code>AIMotor.cs</code></b><br>Ainda não apagues os motores antigos até o novo código compilar.</li>
+        <li><b>Substitui os ficheiros completos</b><br><code>CharacterManager</code>, <code>PlayerInput</code>, <code>StateMachine</code>, os quatro estados e <code>CombatManager</code>.</li>
+        <li><b>Actualiza cada prefab jogável</b><br>Adiciona <code>PlayerMotor</code>, <code>AIMotor</code>, <code>CharacterController</code> e <code>NavMeshAgent</code>.</li>
+        <li><b>Remove os motores antigos dos prefabs</b><br>Retira <code>CharacterControllerMotor</code> e <code>NavMeshAgentMotor</code>.</li>
+        <li><b>Apaga os dois scripts antigos</b><br>Só depois de não existirem referências no Inspector.</li>
+        <li><b>Confirma o NavMesh</b><br>Todos os inimigos devem começar sobre uma superfície navegável.</li>
+      </ol>
+      <div class="warn"><b>Não deixes os dois componentes físicos activos:</b> <code>CharacterManager.SetMotor()</code> desliga o motor anterior antes de ligar o próximo. É isso que impede o controller e o agent de disputarem o mesmo Transform.</div>
+    </section>
+
+    <section id="testes">
+      <div class="eyebrow">12 · Checklist</div>
+      <h2>Testa uma responsabilidade de cada vez</h2>
+      <table>
+        <thead><tr><th>Cenário</th><th>Resultado esperado</th></tr></thead>
+        <tbody>
+          <tr><td>Player parado e em movimento</td><td>Resposta imediata, gravidade activa e animação correcta.</td></tr>
+          <tr><td>AI em Patrol</td><td>Escolhe o ponto seguinte quando termina o path.</td></tr>
+          <tr><td>AI em Chase</td><td>Actualiza o destino para a posição do Player.</td></tr>
+          <tr><td>Entrada em Combat</td><td>O agent executa <code>ResetPath()</code> e fica parado antes do ataque.</td></tr>
+          <tr><td>Player foge</td><td>A AI sai de Combat, volta a Chase e recebe um novo destino.</td></tr>
+          <tr><td>Troca de personagem</td><td>A anterior recebe AIMotor; a nova recebe PlayerMotor.</td></tr>
+          <tr><td>Dodge</td><td><code>ApplyDisplacement</code> usa o motor activo.</td></tr>
+          <tr><td>Morte e respawn</td><td>O motor activo desliga e volta a ligar sem conflito.</td></tr>
+        </tbody>
+      </table>
+      <div class="note"><b>Teste decisivo:</b> abre o Inspector durante o combate. Quando a AI entra em <code>StateCombat</code>, <code>NavMeshAgent.hasPath</code> deve passar a falso e a velocidade deve ficar a zero.</div>
+    </section>
+
+    <footer>
+      Tutorial novo criado a partir do código real do projecto. O HTML anterior foi preservado para comparação.
+    </footer>
+  </main>
+</div>
+
+<script>
+  async function copyCode(button) {
+    const code = button.closest('.codebox').querySelector('code').innerText;
+    await navigator.clipboard.writeText(code);
+    const oldText = button.textContent;
+    button.textContent = 'Copiado';
+    setTimeout(() => button.textContent = oldText, 1200);
+  }
+</script>
+</body>
+</html>
