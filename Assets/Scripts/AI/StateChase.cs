@@ -13,7 +13,7 @@ namespace AF
 
         public override void Tick(StateMachine controller)
         {
-            var player = controller.character.GetPlayer();
+            var player = GameObject.FindWithTag("Player");
             if (player == null)
             {
                 return;
@@ -29,13 +29,14 @@ namespace AF
                 player.transform.position
             );
 
-            if (controller.character.health.IsDead || player.health.IsDead)
+            if (controller.character.health.IsDead || player.GetComponent<Health>().IsDeadAndNotReviving())
             {
                 controller.SwitchState(
                     controller.patrolState != null
                         ? controller.patrolState
                         : controller.idleState
                 );
+
                 return;
             }
 

@@ -22,7 +22,6 @@ namespace AF
         public Health health;
         public CharacterDamageReceiver characterDamageReceiver;
         public Dodge dodge;
-        public Perception perception;
         public LockOn lockOn;
         public CombatManager combatManager;
 
@@ -236,23 +235,12 @@ namespace AF
 
         public bool IsPlayer()
         {
-            return GameContext.Player == this;
-        }
-
-        public CharacterManager GetPlayer()
-        {
-            return GameContext.Player;
+            return gameObject.CompareTag("Player");
         }
 
         public void GiveControlToAI()
         {
             UseNavMeshMotor();
-        }
-
-        public void GiveControlToPlayer()
-        {
-            GameContext.SetPlayer(this);
-            UseCharacterControllerMotor();
         }
 
         void UseCharacterControllerMotor()

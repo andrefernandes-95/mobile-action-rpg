@@ -14,7 +14,7 @@ namespace AF
         {
             if (isLockedOn)
             {
-                if (lockOnTarget == null || lockOnTarget.GetComponent<Health>().IsDead)
+                if (lockOnTarget == null || lockOnTarget.GetComponent<Health>().IsDeadAndNotReviving())
                 {
                     ClearLockOn();
                 }

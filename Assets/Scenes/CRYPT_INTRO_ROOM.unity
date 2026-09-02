@@ -13245,7 +13245,7 @@ MonoBehaviour:
   fadeDuration: 1
   headlinerDuration: 4
   gameTitleDuration: 4
-  skip: 1
+  skip: 0
 --- !u!4 &1855720258 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 427468, guid: 3c732fc2103e2a74aa95ef40ff66c419, type: 3}

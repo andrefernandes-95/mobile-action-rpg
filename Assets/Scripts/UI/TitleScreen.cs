@@ -19,6 +19,8 @@ namespace AF
         void Awake()
         {
             uiDocument = GetComponent<UIDocument>();
+
+
         }
 
         void Start()

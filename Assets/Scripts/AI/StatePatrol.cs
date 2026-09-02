@@ -14,12 +14,6 @@ namespace AF
 
         public override void Tick(StateMachine controller)
         {
-            if (controller.character.perception.CanSeePlayer())
-            {
-                controller.SwitchState(controller.chaseState);
-                return;
-            }
-
             var points = controller.character.patrolPoints;
             if (points == null || points.Length == 0)
             {

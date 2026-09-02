@@ -9,5 +9,6 @@ namespace AF
         public static readonly int Vertical = Animator.StringToHash("Vertical");
         public static readonly int Horizontal = Animator.StringToHash("Horizontal");
         public static readonly int Attack = Animator.StringToHash("Attack");
+        public static readonly int Revive = Animator.StringToHash("Revive");
     }
 }

@@ -8,6 +8,16 @@ namespace AF
     {
         [SerializeField] CharacterManager characterManager;
         [SerializeField] Health health;
+        [SerializeField] AudioClip deathSound;
+
+        AudioSource deathAudioSource;
+
+        void Awake()
+        {
+            deathAudioSource = this.gameObject.AddComponent<AudioSource>();
+            deathAudioSource.playOnAwake = false;
+            deathAudioSource.spatialBlend = 1;
+        }
 
         void OnEnable()
         {
@@ -42,36 +52,67 @@ namespace AF
 
             characterManager.isBusy = true;
 
+            if (characterManager.TryGetComponent(out CapsuleCollider collider))
+            {
+                collider.enabled = false;
+            }
+
             if (characterManager.IsPlayer())
             {
-                StartCoroutine(ReloadGame());
+                HandlePlayerGameOver();
             }
+        }
+
+        void HandlePlayerGameOver()
+        {
+            if (PlayerInventory.Instance.TryUsePotion())
+            {
+                characterManager.health.IsReviving = true;
+                UndoDeath();
+                return;
+            }
+
+            StartCoroutine(ReloadGame());
         }
 
         IEnumerator ReloadGame()
         {
             yield return new WaitForSeconds(2f);
 
-            PlayerProgress.Instance.DropBloodstain(characterManager.transform.position);
-
             Checkpoint lastCheckpoint = PlayerProgress.Instance.LastCheckpoint;
             if (lastCheckpoint != null && !string.IsNullOrEmpty(lastCheckpoint.scene))
             {
                 lastCheckpoint.ShouldRespawn = true;
-                SceneManager.LoadScene(lastCheckpoint.scene);
             }
         }
 
         public void UndoDeath()
         {
-            characterManager.animator.Play(AnimHashes.Idle);
-
             if (characterManager.Motor != null)
             {
                 characterManager.Motor.SetMotorEnabled(true);
             }
 
-            characterManager.isBusy = false;
+
+            if (characterManager.TryGetComponent(out CapsuleCollider collider))
+            {
+                collider.enabled = true;
+            }
+
+            characterManager.animator.Play(AnimHashes.Revive);
+            characterManager.isBusy = true;
+        }
+
+
+        /// <summary>
+        /// Animation Event
+        /// </summary>
+        public void OnDeath()
+        {
+            if (deathSound != null)
+            {
+                deathAudioSource.PlayOneShot(deathSound);
+            }
         }
     }
 }

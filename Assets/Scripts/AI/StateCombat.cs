@@ -23,13 +23,13 @@ namespace AF
                 return;
             }
 
-            var player = controller.character.GetPlayer();
+            var player = GameObject.FindWithTag("Player").GetComponent<CharacterManager>();
             if (player == null)
             {
                 return;
             }
 
-            if (player.health.IsDead)
+            if (player.health.IsDeadAndNotReviving())
             {
                 controller.SwitchState(
                     controller.patrolState != null
@@ -40,9 +40,6 @@ namespace AF
             }
 
             float sqrDist = (controller.transform.position - player.transform.position).sqrMagnitude;
-            float sight = controller.character.perception.sightRange;
-            float disengageSqr = (sight * disengageMultiplier) * (sight * disengageMultiplier);
-
             float stop = 1.5f;
             if (controller.character.Motor != null)
             {
@@ -51,7 +48,7 @@ namespace AF
 
             float stopSqr = stop * stop;
 
-            if (sqrDist > disengageSqr || sqrDist > stopSqr)
+            if (sqrDist > stopSqr)
             {
                 controller.SwitchState(controller.chaseState);
                 return;

@@ -9,6 +9,7 @@ namespace AF
         public WeaponInstance(string id, Weapon weaponData) : base(id, weaponData)
         {
             this.weaponData = weaponData;
+            this.ability = new WeaponAbility(weaponData);
         }
 
     }

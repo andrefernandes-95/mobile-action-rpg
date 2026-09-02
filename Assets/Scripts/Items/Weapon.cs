@@ -5,7 +5,12 @@ namespace AF
     [CreateAssetMenu(menuName = "AF/Data/Weapon")]
     public class Weapon : Item
     {
+        [Header("Weapon Details")]
+        public WeaponType weaponType = WeaponType.Unarmed;
+        public Ability attackAbility;
+
         [Header("Damage")]
+        public DamageType damageType;
         public int amount;
 
         [Header("Audios")]

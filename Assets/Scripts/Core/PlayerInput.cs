@@ -20,19 +20,6 @@ namespace AF
         void OnEnable()
         {
             mainCam = Camera.main;
-            SetCharacter(startingCharacterManager);
-        }
-
-        void SetCharacter(CharacterManager character)
-        {
-            if (characterManager != null)
-            {
-                characterManager.GiveControlToAI();
-            }
-
-            characterManager = character;
-            characterManager.GiveControlToPlayer();
-            onSetCurrentCharacter?.Invoke(characterManager);
         }
 
         void Update()

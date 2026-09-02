@@ -22,9 +22,17 @@ namespace AF
 
         void Awake()
         {
-            if (characterManager.IsPlayer())
+            // The tagged player avatar owns the inventory that persists between scenes.
+            if (characterManager.CompareTag("Player"))
             {
-                Data = FindAnyObjectByType<PlayerInventory>(FindObjectsInactive.Include);
+                Data = PlayerInventory.Instance;
+
+                if (Data == null)
+                {
+                    Debug.LogError("PlayerInventory.Instance is not initialized.", this);
+                    enabled = false;
+                    return;
+                }
             }
             else
             {
@@ -56,6 +64,11 @@ namespace AF
 
         void SetupDefaultInventory()
         {
+            if (Data.GetWeapon() != null)
+            {
+                return;
+            }
+
             if (randomDefaultWeapons.Length > 0)
             {
                 Weapon selected = randomDefaultWeapons[UnityEngine.Random.Range(0, randomDefaultWeapons.Length)];

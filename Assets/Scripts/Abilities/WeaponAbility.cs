@@ -8,14 +8,12 @@ namespace AF
         int amount;
 
         public WeaponAbility(
-            DamageType damageType,
-            int amount,
-            float engageRadius
+            Weapon weaponData
         )
         {
-            this.damageType = damageType;
-            this.amount = amount;
-            this.engageRadius = engageRadius;
+            this.damageType = weaponData.damageType;
+            this.amount = weaponData.amount;
+            this.engageRadius = weaponData.engageRadius;
         }
 
         public override void OnStart(CharacterManager characterManager)

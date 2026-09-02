@@ -26,6 +26,7 @@ namespace AF
 
         public int Max => maxHealth;
         public bool IsDead => Current <= 0;
+        public bool IsReviving = false;
 
         public event Action<DamageResult> OnDamaged;
         public event Action OnDied;
@@ -79,6 +80,21 @@ namespace AF
             }
 
             Current = Mathf.Min(Max, Current + amount);
+        }
+        public void Revive()
+        {
+            Current = Max;
+            IsReviving = false;
+        }
+
+        public bool IsDeadAndNotReviving()
+        {
+            if (IsReviving)
+            {
+                return false;
+            }
+
+            return IsDead;
         }
     }
 }

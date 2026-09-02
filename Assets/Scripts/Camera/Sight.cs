@@ -6,8 +6,24 @@ namespace AF
     {
         [SerializeField] private float sightRadius = 5f;
         [SerializeField] private LayerMask playerLayer;
+        [SerializeField] private StateMachine stateMachine;
 
         bool isChasingPlayer = false;
+
+        void OnEnable()
+        {
+            PlayerInventory.Instance.OnPotionUsed += OnPotionUsed;
+        }
+
+        void OnDisable()
+        {
+            PlayerInventory.Instance.OnPotionUsed -= OnPotionUsed;
+        }
+
+        void OnPotionUsed()
+        {
+            isChasingPlayer = false;
+        }
 
         void Update()
         {
@@ -35,6 +51,7 @@ namespace AF
             {
                 isChasingPlayer = true;
                 playerLockOn.SetLockOn(this.transform);
+                stateMachine.SwitchState(stateMachine.chaseState);
             }
         }
     }

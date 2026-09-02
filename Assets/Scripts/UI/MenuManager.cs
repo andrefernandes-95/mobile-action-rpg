@@ -53,11 +53,6 @@ namespace AF
 
         public void Open(MenuId id)
         {
-            if (GameFlow.IsInCutscene)
-            {
-                return;
-            }
-
             if (!screens.TryGetValue(id, out var next))
             {
                 return;
